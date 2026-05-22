@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Summary — {{ family }}</title>
+    <style>
+        /* ============================== */
+        /* FONTS — Poppins + Inter        */
+        /* ============================== */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
+        /* ============================== */
+        /* BASE RESET                     */
+        /* ============================== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            color: #1a1a2e;
+            background: #ffffff;
+            line-height: 1.5;
+        }
+
+        /* ============================== */
+        /* PAGE SETUP (A4)                */
+        /* ============================== */
+        @page {
+            size: A4;
+            margin: 15mm 18mm;
+        }
+
+        .page {
+            width: 100%;
+            max-width: 210mm;
+            margin: 0 auto;
+        }
+
+        /* ============================== */
+        /* HEADER                         */
+        /* ============================== */
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            padding: 24px 28px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 18px;
+        }
+
+        .header-image {
+            width: 140px;
+            height: 100px;
+            object-fit: contain;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 8px;
+            flex-shrink: 0;
+        }
+
+        .header-image-placeholder {
+            width: 140px;
+            height: 100px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .header-image-placeholder span {
+            font-family: 'Poppins', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .header-info {
+            flex: 1;
+        }
+
+        .header-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
+        }
+
+        .header-subtitle {
+            font-size: 11px;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 12px;
+        }
+
+        .badge-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .badge-rank {
+            background: #e63946;
+            color: #fff;
+        }
+
+        .badge-faults {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+
+        .badge-sites {
+            background: rgba(67, 97, 238, 0.8);
+            color: #fff;
+        }
+
+        .badge-unique {
+            background: rgba(76, 201, 240, 0.8);
+            color: #fff;
+        }
+
+        /* ============================== */
+        /* METRICS ROW                    */
+        /* ============================== */
+        .metrics-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .metric-card {
+            flex: 1;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 14px 16px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-family: 'Poppins', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: #4361ee;
+        }
+
+        .metric-label {
+            font-size: 9px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        /* ============================== */
+        /* SECTION STYLING                */
+        /* ============================== */
+        .section {
+            margin-bottom: 18px;
+            page-break-inside: avoid;
+        }
+
+        .section-header {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: #1a1a2e;
+            border-bottom: 3px solid #4361ee;
+            padding-bottom: 6px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-icon {
+            font-size: 16px;
+        }
+
+        /* ============================== */
+        /* TABLE                          */
+        /* ============================== */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            margin-bottom: 14px;
+        }
+
+        .data-table thead th {
+            font-family: 'Poppins', sans-serif;
+            background: #1a1a2e;
+            color: #ffffff;
+            padding: 8px 12px;
+            text-align: left;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .data-table thead th:first-child {
+            border-radius: 6px 0 0 0;
+        }
+
+        .data-table thead th:last-child {
+            border-radius: 0 6px 0 0;
+        }
+
+        .data-table tbody td {
+            padding: 7px 12px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .data-table tbody tr:hover {
+            background: #e8f0fe;
+        }
+
+        .rank-badge {
+            display: inline-block;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #4361ee;
+            color: #fff;
+            text-align: center;
+            line-height: 22px;
+            font-size: 10px;
+            font-weight: 700;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* ============================== */
+        /* CHART CONTAINERS               */
+        /* ============================== */
+        .chart-container {
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .chart-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+        }
+
+        /* ============================== */
+        /* TWO-COLUMN LAYOUT              */
+        /* ============================== */
+        .two-col {
+            display: flex;
+            gap: 16px;
+        }
+
+        .col-left {
+            flex: 1;
+        }
+
+        .col-right {
+            flex: 1;
+        }
+
+        .col-narrow {
+            flex: 0 0 200px;
+        }
+
+        /* ============================== */
+        /* INSIGHT CARDS                  */
+        /* ============================== */
+        .insight-card {
+            background: #f0f4ff;
+            border-left: 4px solid #4361ee;
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 10px;
+        }
+
+        .insight-card h4 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            color: #4361ee;
+            margin-bottom: 4px;
+        }
+
+        .insight-card p, .insight-card li {
+            font-size: 10px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .insight-card ul {
+            padding-left: 16px;
+            margin-top: 4px;
+        }
+
+        /* ============================== */
+        /* RECOMMENDATION BOX             */
+        /* ============================== */
+        .recommendation-box {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+            border: 1px solid #4361ee;
+            border-radius: 10px;
+            padding: 18px 22px;
+        }
+
+        .recommendation-box h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 10px;
+        }
+
+        .recommendation-content {
+            font-size: 10px;
+            line-height: 1.7;
+            color: #333;
+        }
+
+        .recommendation-content ul {
+            padding-left: 16px;
+        }
+
+        .recommendation-content li {
+            margin-bottom: 4px;
+        }
+
+        .recommendation-content strong {
+            color: #1a1a2e;
+        }
+
+        /* ============================== */
+        /* PATTERN CARD                   */
+        /* ============================== */
+        .pattern-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .pattern-list li {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pattern-name {
+            font-size: 10px;
+            font-weight: 500;
+            color: #1a1a2e;
+            flex: 1;
+        }
+
+        .pattern-pct {
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            color: #4361ee;
+        }
+
+        /* ============================== */
+        /* FOOTER                         */
+        /* ============================== */
+        .footer {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #999;
+            font-size: 8px;
+        }
+
+        .footer-brand {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <!-- ========== HEADER ========== -->
+    <div class="header">
+        {% if unit_image %}
+        <img class="header-image" src="data:image/png;base64,{{ unit_image }}" alt="{{ family }}">
+        {% else %}
+        <div class="header-image-placeholder">
+            <span>{{ family[:4] }}</span>
+        </div>
+        {% endif %}
+        <div class="header-info">
+            <div class="header-title">{{ family }}</div>
+            <div class="header-subtitle">Varian: {{ subtypes }}</div>
+            <div class="badge-row">
+                <span class="badge badge-rank">Rank #{{ rank_position }} dari {{ total_models }} Model</span>
+                <span class="badge badge-faults">{{ total_faults }} Total EMR</span>
+                <span class="badge badge-sites">{{ active_sites }} Site Aktif</span>
+                <span class="badge badge-unique">{{ unique_fault_count }} Kategori Masalah</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== KEY METRICS ========== -->
+    <div class="metrics-row">
+        <div class="metric-card">
+            <div class="metric-value">{{ total_faults }}</div>
+            <div class="metric-label">Total EMR</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value">#{{ rank_position }}</div>
+            <div class="metric-label">Ranking EMR</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value">{{ unique_fault_count }}</div>
+            <div class="metric-label">Kategori Masalah</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value">{{ top3_concentration }}%</div>
+            <div class="metric-label">Konsentrasi Top 3</div>
+        </div>
+    </div>
+
+    <!-- ========== SECTION 1: PROBLEM FOCUS ========== -->
+    <div class="section">
+        <div class="section-header">
+            <span class="section-icon">&#9888;</span>
+            Section 1 — Problem Focus (AI Clustering)
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width:40px">#</th>
+                    <th>Kategori Masalah</th>
+                    <th style="width:80px; text-align:right">Frekuensi</th>
+                    <th style="width:80px; text-align:right">Persentase</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fault in top_faults %}
+                <tr>
+                    <td><span class="rank-badge">{{ loop.index }}</span></td>
+                    <td>{{ fault.fault_name }}</td>
+                    <td style="text-align:right; font-weight:600">{{ fault.frequency }}</td>
+                    <td style="text-align:right">{{ fault.percentage }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if pareto_chart %}
+        <div class="chart-container">
+            <img src="data:image/png;base64,{{ pareto_chart }}" alt="Pareto Chart">
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ========== SECTION 2: CONTEXTUAL INSIGHT ========== -->
+    <div class="section">
+        <div class="section-header">
+            <span class="section-icon">&#128270;</span>
+            Section 2 — Contextual Insight
+        </div>
+
+        <div class="two-col">
+            <!-- Left: Where It Happens -->
+            <div class="col-left">
+                <div class="insight-card">
+                    <h4>&#128205; Where It Happens — Top Site</h4>
+                </div>
+
+                {% if top_sites %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Site</th>
+                            <th>Customer</th>
+                            <th style="text-align:right">EMR</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for site in top_sites[:5] %}
+                        <tr>
+                            <td><span class="rank-badge">{{ loop.index }}</span></td>
+                            <td>{{ site.plan }}</td>
+                            <td>{{ site.account[:25] }}{% if site.account|length > 25 %}...{% endif %}</td>
+                            <td style="text-align:right; font-weight:600">{{ site.total_fault_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                {% if site_chart %}
+                <div class="chart-container">
+                    <img src="data:image/png;base64,{{ site_chart }}" alt="Site Distribution">
+                </div>
+                {% endif %}
+
+                {% else %}
+                <p style="color:#999; font-size:10px;">Data site tidak tersedia.</p>
+                {% endif %}
+            </div>
+
+            <!-- Right: Fault Concentration + Pattern -->
+            <div class="col-right">
+                <div class="insight-card">
+                    <h4>&#128200; Problem Concentration</h4>
+                    <p>Top 3 kategori masalah menyumbang <strong>{{ top3_concentration }}%</strong> dari seluruh EMR pada {{ family }}.</p>
+                </div>
+
+                {% if donut_chart %}
+                <div class="chart-container">
+                    <img src="data:image/png;base64,{{ donut_chart }}" alt="Donut Chart" style="max-width:200px;">
+                </div>
+                {% endif %}
+
+                {% if top3_pattern %}
+                <div class="insight-card" style="margin-top:10px;">
+                    <h4>&#128279; Pola Masalah Dominan</h4>
+                </div>
+                <ul class="pattern-list">
+                    {% if top3_pattern.fault_1 and top3_pattern.fault_1 != 'N/A' %}
+                    <li>
+                        <span class="pattern-name">{{ top3_pattern.fault_1 }}</span>
+                        <span class="pattern-pct">{{ top3_pattern.pct_1 }}%</span>
+                    </li>
+                    {% endif %}
+                    {% if top3_pattern.fault_2 and top3_pattern.fault_2 != 'N/A' and top3_pattern.fault_2 == top3_pattern.fault_2 %}
+                    <li>
+                        <span class="pattern-name">{{ top3_pattern.fault_2 }}</span>
+                        <span class="pattern-pct">{{ top3_pattern.pct_2 }}%</span>
+                    </li>
+                    {% endif %}
+                    {% if top3_pattern.fault_3 and top3_pattern.fault_3 != 'N/A' and top3_pattern.fault_3 == top3_pattern.fault_3 %}
+                    <li>
+                        <span class="pattern-name">{{ top3_pattern.fault_3 }}</span>
+                        <span class="pattern-pct">{{ top3_pattern.pct_3 }}%</span>
+                    </li>
+                    {% endif %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== SECTION 3: PRESCRIPTIVE ACTION ========== -->
+    <div class="section">
+        <div class="section-header">
+            <span class="section-icon">&#9989;</span>
+            Section 3 — Prescriptive Action (Next Step)
+        </div>
+
+        <div class="recommendation-box">
+            <h3>&#128161; Rekomendasi AI untuk Tim Maintenance</h3>
+            <div class="recommendation-content">
+                {{ recommendation | replace('\n', '<br>') }}
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== FOOTER ========== -->
+    <div class="footer">
+        <span class="footer-brand">RAG Fault Analyzer v3.0 — EMR + AI Clustering</span>
+        <span>Generated: {{ generated_at }} | Data-driven by AI</span>
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+Lib/
+Scripts/
+Include/
+share/
+pyvenv.cfg
+
+# Vector database and local storage
+database_vektor/
+output/
+output_test.html
+output_test.pdf
+
+# Configuration and secrets
+.env
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
