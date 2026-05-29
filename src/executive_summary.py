@@ -39,11 +39,10 @@ _IMAGES_DIR = _ASSETS_DIR / "unit_images"
 _OUTPUT_DIR = _PROJECT_ROOT / "output"
 
 # Environment
-from dotenv import load_dotenv
-load_dotenv(_PROJECT_ROOT / ".env")
+from .config import settings
 
-EMR_FILE_NAME: str = os.getenv("EMR_FILE_NAME", "Dashboard EMR.xlsx")
-EMR_SHEET_NAME: str = os.getenv("EMR_SHEET_NAME", "report1776669858353")
+EMR_FILE_NAME: str = settings.emr_file_name
+EMR_SHEET_NAME: str = settings.emr_sheet_name
 
 # Design Tokens
 _COLORS = ["#4361ee", "#3a86ff", "#4895ef", "#4cc9f0", "#72efdd",
@@ -228,10 +227,10 @@ def extract_summary_data(family: str) -> Dict[str, Any]:
 def _generate_recommendation(data: Dict[str, Any]) -> str:
     """Generate AI recommendation using Ollama."""
     try:
-        from src.chat_engine import get_chat_engine
+        from .utils import get_llm
         from langchain_core.messages import HumanMessage
 
-        engine = get_chat_engine()
+        llm = get_llm(temperature=0.0)
         top_faults_text = "\n".join(
             f"  - {f['fault_name']}: {f['frequency']} kejadian ({f['percentage']}%)"
             for f in data.get("top_faults", [])[:5]
@@ -243,7 +242,7 @@ def _generate_recommendation(data: Dict[str, Any]) -> str:
             "Berikan 3-5 rekomendasi aksi maintenance yang spesifik dan actionable "
             "dalam format bullet points. Gunakan Bahasa Indonesia."
         )
-        resp = engine.llm.invoke([HumanMessage(content=prompt)])
+        resp = llm.invoke([HumanMessage(content=prompt)])
         return resp.content.strip()
     except Exception as exc:
         logger.warning("LLM recommendation failed: %s", exc)

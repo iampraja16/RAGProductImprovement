@@ -11,10 +11,14 @@ from __future__ import annotations
 
 import logging
 import sys
+import os
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from langchain_core.documents import Document
+
+from .config import settings
 
 # ---------------------------------------------------------------------------
 # Logger
@@ -46,6 +50,48 @@ def extract_model_family(model: str) -> str:
         return model
     return str(model).split("-")[0]
 
+
+# ===================================================================
+# Loading Data
+# ===================================================================
+def load_emr_data(file_path: Optional[str] = None) -> pd.DataFrame:
+    """
+    Load Dashboard EMR.xlsx and return the main sheet as a DataFrame.
+    """
+    if not file_path:
+        file_path = os.path.join(settings.data_dir, settings.emr_file_name)
+        
+    p = Path(file_path)
+
+    if not p.exists():
+        raise FileNotFoundError(
+            f"File EMR tidak ditemukan: '{p}'.\n"
+        )
+
+    logger.info("Loading EMR data: %s (sheet: %s)", p.name, settings.emr_sheet_name)
+    df = pd.read_excel(p, sheet_name=settings.emr_sheet_name)
+    logger.info("  Loaded %d rows, %d columns.", len(df), len(df.columns))
+
+    # Basic cleaning - strip spaces but keep duplicate names unique
+    new_cols = []
+    seen = {}
+    for col in df.columns:
+        clean_col = str(col).strip()
+        if clean_col in seen:
+            seen[clean_col] += 1
+            new_cols.append(f"{clean_col}.{seen[clean_col]}")
+        else:
+            seen[clean_col] = 0
+            new_cols.append(clean_col)
+    df.columns = new_cols
+
+    # Ensure key text columns exist
+    for col in ("Subjects", "Symptom", "Caused of Problem"):
+        if col not in df.columns:
+            logger.warning("  Column '%s' not found — filling with empty.", col)
+            df[col] = ""
+
+    return df
 
 # ===================================================================
 # Row -> Prompt-Ready Text

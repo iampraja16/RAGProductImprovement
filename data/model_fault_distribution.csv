@@ -1,0 +1,2349 @@
+model_type,fault_name,frequency,percentage
+D155A-6R,coolant+decrease in quantity,92,17.73
+D155A-6R,rail press low error,58,11.18
+D155A-6R,coolant+overheat,54,10.4
+D155A-6R,hydraulic pump oil pressure sensor+short circuit,26,5.01
+D155A-6R,komtrax gps antenna cable+open circuit,26,5.01
+D155A-6R,air cleaner element+clogging,22,4.24
+D155A-6R,rail press very low error,20,3.85
+D155A-6R,grid htr relay volt low error,18,3.47
+D155A-6R,back alarm relay+open circuit,16,3.08
+D155A-6R,battery relay+short circuit,16,3.08
+D155A-6R,monitor controller can communicaton+malfunction,14,2.7
+D155A-6R,power train controller+source voltage drop,14,2.7
+D155A-6R,t/c oil+overheat,14,2.7
+D155A-6R,alternator+defective function,12,2.31
+D155A-6R,throttle sensor low error,12,2.31
+D155A-6R,c/r eng cntrlr can communication+communication error (compo line),10,1.93
+D155A-6R,"ecmv tm 2nd clutch+command curency on, fill signal off",10,1.93
+D155A-6R,shift up switch+open circuit,8,1.54
+D155A-6R,steering brake+miss operation or miss setting,8,1.54
+D155A-6R,"ecmv tm 2nd clutch+command curency off, fill signal on",6,1.16
+D155A-6R,komnet datalink timeout error,6,1.16
+D155A-6R,chg air press sensor low error,4,0.77
+D155A-6R,"ecmv tm 1st clutch+command curency on, fill signal off",4,0.77
+D155A-6R,eng ne and bkup speed sens error,4,0.77
+D155A-6R,forward & reverse potentiometer+analog signal doesnt match,4,0.77
+D155A-6R,reverse fan pump solenoid valve+open circuit,4,0.77
+D155A-6R,throttle sensor high error,4,0.77
+D155A-6R,3rd clutch solenoid valve+short circuit,2,0.39
+D155A-6R,brake angle sensor+open circuit,2,0.39
+D155A-6R,chg air temp sensor high error,2,0.39
+D155A-6R,"ecmv tm 3rd clutch+command curency on, fill signal off",2,0.39
+D155A-6R,"ecmv tm r-clutch+command curency on, fill signal off",2,0.39
+D155A-6R,eng bkup speed sensor error,2,0.39
+D155A-6R,fan control solenoid valve+open circuit,2,0.39
+D155A-6R,hydraulic oil+overheat,2,0.39
+D155A-6R,imv/pcv1 open error,2,0.39
+D155A-6R,"left steering brake+command curency on, fill signal off",2,0.39
+D155A-6R,monitor controller can communicaton+communication error (compo line),2,0.39
+D155A-6R,rail press sensor high error,2,0.39
+D155A-6R,"right steering clutch+command curency on, fill signal off",2,0.39
+D155A-6R,shift down switch+open circuit,2,0.39
+D155A-6R,sudden stop prevent solenoid valve+open circuit,2,0.39
+D155A-6R,traveling lock switch(2)+open circuit,2,0.39
+D155A-6R,acc signal drive relay+open circuit,1,0.19
+D21PL-8,komtrax gps antenna cable+open circuit,8,100.0
+D31EX-22,komtrax gps antenna cable+open circuit,108,27.76
+D31EX-22,water in fuel sensor high error,48,12.34
+D31EX-22,chg air press sensor low error,26,6.68
+D31EX-22,rail press low error,24,6.17
+D31EX-22,eng ne speed sensor error,20,5.14
+D31EX-22,chg air temp sensor high error,14,3.6
+D31EX-22,rail press very low error,14,3.6
+D31EX-22,air cleaner element+clogging,13,3.34
+D31EX-22,alternator+defective function,12,3.08
+D31EX-22,monitor controller can communicaton+malfunction,8,2.06
+D31EX-22,brake pressure switch+open circuit,6,1.54
+D31EX-22,brake pressure switch+short circuit,6,1.54
+D31EX-22,hst controller+source voltage drop,6,1.54
+D31EX-22,hst oil+low oil pressure,6,1.54
+D31EX-22,hydraulic tank temperature sensor+open circuit,6,1.54
+D31EX-22,inj #3(l#3) open/short error,6,1.54
+D31EX-22,injectors drive circuit error,6,1.54
+D31EX-22,monitor controller can communicaton+communication error (compo line),6,1.54
+D31EX-22,st controller can communication+communication error (compo line),6,1.54
+D31EX-22,throttle lever angle sensor+open circuit,6,1.54
+D31EX-22,coolant+overheat,4,1.03
+D31EX-22,engine oil+low oil pressure,4,1.03
+D31EX-22,throttle sensor low error,4,1.03
+D31EX-22,ambient press sens low error,2,0.51
+D31EX-22,c/r eng cntrlr can communication+communication error (compo line),2,0.51
+D31EX-22,chg air temp sensor low error,2,0.51
+D31EX-22,coolant temp sens high error,2,0.51
+D31EX-22,fan control solenoid valve+open circuit,2,0.51
+D31EX-22,hst filter element+clogging,2,0.51
+D31EX-22,hydraulic fan speed sensor+short circuit,2,0.51
+D31EX-22,imv/pcv1 open error,2,0.51
+D31EX-22,komnet datalink timeout error,2,0.51
+D31EX-22,parking switch+open circuit,2,0.51
+D31EX-22,rail press high error,2,0.51
+D31EX-22,rail press sensor high error,2,0.51
+D31EX-22,rail press very high error,2,0.51
+D31EX-22,rh-pump reverse epc solenoid valve+open circuit,2,0.51
+D31EX-22,safety relay+short circuit,2,0.51
+D31PX-22,komtrax gps antenna cable+open circuit,48,23.19
+D31PX-22,rail press low error,20,9.66
+D31PX-22,water in fuel sensor high error,20,9.66
+D31PX-22,ambient press sens low error,12,5.8
+D31PX-22,rail press very low error,12,5.8
+D31PX-22,air cleaner element+clogging,11,5.31
+D31PX-22,brake pressure switch+short circuit,8,3.86
+D31PX-22,hst oil+low oil pressure,8,3.86
+D31PX-22,right hst motor speed sensor+short circuit,8,3.86
+D31PX-22,shift down switch+open circuit,8,3.86
+D31PX-22,alternator+defective function,6,2.9
+D31PX-22,back-up alarm buzzer+short circuit,6,2.9
+D31PX-22,coolant temp sens high error,6,2.9
+D31PX-22,eng bkup speed sensor error,6,2.9
+D31PX-22,eng ne speed sensor error,6,2.9
+D31PX-22,eng oil press sw error,6,2.9
+D31PX-22,throttle lever angle sensor+open circuit,6,2.9
+D31PX-22,hydraulic tank temperature sensor+open circuit,4,1.93
+D31PX-22,parking switch+stick,2,0.97
+D31PX-22,throttle lever angle sensor+short circuit,2,0.97
+D31PX-22,water in fuel sensor low error,2,0.97
+D375A-5,high r cyl. exhaust temp.,83,14.21
+D375A-5,very high r cyl. exhaust temp.,82,14.04
+D375A-5,high f cyl. exhaust temp.,59,10.1
+D375A-5,very high f cyl. exhaust temp.,43,7.36
+D375A-5,exhaust temp. sensor f failure,32,5.48
+D375A-5,fuel control dial sensor failure(eng),31,5.31
+D375A-5,r steering clutch pressure abnormal,29,4.97
+D375A-5,exhaust temp. sensor r failure,26,4.45
+D375A-5,fsov mech stuck open,22,3.77
+D375A-5,2nd clutch failure,18,3.08
+D375A-5,t/m oil temp. overheat,18,3.08
+D375A-5,high blowby pressure,14,2.4
+D375A-5,eng.oil temp. sensor failure,13,2.23
+D375A-5,low battery voltage,13,2.23
+D375A-5,blowby pressure sensor failure,10,1.71
+D375A-5,blade full raise ppc switch failure,8,1.37
+D375A-5,high coolant temp,8,1.37
+D375A-5,low coolant level,8,1.37
+D375A-5,r steering brake pressure abnormal,7,1.2
+D375A-5,battery charge trouble,6,1.03
+D375A-5,fsov open cicuit,6,1.03
+D375A-5,ripper lower ppc switch failure,6,1.03
+D375A-5,abnormality in 24v source(s/t),4,0.68
+D375A-5,blade r tilt ppc switch failure,4,0.68
+D375A-5,pump pressure sensor failure(f),4,0.68
+D375A-5,pump pressure sensor failure(r),4,0.68
+D375A-5,remote throttle ckt failed low,4,0.68
+D375A-5,remote throttle ckt failed high,3,0.51
+D375A-5,abnormality in 12v source system(vhms),2,0.34
+D375A-5,blade knob up switch failure,2,0.34
+D375A-5,ecm software / hardware failure,2,0.34
+D375A-5,fuel pump open circuit,2,0.34
+D375A-5,fuel pump press ckt failed low,2,0.34
+D375A-5,r steering brake abnormal,2,0.34
+D375A-5,ripper tilt back ppc switch failure,2,0.34
+D375A-5,ripper tilt in ppc switch failure,2,0.34
+D375A-5,fuel pump mech stuck,1,0.17
+D375A-5,lb boost ckt failed high,1,0.17
+D375A-5,p/l clutch slip failure,1,0.17
+D375A-6,very high rb cyl. exhaust temp.,194,13.59
+D375A-6,high rb cyl. exhaust temp.,192,13.45
+D375A-6,very high lb cyl. exhaust temp.,122,8.55
+D375A-6,high lb cyl. exhaust temp.,111,7.78
+D375A-6,1st clutch failure,103,7.22
+D375A-6,l steering brake pressure abnormal,69,4.84
+D375A-6,2nd clutch failure,68,4.77
+D375A-6,low hydraulic oil level,63,4.41
+D375A-6,r steering brake pressure abnormal,56,3.92
+D375A-6,exhaust temp. sensor rb failure,55,3.85
+D375A-6,fan pid control failure,52,3.64
+D375A-6,exhaust temp. sensor lb failure,36,2.52
+D375A-6,blowby pressure sensor failure,35,2.45
+D375A-6,sampled_throttle_low_error,35,2.45
+D375A-6,low coolant level,27,1.89
+D375A-6,l/u clutch slip failure,26,1.82
+D375A-6,t/m clutch slip failure,22,1.54
+D375A-6,r steering clutch pressure abnormal,17,1.19
+D375A-6,kom-net communication failure,15,1.05
+D375A-6,k-net communication lost(monitor),14,0.98
+D375A-6,coolant temp. overheat,10,0.7
+D375A-6,fan reverse solenoid failure,10,0.7
+D375A-6,fan speed sensor failure,10,0.7
+D375A-6,high blowby pressure,8,0.56
+D375A-6,air cleaner clogged,6,0.42
+D375A-6,apc_diesel_low_prs_error,6,0.42
+D375A-6,battery charge trouble,6,0.42
+D375A-6,r clutch failure,6,0.42
+D375A-6,blade knob up switch failure,5,0.35
+D375A-6,brake pedal sensor failure,4,0.28
+D375A-6,f clutch failure,4,0.28
+D375A-6,fr lever sensor 1 2 failure,4,0.28
+D375A-6,fuel control dial sensor failure(p/t),4,0.28
+D375A-6,steering lever sensor 1 failure,4,0.28
+D375A-6,steering lever sensor 2 failure,4,0.28
+D375A-6,t/c in-pressure sensor failure,4,0.28
+D375A-6,steering lever sensor 1 2 failure,3,0.21
+D375A-6,fr lever sensor 1 failure,2,0.14
+D375A-6,fr lever sensor 2 failure,2,0.14
+D375A-6,hydraulic oil temperature sensor failure,2,0.14
+D375A-6,injector_1_severe_1_error,2,0.14
+D375A-6,injector_2_severe_1_error,2,0.14
+D375A-6,injector_3_severe_1_error,2,0.14
+D375A-6,n safety cut relay failure,2,0.14
+D375A-6,work equipment lock switch failure,2,0.14
+D375A-6,brake pedal abnormal use,1,0.07
+D375A-6R,komtrax gps antenna cable+open circuit,48,100.0
+D39EX-22,back-up alarm buzzer+short circuit,4,100.0
+D39PX-22,water in fuel sensor high error,34,26.15
+D39PX-22,komtrax gps antenna cable+open circuit,30,23.08
+D39PX-22,air cleaner element+clogging,18,13.85
+D39PX-22,slow brake solenoid valve+open circuit,8,6.15
+D39PX-22,hydraulic tank temperature sensor+open circuit,6,4.62
+D39PX-22,rail press low error,6,4.62
+D39PX-22,coolant+overheat,4,3.08
+D39PX-22,fan control solenoid valve+open circuit,4,3.08
+D39PX-22,hst controller+source voltage drop,4,3.08
+D39PX-22,left hst motor speed sensor+short circuit,4,3.08
+D39PX-22,eng overspeed,2,1.54
+D39PX-22,hydraulic fan speed sensor+open circuit,2,1.54
+D39PX-22,hydraulic fan speed sensor+short circuit,2,1.54
+D39PX-22,left hst motor speed sensor+defective function,2,1.54
+D39PX-22,parking switch+stick,2,1.54
+D39PX-22,rail press very low error,2,1.54
+D65E-12,komtrax gps antenna cable+open circuit,14,100.0
+D65P-12,komtrax gps antenna cable+open circuit,56,100.0
+GD511A-1,komtrax gps antenna cable+open circuit,54,100.0
+GD535-5,water in fuel sensor high error,198,22.07
+GD535-5,tm shift lever+open circuit,78,8.7
+GD535-5,rail press low error,66,7.36
+GD535-5,komtrax operating lamp+open circuit,54,6.02
+GD535-5,monitor cntrlr operating lamp+open circuit,54,6.02
+GD535-5,t/m controller operating lamp+open circuit,54,6.02
+GD535-5,t/m controller output power line+source voltage drop,42,4.68
+GD535-5,rail press very low error,34,3.79
+GD535-5,idle validation sw error,28,3.12
+GD535-5,komtrax gps antenna cable+open circuit,28,3.12
+GD535-5,water in fuel sensor low error,26,2.9
+GD535-5,fuel level sensor+open circuit,18,2.01
+GD535-5,rear accumulator+low oil pressure,16,1.78
+GD535-5,t/m controller can communication+defective function,16,1.78
+GD535-5,c/r eng cntrlr can communication 2+communication error (compo line),12,1.34
+GD535-5,eng oil press sw error,12,1.34
+GD535-5,coolant+overheat,10,1.11
+GD535-5,front accumulator+low oil pressure,10,1.11
+GD535-5,parking brake solenoid valve+open circuit,10,1.11
+GD535-5,rpm set switch+short circuit,10,1.11
+GD535-5,alternator+defective charging,9,1.0
+GD535-5,"low clutch ,fill switch+open circuit",8,0.89
+GD535-5,swing angle sensor+input signal out of scope,8,0.89
+GD535-5,tm mount+overheat,8,0.89
+GD535-5,ambient press sens low error,6,0.67
+GD535-5,back lamp relay+open circuit,6,0.67
+GD535-5,lock up solenoid valve+short circuit,6,0.67
+GD535-5,monitor cntrlr battery direct line+source voltage drop,6,0.67
+GD535-5,parking brake solenoid valve+short circut of power source line,6,0.67
+GD535-5,parking brake switch+on/off signal doesnt match,6,0.67
+GD535-5,reverse clutch fill switch+open circuit,6,0.67
+GD535-5,chg air press sensor high error,4,0.45
+GD535-5,rail press high error,4,0.45
+GD535-5,t/c oil pressure sensor+input signal out of scope,4,0.45
+GD535-5,tm controller can2+communication error (compo line),4,0.45
+GD535-5,1st clutch fill switch+open circuit,2,0.22
+GD535-5,2nd clutch solenoid valve+open circuit,2,0.22
+GD535-5,chg air press sensor low error,2,0.22
+GD535-5,chg air temp sensor high error,2,0.22
+GD535-5,engine oil+low oil pressure,2,0.22
+GD535-5,idle validation process error,2,0.22
+GD535-5,inching pedal angle sensor+input signal out of scope,2,0.22
+GD535-5,inj #1(l#1) open/short error,2,0.22
+GD535-5,inj #5(l#5) open/short error,2,0.22
+GD535-5,inj #6(l#6) open/short error,2,0.22
+GD535-5,t/c oil pressure sensor+eng condition and signal not match,2,0.22
+GD535-5,t/m intermediate shaft speed sensor+open circuit,2,0.22
+GD535-5,tm shift controller+malfunction,2,0.22
+GD535-5,transmission reverse clutch+slip,2,0.22
+GD535-5,2nd clutch fill switch+open circuit,1,0.11
+GD535-5,4th clutch fill switch+open circuit,1,0.11
+GD705-5,water in fuel sensor high error,166,23.61
+GD705-5,hydraulic fan speed sensor+deterioration,62,8.82
+GD705-5,tm shift lever+open circuit,60,8.53
+GD705-5,rail press low error,52,7.4
+GD705-5,water in fuel sensor low error,44,6.26
+GD705-5,fuel level sensor+open circuit,42,5.97
+GD705-5,komtrax gps antenna cable+open circuit,36,5.12
+GD705-5,swing angle sensor+input signal out of scope,32,4.55
+GD705-5,alternator+defective function,16,2.28
+GD705-5,fuel feed pump open error,16,2.28
+GD705-5,hydraulic oil+overheat,16,2.28
+GD705-5,c/r eng cntrlr can communication+communication error (compo line),12,1.71
+GD705-5,t/m controller output power line+source voltage drop,12,1.71
+GD705-5,grid htr relay volt low error,10,1.42
+GD705-5,imv/pcv1 open error,10,1.42
+GD705-5,rail press sensor high error,10,1.42
+GD705-5,coolant+overheat,8,1.14
+GD705-5,parking brake switch+on/off signal doesnt match,8,1.14
+GD705-5,rail press sensor low error,8,1.14
+GD705-5,rail press very low error,8,1.14
+GD705-5,back lamp relay+open circuit,6,0.85
+GD705-5,"low clutch ,fill switch+open circuit",6,0.85
+GD705-5,2nd clutch fill switch+open circuit,5,0.71
+GD705-5,eng bkup speed sensor error,4,0.57
+GD705-5,fan pump epc solenoid valve+open circuit,4,0.57
+GD705-5,hydraulic oil temperature sensor+short circuit,4,0.57
+GD705-5,inj #5(l#5) open/short error,4,0.57
+GD705-5,rail press high error,4,0.57
+GD705-5,rail press very high error,4,0.57
+GD705-5,t/m valve oil temperature sensor+input signal out of scope,4,0.57
+GD705-5,1st clutch fill switch+open circuit,2,0.28
+GD705-5,3rd clutch fill switch+open circuit,2,0.28
+GD705-5,buzzer+short circuit,2,0.28
+GD705-5,chg air press sensor low error,2,0.28
+GD705-5,hydraulic fan speed sensor+open circuit,2,0.28
+GD705-5,imv solenoid error,2,0.28
+GD705-5,inj #6(l#6) open/short error,2,0.28
+GD705-5,monitor cntrlr can communicaton 2+communication error (compo line),2,0.28
+GD705-5,parking brake solenoid valve+open circuit,2,0.28
+GD705-5,rpm set switch+short circuit,2,0.28
+GD705-5,t/c oil pressure sensor+eng condition and signal not match,2,0.28
+GD705-5,t/c oil+overheat,2,0.28
+GD705-5,tm mount+overheat,2,0.28
+GD705-5,tm shift controller+source voltage drop,2,0.28
+GD705-5,transmission 2nd clutch+slip,2,0.28
+GD755-5R,tm shift lever+open circuit,60,17.6
+GD755-5R,tm mount+overheat,28,8.21
+GD755-5R,hydraulic fan speed sensor+rotating speed signal doesnt match,26,7.62
+GD755-5R,coolant+overheat,24,7.04
+GD755-5R,komtrax gps antenna cable+open circuit,24,7.04
+GD755-5R,3rd clutch fill switch+open circuit,16,4.69
+GD755-5R,rear accumulator+low oil pressure,16,4.69
+GD755-5R,reverse clutch fill switch+open circuit,16,4.69
+GD755-5R,front accumulator+low oil pressure,12,3.52
+GD755-5R,"ecmv tm h-clutch+command curency off, fill signal on",10,2.93
+GD755-5R,parking brake switch+on/off signal doesnt match,10,2.93
+GD755-5R,t/m controller output power line+source voltage drop,10,2.93
+GD755-5R,2nd clutch fill switch+open circuit,9,2.64
+GD755-5R,1st clutch fill switch+open circuit,8,2.35
+GD755-5R,forward clutch fill switch+open circuit,8,2.35
+GD755-5R,fan pump epc solenoid valve+short circuit,6,1.76
+GD755-5R,grid htr relay volt low error,6,1.76
+GD755-5R,idle validation sw error,6,1.76
+GD755-5R,4th clutch solenoid valve+open circuit,4,1.17
+GD755-5R,fan pump epc solenoid valve+open circuit,4,1.17
+GD755-5R,fuel level sensor+open circuit,4,1.17
+GD755-5R,hydraulic oil+overheat,4,1.17
+GD755-5R,rail press low error,4,1.17
+GD755-5R,rail press sensor high error,4,1.17
+GD755-5R,rail press very low error,4,1.17
+GD755-5R,inching pedal angle sensor+input signal out of scope,2,0.59
+GD755-5R,parking brake solenoid valve+open circuit,2,0.59
+GD755-5R,rail press sensor low error,2,0.59
+GD755-5R,rail press very high error,2,0.59
+GD755-5R,rpm set switch+short circuit,2,0.59
+GD755-5R,swing angle sensor+input signal out of scope,2,0.59
+GD755-5R,t/c oil+overheat,2,0.59
+GD755-5R,t/m input shaft speed sensor+open circuit,2,0.59
+GD755-5R,t/m input shaft speed sensor+rotating speed signal doesnt match,2,0.59
+GD825A-2,komtrax gps antenna cable+open circuit,128,100.0
+GD955-7R,grease+shortage,32,7.51
+GD955-7R,steering angle sensor+analog signal doesnt match,20,4.69
+GD955-7R,auto grease controller assy+on/off signal doesnt match,16,3.76
+GD955-7R,emergency steering pressure sensor1+input signal out of scope,16,3.76
+GD955-7R,eng exhaust temperature sensor(f)+short circut of power source line,16,3.76
+GD955-7R,steering angle sensor+communication error (compo line),16,3.76
+GD955-7R,air cleaner clogging sensor(1)+open circuit,14,3.29
+GD955-7R,air cleaner element+clogging,14,3.29
+GD955-7R,s/t vehicle speed sensor big error,14,3.29
+GD955-7R,s/t cutoff sol error 2,12,2.82
+GD955-7R,water in fuel sensor high error,12,2.82
+GD955-7R,auto articulate centering return sw+open circuit,10,2.35
+GD955-7R,auto grease level sensor+open circut or short circuit,8,1.88
+GD955-7R,eng exhaust temperature sensor(r)+short circut of power source line,8,1.88
+GD955-7R,engine oil+decrease in quantity,8,1.88
+GD955-7R,"komtrax plus,ethernet comm 2+communication error (compo line)",8,1.88
+GD955-7R,s/t eh spool error 1,8,1.88
+GD955-7R,s/t safe state request,8,1.88
+GD955-7R,s/t vehicle speed sensor error 2,8,1.88
+GD955-7R,auto grease pressure sensor+open circuit,6,1.41
+GD955-7R,forward & reverse switch+open circuit,6,1.41
+GD955-7R,komtrax plus controller+malfunction,6,1.41
+GD955-7R,steering angle sensor+defective function,6,1.41
+GD955-7R,attachment1 lever potentiometer(sub+open circuit,4,0.94
+GD955-7R,attachment1 lever potentiometer+open circuit,4,0.94
+GD955-7R,blade float solenoid+open circuit,4,0.94
+GD955-7R,blade folat cancel relay+open circuit,4,0.94
+GD955-7R,blade shift lever potentio 1+open circuit,4,0.94
+GD955-7R,blade shift lever potentio 2+open circuit,4,0.94
+GD955-7R,blade tilt lever potentio 1+open circuit,4,0.94
+GD955-7R,blade tilt lever potentio 2+open circuit,4,0.94
+GD955-7R,c terminal signal+open circut or short circuit,4,0.94
+GD955-7R,circle rotation lever potentio 1+open circuit,4,0.94
+GD955-7R,circle rotation lever potentio 2+open circuit,4,0.94
+GD955-7R,fan con.can1+communication error (compo line),4,0.94
+GD955-7R,fan con.can2+communication error (compo line),4,0.94
+GD955-7R,float solenoid valve+open circuit,4,0.94
+GD955-7R,hydraulic fan speed sensor+rotating speed signal doesnt match,4,0.94
+GD955-7R,joystick switch shift up/down+open circuit,4,0.94
+GD955-7R,"komtrax plus,power source line+source voltage drop",4,0.94
+GD955-7R,"komtrax plus,system operating lamp+open circuit",4,0.94
+GD955-7R,lift lever potentiometer(sub)+open circuit,4,0.94
+GD955-7R,lift lever potentiometer+open circuit,4,0.94
+GD955-7R,monitor cntrlr operating lamp+open circuit,4,0.94
+GD955-7R,parking brake switch+on/off signal doesnt match,4,0.94
+GD955-7R,personal code relay+open circut or short circuit,4,0.94
+GD955-7R,rail press low error,4,0.94
+GD955-7R,rpm set switch+short circuit,4,0.94
+GD955-7R,s/t cross check error 1,4,0.94
+GD955-7R,s/t eh spool error 3,4,0.94
+GD955-7R,swing angle sensor+analog signal doesnt match,4,0.94
+GD955-7R,"t/m controller , power source line+open circuit",4,0.94
+GD955-7R,t/m controller can communication+communication error (compo line),4,0.94
+GD955-7R,tm controller can2+communication error (compo line),4,0.94
+GD955-7R,tm shift controller+source voltage drop,4,0.94
+GD955-7R,w-equip cntrlr can communication 2+communication error (compo line),4,0.94
+GD955-7R,w-equip cntrlr can communication+communication error (compo line),4,0.94
+GD955-7R,work equipment controller+source voltage drop,4,0.94
+GD955-7R,engine exhaust gas(left)+abnormal generation of heat,2,0.47
+GD955-7R,engine exhaust gas(right)+abnormal generation of heat,2,0.47
+GD955-7R,engine exhaust gas(right)+overheat,2,0.47
+GD955-7R,rail press very low error,2,0.47
+GD955-7R,s/t cross check error 11,2,0.47
+GD955-7R,w-equip cntrlr output power line+source voltage drop,2,0.47
+GD955-7R,work equipment lever lock switch+short circut of power source line,2,0.47
+HB205-1,g/p controller can communication+malfunction,4,22.22
+HB205-1,monitor controller can communicaton+malfunction,4,22.22
+HB205-1,travel neutral solenoid valve+open circuit,4,22.22
+HB205-1,wind washer motor+open circuit,4,22.22
+HB205-1,eng oil press sw error,2,11.11
+HB365-1,engine oil+decrease in quantity,38,10.35
+HB365-1,hb swing emergency stop switch+operation,20,5.45
+HB365-1,ventilating sensor+open circuit,19,5.18
+HB365-1,back-up alarm buzzer+short circuit,18,4.9
+HB365-1,rail press low error,18,4.9
+HB365-1,ventilation damper+malfunction,18,4.9
+HB365-1,rail press very low error,16,4.36
+HB365-1,water in fuel sensor high error,14,3.81
+HB365-1,kvgt servo error,12,3.27
+HB365-1,persistent data lost error,12,3.27
+HB365-1,water in fuel sensor low error,12,3.27
+HB365-1,air cleaner element+clogging,11,3.0
+HB365-1,coolant+servicing,10,2.72
+HB365-1,air cleaner clogging sensor(1)+open circuit,9,2.45
+HB365-1,air mix damper+malfunction,8,2.18
+HB365-1,egr valve solenoid open error,8,2.18
+HB365-1,inner sensor+open circuit,8,2.18
+HB365-1,refrigerant+input signal out of scope,8,2.18
+HB365-1,2-stage relief solenoid valve+open circuit,7,1.91
+HB365-1,2stage back pressure solenoid valve+open circuit,7,1.91
+HB365-1,chg air press sensor low error,6,1.63
+HB365-1,coolant+decrease in quantity,6,1.63
+HB365-1,exh manifold press sens in range error,6,1.63
+HB365-1,hyb swing-l ppc pressure sensor+analog signal doesnt match,6,1.63
+HB365-1,hyb swing-r ppc pressure sensor+analog signal doesnt match,6,1.63
+HB365-1,ambient press sens in range error,4,1.09
+HB365-1,hyb dc line+open circut or short circuit,4,1.09
+HB365-1,kvgt pos sens high error,4,1.09
+HB365-1,wind washer motor+short circuit,4,1.09
+HB365-1,alternator+defective charging,2,0.54
+HB365-1,booster inductor+overheat,2,0.54
+HB365-1,c/r eng cntrlr can communication 2+communication error (compo line),2,0.54
+HB365-1,c/r eng cntrlr can communication+communication error (compo line),2,0.54
+HB365-1,capacitor temperature sensor+open circut or short circuit,2,0.54
+HB365-1,chg air temp sensor high error,2,0.54
+HB365-1,dc before booster in general+over charge,2,0.54
+HB365-1,egr orifice temp sens high error,2,0.54
+HB365-1,exhaust manifold press sens low error,2,0.54
+HB365-1,grid htr relay volt low error,2,0.54
+HB365-1,hb swing brake solenoid supply line+short circuit,2,0.54
+HB365-1,hyb swing motor resolver+defective function,2,0.54
+HB365-1,hyb swing-r ppc pressure sensor+defective function,2,0.54
+HB365-1,hyb swing-r ppc pressure sensor+open circut or short circuit,2,0.54
+HB365-1,hybrid group+overheat,2,0.54
+HB365-1,imv solenoid error,2,0.54
+HB365-1,inj #5(l#5) open/short error,2,0.54
+HB365-1,monitor cntrlr can communicaton 2+communication error (compo line),2,0.54
+HB365-1,personal code relay+open circut or short circuit,2,0.54
+HB365-1,power cable interlock+open circuit,2,0.54
+HB365-1,pump press balance error,2,0.54
+HB365-1,rail press valve trip error,2,0.54
+HB365-1,sens supply 1 volt low error,2,0.54
+HB365-1,swing motor driver sub-cpu+controller inside failure,2,0.54
+HB365LC-1,air cleaner clogging sensor(1)+open circuit,9,40.91
+HB365LC-1,air cleaner element+clogging,9,40.91
+HB365LC-1,hb swing emergency stop switch+operation,4,18.18
+HD1500-8,neutral coast caution+operation,28,23.53
+HD1500-8,"komtrax plus,ethernet comm 2+communication error (compo line)",16,13.45
+HD1500-8,neutral over speed caution+operation,16,13.45
+HD1500-8,fan control circuit - voltage above normal or shorted to high source,12,10.08
+HD1500-8,"intake manifold 2 pressure sensor circuit - voltage below normal, or shorted to low source",10,8.4
+HD1500-8,air cleaner element+clogging,7,5.88
+HD1500-8,eng overspeed,4,3.36
+HD1500-8,exhaust gas temperature deviation low for cylinder 7 - data valid but below normal operating range - least severe level,4,3.36
+HD1500-8,komtrax plus controller+malfunction,4,3.36
+HD1500-8,remote cooling motor speed (rear)+rotating speed signal doesnt match,4,3.36
+HD1500-8,coolant pressure sensor circuit - voltage below normal or shorted to low source,2,1.68
+HD1500-8,engine oil rifle pressure - data valid but below normal operating range - most severe level,2,1.68
+HD1500-8,exhaust gas temperature deviation low for cylinder 1 - data valid but below normal operating range - least severe level,2,1.68
+HD1500-8,exhaust gas temperature deviation low for cylinder 3 - data valid but below normal operating range - least severe level,2,1.68
+HD1500-8,fuel level sensor+open circuit,2,1.68
+HD1500-8,t/c oil+overheat,2,1.68
+HD1500-8,tm lube flow select v. pres. sensor+input signal out of scope,2,1.68
+HD465-7,high f cyl. exhaust temp.2,181,12.86
+HD465-7,high f cyl. exhaust temp.1,160,11.37
+HD465-7,r exhaust temp. sensor failure,121,8.6
+HD465-7,high r cyl. exhaust temp.1,120,8.53
+HD465-7,high r cyl. exhaust temp.2,108,7.68
+HD465-7,f exhaust temp. sensor failure,102,7.25
+HD465-7,high blowby pressure,86,6.11
+HD465-7,drop in accumulator oil pressure (rear),84,5.97
+HD465-7,shift lever input signal short circuit,51,3.62
+HD465-7,abnormality in suspension pressure sensor circuit (rl),46,3.27
+HD465-7,abnormality in suspension pressure sensor circuit (rr),42,2.99
+HD465-7,blowby pres. sensor failure,41,2.91
+HD465-7,vhms 24v source sys error,40,2.84
+HD465-7,rail press low error,34,2.42
+HD465-7,drop in accumulator oil pressure (front),32,2.27
+HD465-7,abnormality in steering angle potentiometer circuit,30,2.13
+HD465-7,drop in engine oil level,21,1.49
+HD465-7,brake cooling oil overheat (rear),19,1.35
+HD465-7,alternator malfunction (r terminal: low voltage or abnormal),12,0.85
+HD465-7,vhms 12v source sys error,9,0.64
+HD465-7,manual retarder potentiometer & rvs abnormality,8,0.57
+HD465-7,suspension pressure sensor (fl) (disconnect/short circuit),8,0.57
+HD465-7,abnormality in steering oil temp. sensor circuit,7,0.5
+HD465-7,suspension pressure sensor (fr) (hot short),7,0.5
+HD465-7,fuel temp sensor low error,6,0.43
+HD465-7,engine overrun prevention system activated,4,0.28
+HD465-7,l clutch fill switch circuit disconnect,4,0.28
+HD465-7,neutral over speed caution,4,0.28
+HD465-7,vhms 5v source sys error,4,0.28
+HD465-7,suspension pressure sensor (fr) (disconnect/short circuit),3,0.21
+HD465-7,1st clutch fill switch circuit disconnect,2,0.14
+HD465-7,2nd clutch fill switch circuit disconnect,2,0.14
+HD465-7,abnormality in angle sensor circuit,2,0.14
+HD465-7,abnormality in t/c input oil pressure sensor circuit,2,0.14
+HD465-7,fuel tank level sensor circuit disconnection,2,0.14
+HD465-7,neutral coast caution,2,0.14
+HD465-7,t/c oil overheat,1,0.07
+HD785-7,drop in accumulator oil pressure (rear),2452,12.82
+HD785-7,drop in accumulator oil pressure (front),1979,10.35
+HD785-7,very high rbr cyl. exhaust temp,1468,7.67
+HD785-7,very high rbf cyl. exhaust temp,1343,7.02
+HD785-7,high rbr cyl. exhaust temp,1195,6.25
+HD785-7,very high lbf cyl. exhaust temp,1194,6.24
+HD785-7,high rbf cyl. exhaust temp,1166,6.1
+HD785-7,high lbf cyl. exhaust temp,971,5.08
+HD785-7,very high lbr cyl. exhaust temp,953,4.98
+HD785-7,high lbr cyl. exhaust temp,814,4.26
+HD785-7,exhaust temp. sensor lbf failure,658,3.44
+HD785-7,exhaust temp. sensor rbf failure,625,3.27
+HD785-7,exhaust temp. sensor rbr failure,522,2.73
+HD785-7,high blowby pressure,408,2.13
+HD785-7,exhaust temp. sensor lbr failure,255,1.33
+HD785-7,body positioner sensor signal (high voltage),253,1.32
+HD785-7,abnormality in suspension pressure sensor circuit (rr),249,1.3
+HD785-7,neutral coast caution,243,1.27
+HD785-7,shift lever input signal short circuit,200,1.05
+HD785-7,engine overrun prevention system activated,168,0.88
+HD785-7,blowby pres. sensor failure,153,0.8
+HD785-7,neutral over speed caution,148,0.77
+HD785-7,drop in engine oil level,140,0.73
+HD785-7,manual retarder potentiometer & rvs abnormality,127,0.66
+HD785-7,rail press. low error,91,0.48
+HD785-7,abnormality in suspension pressure sensor circuit (rl),85,0.44
+HD785-7,intake air temp. sensor high error,80,0.42
+HD785-7,brake cooling oil overheat (rear),64,0.33
+HD785-7,intake air temp. sensor low error,55,0.29
+HD785-7,abnormality in steering angle potentiometer circuit,48,0.25
+HD785-7,suspension pressure sensor (rr) (hot short),40,0.21
+HD785-7,ecmv (t/c lock-up) malfunction,36,0.19
+HD785-7,h clutch fill switch circuit disconnect,34,0.18
+HD785-7,main pressure variable valve cancellation malfunction,34,0.18
+HD785-7,pcv2 open error,34,0.18
+HD785-7,rail press. very low error,32,0.17
+HD785-7,2nd clutch fill switch circuit disconnect,31,0.16
+HD785-7,drop in coolant level,30,0.16
+HD785-7,3rd clutch slipping,27,0.14
+HD785-7,alternator malfunction (r terminal: low voltage or abnormal),27,0.14
+HD785-7,steering oil overheat,27,0.14
+HD785-7,rail press. sensor high error,23,0.12
+HD785-7,brake cooling oil overheat (front),22,0.12
+HD785-7,front brake control valve malfunction,22,0.12
+HD785-7,t/c oil overheat,20,0.1
+HD785-7,vhms 5v source sys error,20,0.1
+HD785-7,suspension pressure sensor (rl) (hot short),19,0.1
+HD785-7,t/m oil filter clogged,17,0.09
+HD785-7,1st clutch slipping,16,0.08
+HD785-7,suspension pressure sensor (fl) (disconnect/short circuit),16,0.08
+HD785-7,wheel speed sensor (rear right) disconnection,16,0.08
+HD785-7,accumulator pressure sensor(front) malfunction,15,0.08
+HD785-7,suspension pressure sensor (rr) (disconnect/short circuit),15,0.08
+HD785-7,eng. backup speed sensor error,14,0.07
+HD785-7,imv/pcv1 short error,14,0.07
+HD785-7,kom-net communication failure,14,0.07
+HD785-7,transmission lubrication variable valve short circuit,14,0.07
+HD785-7,3rd clutch fill switch circuit disconnect,13,0.07
+HD785-7,eng. ne and backup speed sensor error,13,0.07
+HD785-7,l clutch fill switch circuit disconnect,13,0.07
+HD785-7,2nd clutch slipping,12,0.06
+HD785-7,abnormality in steering oil temp. sensor circuit,12,0.06
+HD785-7,amount of oil change valve cancellation malfunction,12,0.06
+HD785-7,both hoist lever potentiometer signal mismatch,12,0.06
+HD785-7,communication error (monitor panel),12,0.06
+HD785-7,wheel speed sensor (rear left) circuit malfunction,12,0.06
+HD785-7,arsc system switch disconnection,11,0.06
+HD785-7,4th clutch slipping,10,0.05
+HD785-7,defective connection in monitor panel,10,0.05
+HD785-7,1st clutch fill switch circuit disconnect,9,0.05
+HD785-7,rear brake control valve malfunction,9,0.05
+HD785-7,vhms 24v source sys error,9,0.05
+HD785-7,wheel speed sensor (rear left) disconnection,9,0.05
+HD785-7,abnormality in t/c input oil pressure sensor circuit,8,0.04
+HD785-7,fuel tank level sensor circuit disconnection,8,0.04
+HD785-7,parking brake dragging,8,0.04
+HD785-7,suspension pressure sensor (rl) (disconnect/short circuit),8,0.04
+HD785-7,transmission lubrication variable valve disconnect,8,0.04
+HD785-7,communication error (engine),7,0.04
+HD785-7,communication error (engine)(child),7,0.04
+HD785-7,idle validation sw low error,7,0.04
+HD785-7,throttle sensor low error,7,0.04
+HD785-7,transmission lubrication variable valve malfunction,7,0.04
+HD785-7,drop in retarder controller battery direct power source,6,0.03
+HD785-7,engine oil press. low,6,0.03
+HD785-7,ecmv (1st) malfunction,5,0.03
+HD785-7,suspension pressure sensor (fr) (disconnect/short circuit),5,0.03
+HD785-7,asr control valve (right) malfunction,4,0.02
+HD785-7,charge air temp. sensor high error,4,0.02
+HD785-7,drop in t/m controller solenoid power source,4,0.02
+HD785-7,ecmv (4) fill sw short circuit,4,0.02
+HD785-7,hoist epc output disconnection,4,0.02
+HD785-7,hoist epc output malfunction,4,0.02
+HD785-7,hoist lever potentiometer signal (high voltage),4,0.02
+HD785-7,idle validation process error,4,0.02
+HD785-7,imv/pcv1 open error,4,0.02
+HD785-7,komnet datalink timeout error,4,0.02
+HD785-7,oil press. sensor high error,4,0.02
+HD785-7,suspension pressure sensor (fr) (hot short),4,0.02
+HD785-7,t/m input shaft speed sensor circuit disconnection,4,0.02
+HD785-7,t/m middle shaft speed sensor circuit disconnection,4,0.02
+HD785-7,t/m output speed sensor disconnection,4,0.02
+HD785-7,transmission lubrication variable valve cancellation malfunction,4,0.02
+HD785-7,tm clutch disk abuse (front),3,0.02
+HD785-7,abnormality in angle sensor circuit,2,0.01
+HD785-7,abnormality in speed select switch circuit,2,0.01
+HD785-7,abnormality in t/c oil temp. sensor circuit,2,0.01
+HD785-7,asr control valve (left) malfunction,2,0.01
+HD785-7,charge air press sensor low error,2,0.01
+HD785-7,drop in t/m controller power source,2,0.01
+HD785-7,ecmv (2nd) malfunction,2,0.01
+HD785-7,ecmv (3rd) fill sw short circuit,2,0.01
+HD785-7,ecmv (h) fill sw short circuit,2,0.01
+HD785-7,eng. ne speed sensor error,2,0.01
+HD785-7,gps module+malfunction,2,0.01
+HD785-7,grid heater relay open error,2,0.01
+HD785-7,hoist selector valve output (disconnect/short circuit),2,0.01
+HD785-7,komtrax controller+malfunction,2,0.01
+HD785-7,r clutch fill switch circuit disconnect,2,0.01
+HD785-7,rail press. high error,2,0.01
+HD785-7,sensor sup. 2 volt low error,2,0.01
+HD785-7,t/c lock-up solenoid output signal disconnection,2,0.01
+HD785-7,t/m ecmv (h) solenoid short circuit,2,0.01
+HD785-7,t/m ecmv (l) solenoid short circuit,2,0.01
+HD785-7,vhms connector mismatch,2,0.01
+HD785-7,vhms source voltage error,2,0.01
+HD785-7,4th clutch fill switch circuit disconnect,1,0.01
+HD785-7,bcv malfunction,1,0.01
+HD785-7,calibration code incompatibility,1,0.01
+HD785-7,injector #10 (r/b #4) open/short error,1,0.01
+HD785-7,injector #11 (r/b #5) open/short error,1,0.01
+HD785-7,injector #12 (r/b #6) open/short error,1,0.01
+HD785-7,rear brake oil temp. sensor (disconnect/short circuit),1,0.01
+HD785-7,rear brake oil temp. sensor (short circuit),1,0.01
+HD785-8R,engine exhaust temp sensor(fl)+short circut of power source line,16,15.69
+HD785-8R,neutral coast caution+operation,16,15.69
+HD785-8R,camera controller+controller inside failure,10,9.8
+HD785-8R,camera5+open circuit,8,7.84
+HD785-8R,engine exhaust temp sensor(rl)+short circut of power source line,8,7.84
+HD785-8R,"komtrax plus,ethernet comm 2+communication error (compo line)",8,7.84
+HD785-8R,"komtrax plus,system operating lamp+short circuit",8,7.84
+HD785-8R,"komtrax plus,system operating lamp+open circuit",6,5.88
+HD785-8R,front accumulator+low oil pressure,4,3.92
+HD785-8R,front sus left oil pressure sensor+open circut or short circuit,4,3.92
+HD785-8R,neutral over speed caution+operation,4,3.92
+HD785-8R,fuel level sensor+open circuit,2,1.96
+HD785-8R,imv/pcv1 open error,2,1.96
+HD785-8R,"komtrax plus,ethernet comm 1+communication error (compo line)",2,1.96
+HD785-8R,"komtrax plus,power source line+source voltage drop",2,1.96
+HD785-8R,pcv2 open error,2,1.96
+HM400-3R,neutral over speed caution+operation,546,12.87
+HM400-3R,neutral coast caution+operation,422,9.94
+HM400-3R,cac fan speed sensor+deterioration,250,5.89
+HM400-3R,brake cooling oil(rear left)+overheat,236,5.56
+HM400-3R,brake cooling oil(front)+overheat,196,4.62
+HM400-3R,rear accumulator+low oil pressure,176,4.15
+HM400-3R,front accumulator+low oil pressure,174,4.1
+HM400-3R,rear sus (r) oil pressure sensor+open circut or short circuit,128,3.02
+HM400-3R,high clutch fill switch+open circuit,124,2.92
+HM400-3R,emergency steering pressure sensor1+input signal out of scope,90,2.12
+HM400-3R,emergency steering pressure sensor2+input signal out of scope,84,1.98
+HM400-3R,rear sus (l) oil pressure sensor+open circut or short circuit,84,1.98
+HM400-3R,cac fan speed sensor+rotating speed signal doesnt match,80,1.89
+HM400-3R,vessel body position sensor+input signal out of scope,80,1.89
+HM400-3R,brake oil temperature sensor(2)+analog signal doesnt match,68,1.6
+HM400-3R,engine oil+decrease in quantity,68,1.6
+HM400-3R,air cleaner element+clogging,64,1.51
+HM400-3R,fuel level sensor+open circuit,40,0.94
+HM400-3R,wheel speed sensor (rear f left)+rotating speed signal doesnt match,40,0.94
+HM400-3R,retarder pressure sensor (center r)+input signal out of scope,34,0.8
+HM400-3R,wheel speed sensor (rear f right)+rotating speed signal doesnt match,34,0.8
+HM400-3R,coolant+decrease in quantity,32,0.75
+HM400-3R,s/t gear box oil+overheat,32,0.75
+HM400-3R,vhms controller output sensor line2+out put voltage drop,32,0.75
+HM400-3R,rear sus (l) oil pressure sensor+short circut of power source line,30,0.71
+HM400-3R,1st clutch fill switch+open circuit,27,0.64
+HM400-3R,body inclination sensor+input signal out of scope,26,0.61
+HM400-3R,outer sensor+open circuit,26,0.61
+HM400-3R,"wheel speed sensor (front, left)+rotating speed signal doesnt match",26,0.61
+HM400-3R,h&b controller operating lamp+open circuit,24,0.57
+HM400-3R,monitor cntrlr operating lamp+open circuit,24,0.57
+HM400-3R,parking brake pressure sensor+input signal out of scope,24,0.57
+HM400-3R,t/m controller operating lamp+open circuit,24,0.57
+HM400-3R,front sus left oil pressure sensor+open circut or short circuit,22,0.52
+HM400-3R,meter unit+communication error (compo line),22,0.52
+HM400-3R,piston pump oil temp.sensor (low)+input signal out of scope,22,0.52
+HM400-3R,refrigerant+input signal out of scope,22,0.52
+HM400-3R,retarder pressure sensor (front l)+input signal out of scope,22,0.52
+HM400-3R,alternator+defective charging,21,0.49
+HM400-3R,hydraulic fan speed sensor+deterioration,20,0.47
+HM400-3R,rail press low error,20,0.47
+HM400-3R,retarder pressure sensor (center l)+input signal out of scope,20,0.47
+HM400-3R,steering angle sensor+input signal out of scope,20,0.47
+HM400-3R,"wheel speed sensor (front, right)+rotating speed signal doesnt match",20,0.47
+HM400-3R,air mix damper+malfunction,18,0.42
+HM400-3R,retarder pressure sensor (front r)+input signal out of scope,18,0.42
+HM400-3R,steering oil temp. sensor+analog signal doesnt match,18,0.42
+HM400-3R,tm shift lever+open circuit,18,0.42
+HM400-3R,ventilating sensor+open circuit,18,0.42
+HM400-3R,wheel speed sensor (rear f wheel)+rotating speed signal doesnt match,18,0.42
+HM400-3R,ambient press sens low error,16,0.38
+HM400-3R,front sus right oil pressure sensor+open circut or short circuit,16,0.38
+HM400-3R,hydraulic fan speed sensor+open circuit,16,0.38
+HM400-3R,personal code relay+open circut or short circuit,16,0.38
+HM400-3R,h&b controller battery direct line+source voltage drop,14,0.33
+HM400-3R,hydraulic fan speed sensor+rotating speed signal doesnt match,14,0.33
+HM400-3R,inclination sensor+input signal out of scope,14,0.33
+HM400-3R,reverse fan pump solenoid valve+open circut or short circuit,14,0.33
+HM400-3R,steering pressure sensor+low oil pressure,14,0.33
+HM400-3R,"t/m o/p shaft speed sensor, f wheel+rotating speed signal doesnt match",14,0.33
+HM400-3R,tm shift controller+source voltage drop,14,0.33
+HM400-3R,manual retarder potentiometer+inconsistency potentio & sw signals,12,0.28
+HM400-3R,t/c oil+overheat,12,0.28
+HM400-3R,emergency steering motor+impossible release,10,0.24
+HM400-3R,front brake oil temperature sensor+analog signal doesnt match,10,0.24
+HM400-3R,"low clutch ,fill switch+open circuit",10,0.24
+HM400-3R,rear sus (r) oil pressure sensor+short circut of power source line,10,0.24
+HM400-3R,t/c oil pressure sensor+input signal out of scope,10,0.24
+HM400-3R,ventilation damper+malfunction,10,0.24
+HM400-3R,2nd clutch fill switch+open circuit,9,0.21
+HM400-3R,c/r eng cntrlr can communication 2+communication error (compo line),8,0.19
+HM400-3R,cac fan speed sensor+open circuit,8,0.19
+HM400-3R,ecmv tm inter axle diff lock clutch+defective function,8,0.19
+HM400-3R,emergency steering motor+defective function,8,0.19
+HM400-3R,front sus right oil pressure sensor+short circut of power source line,8,0.19
+HM400-3R,h&b controller output power line+source voltage drop,8,0.19
+HM400-3R,idle validation sw error,8,0.19
+HM400-3R,imv/pcv1 open error,8,0.19
+HM400-3R,komtrax operating lamp+open circuit,8,0.19
+HM400-3R,rail press very low error,8,0.19
+HM400-3R,retarder valve (center left)+open circuit,8,0.19
+HM400-3R,retarder valve (center right)+defective function,8,0.19
+HM400-3R,cac fan pump epc solenoid+short circuit,6,0.14
+HM400-3R,cac fan reverse solenoid+open circut or short circuit,6,0.14
+HM400-3R,monitor cntrlr battery direct line+source voltage drop,6,0.14
+HM400-3R,plm sensor supply voltage+out put voltage drop,6,0.14
+HM400-3R,rail press sensor high error,6,0.14
+HM400-3R,rear view monitor+communication error (compo line),6,0.14
+HM400-3R,retarder valve (center right)+open circuit,6,0.14
+HM400-3R,retarder valve (front left)+defective function,6,0.14
+HM400-3R,steering pressure sensor+input signal out of scope,6,0.14
+HM400-3R,"t/m o/p shaft speed sensor, f wheel+open circuit",6,0.14
+HM400-3R,tc oil temperature sensor+input signal out of scope,6,0.14
+HM400-3R,ain flow selector valve sensor+input signal out of scope,4,0.09
+HM400-3R,brake oil temperature sensor(2)+short circuit,4,0.09
+HM400-3R,emergency steering motor 2+malfunction,4,0.09
+HM400-3R,esc sps controller+malfunction,4,0.09
+HM400-3R,f-accumulator oil pressure sensor+input signal out of scope,4,0.09
+HM400-3R,inner sensor+open circuit,4,0.09
+HM400-3R,komtrax gps antenna cable+open circuit,4,0.09
+HM400-3R,parking brake interlock+open circuit,4,0.09
+HM400-3R,r-accumulator oil pressure sensor+input signal out of scope,4,0.09
+HM400-3R,retarder valve (front right)+defective function,4,0.09
+HM400-3R,"t/m o/p shaft speed sensor, f wheel+operation",4,0.09
+HM400-3R,tm shift controller+controller inside failure,4,0.09
+HM400-3R,transmission oil filter+clogging,4,0.09
+HM400-3R,wheel speed sensor (front wheel)+rotating speed signal doesnt match,4,0.09
+HM400-3R,air controller can communication 2+communication error (compo line),3,0.07
+HM400-3R,1st clutch solenoid valve+open circuit,2,0.05
+HM400-3R,2nd clutch solenoid valve+open circuit,2,0.05
+HM400-3R,3rd clutch solenoid valve+open circuit,2,0.05
+HM400-3R,acceleration sensor+input signal out of scope,2,0.05
+HM400-3R,"amount of oil change valve+command curency off, fill signal on",2,0.05
+HM400-3R,"amount of oil change valve+command curency on, fill signal off",2,0.05
+HM400-3R,c terminal signal+eng condition and signal not match,2,0.05
+HM400-3R,cac output temperature sensor+input signal out of scope,2,0.05
+HM400-3R,coolant+overheat,2,0.05
+HM400-3R,"ecmv tm 1st clutch+command curency off, fill signal on",2,0.05
+HM400-3R,ecmv tm 1st clutch+defective function,2,0.05
+HM400-3R,"ecmv tm 2nd clutch+command curency off, fill signal on",2,0.05
+HM400-3R,"ecmv tm 3rd clutch+command curency off, fill signal on",2,0.05
+HM400-3R,"ecmv tm h-clutch+command curency off, fill signal on",2,0.05
+HM400-3R,ecmv tm h-clutch+defective function,2,0.05
+HM400-3R,"ecmv tm l-clutch+command curency off, fill signal on",2,0.05
+HM400-3R,ecmv tm l-clutch+defective function,2,0.05
+HM400-3R,"ecmv tm r-clutch+command curency off, fill signal on",2,0.05
+HM400-3R,emergency steering motor+malfunction,2,0.05
+HM400-3R,h clutch solenoid valve+open circuit,2,0.05
+HM400-3R,hoist lever potentiometer(2)+analog signal doesnt match,2,0.05
+HM400-3R,inj #4(l#4) open/short error,2,0.05
+HM400-3R,inj #5(l#5) open/short error,2,0.05
+HM400-3R,inj #6(l#6) open/short error,2,0.05
+HM400-3R,l clutch solenoid valve+open circuit,2,0.05
+HM400-3R,lock up solenoid valve+open circuit,2,0.05
+HM400-3R,monitor cntrlr can communicaton 2+communication error (compo line),2,0.05
+HM400-3R,parking brake solenoid valve+defective function,2,0.05
+HM400-3R,parking brake solenoid valve+out of control,2,0.05
+HM400-3R,plm controller can2+model select signal mismatch,2,0.05
+HM400-3R,plm controller+source voltage drop,2,0.05
+HM400-3R,r clutch solenoid valve+open circuit,2,0.05
+HM400-3R,rail press high error,2,0.05
+HM400-3R,retarder valve (center left)+defective function,2,0.05
+HM400-3R,retarder valve (front left)+out of control,2,0.05
+HM400-3R,retarder valve (front right)+open circuit,2,0.05
+HM400-3R,t/c oil pressure sensor+eng condition and signal not match,2,0.05
+HM400-3R,tm out put shaft speed sensor+rotating speed signal doesnt match,2,0.05
+HM400-3R,tm shift lever+short circuit,2,0.05
+HM400-3R,transmission 1st clutch+slip,2,0.05
+HM400-3R,vhms controller (komnet) group+source voltage drop,2,0.05
+HM400-3R,vhms controller can communication 2+communication error (compo line),2,0.05
+PC1250-11R,"komtrax plus,ethernet comm 2+communication error (compo line)",310,10.92
+PC1250-11R,hydraulic fan speed sensor+deterioration,206,7.26
+PC1250-11R,hydraulic gear pump+eng condition and signal not match,170,5.99
+PC1250-11R,camera4+open circuit,152,5.35
+PC1250-11R,"komtrax plus,ethernet comm 1+communication error (compo line)",148,5.21
+PC1250-11R,camera controller+controller inside failure,102,3.59
+PC1250-11R,field-of-view check aux camera 2+open circuit,94,3.31
+PC1250-11R,lock lever auto lock release switch+operation,92,3.24
+PC1250-11R,f-o-v aux camera2 image reverse i/p+input signal out of scope,86,3.03
+PC1250-11R,camera controller+miss operation or miss setting,84,2.96
+PC1250-11R,f-o-v aux camera3 image reverse i/p+input signal out of scope,78,2.75
+PC1250-11R,persistent data lost error,68,2.4
+PC1250-11R,field-of-view check aux camera 3+open circuit,58,2.04
+PC1250-11R,g/p controller operating lamp+open circuit,56,1.97
+PC1250-11R,"komtrax plus,system operating lamp+open circuit",56,1.97
+PC1250-11R,monitor cntrlr operating lamp+open circuit,56,1.97
+PC1250-11R,power supply lamp+open circuit,54,1.9
+PC1250-11R,field-of-view check camera 1+open circuit,52,1.83
+PC1250-11R,field-of-view check aux camera 1+open circuit,48,1.69
+PC1250-11R,rail press low error,44,1.55
+PC1250-11R,hyd filter bypass valve sensor 2+clogging,30,1.06
+PC1250-11R,rail press very low error,30,1.06
+PC1250-11R,ventilation damper+malfunction,25,0.88
+PC1250-11R,coolant+decrease in quantity,24,0.85
+PC1250-11R,eng bkup speed sensor error,24,0.85
+PC1250-11R,fan drive gear pump+eng condition and signal not match,24,0.85
+PC1250-11R,hyd filter bypass valve sensor 1+clogging,24,0.85
+PC1250-11R,outer sensor+open circuit,24,0.85
+PC1250-11R,reverse fan pump solenoid valve+open circuit,24,0.85
+PC1250-11R,grid htr relay volt low error,22,0.77
+PC1250-11R,komtrax plus controller+malfunction,22,0.77
+PC1250-11R,air mix damper+malfunction,18,0.63
+PC1250-11R,front pump oil pressure sensor+defective function,18,0.63
+PC1250-11R,back-up alarm buzzer+short circuit,16,0.56
+PC1250-11R,fan drive gear pump+open circuit,16,0.56
+PC1250-11R,monitor controller+miss operation or miss setting,16,0.56
+PC1250-11R,rear pump oil pressure sensor+defective function,16,0.56
+PC1250-11R,eng ne speed sensor error,14,0.49
+PC1250-11R,engine exhaust gas(f)+overheat,14,0.49
+PC1250-11R,boom down ppc pressure sensor+defective function,12,0.42
+PC1250-11R,hyd pump 3 oil pressure sensor+defective function,12,0.42
+PC1250-11R,ventilating sensor+open circuit,12,0.42
+PC1250-11R,tvc solenoid valve+open circuit,11,0.39
+PC1250-11R,c/r eng cntrlr can communication 2+communication error (compo line),10,0.35
+PC1250-11R,hydraulic fan speed sensor+short circuit,10,0.35
+PC1250-11R,pto case oil+overheat,10,0.35
+PC1250-11R,refrigerant+input signal out of scope,10,0.35
+PC1250-11R,throttle sensor low error,10,0.35
+PC1250-11R,work equipment lever lock switch+open circuit,10,0.35
+PC1250-11R,auto grease pressure sensor 2+defective function,8,0.28
+PC1250-11R,auto grease pressure sensor+defective function,8,0.28
+PC1250-11R,boom up ppc pressure sensor+defective function,8,0.28
+PC1250-11R,camera controller output power 8v+short circuit,8,0.28
+PC1250-11R,coolant temp sens high error,8,0.28
+PC1250-11R,g/p controller output sensor line 1+out put voltage drop,8,0.28
+PC1250-11R,grease lubrication system+low oil pressure,8,0.28
+PC1250-11R,komtrax gps antenna cable+open circuit,8,0.28
+PC1250-11R,ladder up solenoid+open circuit,8,0.28
+PC1250-11R,step light relay+open circuit,8,0.28
+PC1250-11R,arm dump ppc pressure sensor+defective function,6,0.21
+PC1250-11R,arm in ppc pressure sensor+defective function,6,0.21
+PC1250-11R,bucket curl ppc pressure sensor+defective function,6,0.21
+PC1250-11R,bucket dump ppc pressure sensor+defective function,6,0.21
+PC1250-11R,crankcase press sens low error,6,0.21
+PC1250-11R,engine exhaust gas(f)+abnormal generation of heat,6,0.21
+PC1250-11R,engine exhaust gas(r)+abnormal generation of heat,6,0.21
+PC1250-11R,engine exhaust gas(r)+overheat,6,0.21
+PC1250-11R,front pump oil pressure sensor+pressure high error,6,0.21
+PC1250-11R,g/p controller output sensor line 2+out put voltage drop,6,0.21
+PC1250-11R,hyd filter bypass valve sensor 1+open circuit,6,0.21
+PC1250-11R,hyd filter bypass valve sensor 2+short circuit,6,0.21
+PC1250-11R,monitor cntrlr can communicaton 2+communication error (compo line),6,0.21
+PC1250-11R,swing left ppc pressure sensor+defective function,6,0.21
+PC1250-11R,swing right ppc pressure sensor+defective function,6,0.21
+PC1250-11R,travel ppc p.sensor;backward left+defective function,6,0.21
+PC1250-11R,travel ppc p.sensor;backward right+defective function,6,0.21
+PC1250-11R,travel ppc p.sensor;forward left+defective function,6,0.21
+PC1250-11R,travel ppc p.sensor;forward right+defective function,6,0.21
+PC1250-11R,ambient press sens high error,4,0.14
+PC1250-11R,cen communication error,4,0.14
+PC1250-11R,chg air press sensor high error,4,0.14
+PC1250-11R,chg air temp sensor high error,4,0.14
+PC1250-11R,coolant+servicing,4,0.14
+PC1250-11R,crankcase press sens in range error,4,0.14
+PC1250-11R,eng bkup speed sens phase error,4,0.14
+PC1250-11R,eng oil press sensor high error,4,0.14
+PC1250-11R,eng oil temp sensor high error,4,0.14
+PC1250-11R,engine exhaust temperature sensor+short circuit,4,0.14
+PC1250-11R,engine oil+decrease in quantity,4,0.14
+PC1250-11R,fan pump epc solenoid valve+open circuit,4,0.14
+PC1250-11R,g/p controller can communication+communication error (compo line),4,0.14
+PC1250-11R,hydraulic fan speed sensor+open circuit,4,0.14
+PC1250-11R,inj #5(l#5) open/short error,4,0.14
+PC1250-11R,inner sensor+open circuit,4,0.14
+PC1250-11R,"komtrax plus,can communication 2+communication error (compo line)",4,0.14
+PC1250-11R,outer sensor+short circuit,4,0.14
+PC1250-11R,ppc lock relay+short circuit,4,0.14
+PC1250-11R,rail press sensor high error,4,0.14
+PC1250-11R,rail press sensor low error,4,0.14
+PC1250-11R,throttle sensor high error,4,0.14
+PC1250-11R,wiper motor 2+defective function,4,0.14
+PC1250-11R,ambient press sens low error,2,0.07
+PC1250-11R,c/r eng cntrlr can communication+communication error (compo line),2,0.07
+PC1250-11R,coolant+overheat,2,0.07
+PC1250-11R,eng exhaust temperature sensor(f)+short circuit,2,0.07
+PC1250-11R,g/p controller operating lamp+short circuit,2,0.07
+PC1250-11R,hydraulic gear pump+open circuit,2,0.07
+PC1250-11R,hydraulic gear pump+short circuit,2,0.07
+PC1250-11R,inj #3(l#3) open/short error,2,0.07
+PC1250-11R,inj #4(l#4) open/short error,2,0.07
+PC1250-11R,inj #6(l#6) open/short error,2,0.07
+PC1250-11R,"komtrax plus,power source line+source voltage drop",2,0.07
+PC1250-11R,pcv2 short error,2,0.07
+PC1250-11R,rail press sens sup volt low error,2,0.07
+PC1250-11R,swing reducing tvc solenoid valve+open circuit,2,0.07
+PC1250-11R,travel neutral solenoid valve+open circuit,2,0.07
+PC1250-11R,air cleaner element+clogging,1,0.04
+PC1250-8,high blowby pressure,81,17.65
+PC1250-8,blowby pres. sensor failure,53,11.55
+PC1250-8,f pump press sensor abnormality,50,10.89
+PC1250-8,high relief press f pump,35,7.63
+PC1250-8,abnomal fan.gear pump press,33,7.19
+PC1250-8,r pump press sensor abnormality,30,6.54
+PC1250-8,abnomal cnt.gear pump press,25,5.45
+PC1250-8,high r cyl. exhaust temp.1,24,5.23
+PC1250-8,high r cyl. exhaust temp.2,20,4.36
+PC1250-8,high f cyl. exhaust temp.2,19,4.14
+PC1250-8,fan pump pre.sens failure,15,3.27
+PC1250-8,high f cyl. exhaust temp.1,15,3.27
+PC1250-8,high relief press pump swing,11,2.4
+PC1250-8,high relief press r pump,11,2.4
+PC1250-8,swing pre.sens failure,11,2.4
+PC1250-8,f exhaust temp. sensor failure,6,1.31
+PC1250-8,5v sensor1 power abnormality,3,0.65
+PC1250-8,can discon (pump con detected),2,0.44
+PC1250-8,eng ne speed sensor error,2,0.44
+PC1250-8,eng. oil level low,2,0.44
+PC1250-8,engine speed sensor abnormality,2,0.44
+PC1250-8,kom-net/c error,2,0.44
+PC1250-8,r exhaust temp. sensor failure,2,0.44
+PC1250-8,rail press sensor high error,2,0.44
+PC1250-8,swing brake sol open circuit,2,0.44
+PC1250-8,tvc sol. open circuit,1,0.22
+PC130F-7,engine speed sensor+defective function,868,16.78
+PC130F-7,komtrax gps antenna cable+open circuit,714,13.8
+PC130F-7,feedback potentiometer+open circut or short circuit,450,8.7
+PC130F-7,governor motor+out of control,316,6.11
+PC130F-7,front pump oil pressure sensor+defective function,246,4.75
+PC130F-7,ls control epc solenoid valve+open circuit,244,4.72
+PC130F-7,2-stage relief solenoid valve+open circuit,230,4.45
+PC130F-7,wiper motor+open circuit,214,4.14
+PC130F-7,tvc solenoid valve+open circuit,209,4.04
+PC130F-7,air cleaner element+clogging,202,3.9
+PC130F-7,governor motor+open circuit,200,3.87
+PC130F-7,swing brake solenoid valve+open circuit,176,3.4
+PC130F-7,ls control epc solenoid valve+short circuit,166,3.21
+PC130F-7,battery relay+short circuit,136,2.63
+PC130F-7,2-stage relief solenoid valve+short circuit,134,2.59
+PC130F-7,throttle lever angle sensor+open circut or short circuit,80,1.55
+PC130F-7,coolant+overheat,74,1.43
+PC130F-7,tvc solenoid valve+short circuit,60,1.16
+PC130F-7,g/p controller s-net communication+model select signal mismatch,58,1.12
+PC130F-7,rear pump oil pressure sensor+defective function,58,1.12
+PC130F-7,governor motor+short circuit,52,1.01
+PC130F-7,wiper motor+defective function,48,0.93
+PC130F-7,pump merger-divider solenoid valve+open circuit,42,0.81
+PC130F-7,over load warning sensor+defective function,36,0.7
+PC130F-7,g/p controller output sensor line 1+out put voltage drop,34,0.66
+PC130F-7,swing brake solenoid valve+short circuit,34,0.66
+PC130F-7,travel neutral solenoid valve+open circuit,22,0.43
+PC130F-7,travel speed solenoid valve+short circuit,19,0.37
+PC130F-7,travel speed solenoid valve+open circuit,18,0.35
+PC130F-7,g/p controller s-net communication+open circuit,16,0.31
+PC130F-7,arm angle sensor+open circuit,2,0.04
+PC130F-7,attachment select relay+open circuit,2,0.04
+PC130F-7,boom angle sensor+open circuit,2,0.04
+PC130F-7,bottom oil pressure sensor+input signal out of scope,2,0.04
+PC130F-7,bucket dump prohibit solenoid relay+open circuit,2,0.04
+PC130F-7,engine assy+engine low idle speed too high,2,0.04
+PC130F-7,engine assy+engine over running,2,0.04
+PC130F-7,rod oil pressure sensor+input signal out of scope,2,0.04
+PC130F-7,wiper motor (clockwise)+short circuit,2,0.04
+PC135F-10M0,engine oil+decrease in quantity,654,9.03
+PC135F-10M0,eng.blow-by pressure+pressure high error,578,7.98
+PC135F-10M0,eng oil press sw error,446,6.16
+PC135F-10M0,air cleaner element+clogging,411,5.67
+PC135F-10M0,rail press low error,362,5.0
+PC135F-10M0,hyd filter bypass valve sensor 1+defective function,292,4.03
+PC135F-10M0,coolant+decrease in quantity,282,3.89
+PC135F-10M0,hyd filter bypass valve sensor 1+clogging,256,3.53
+PC135F-10M0,hydraulic oil temperature sensor+open circuit,242,3.34
+PC135F-10M0,wiper motor+defective function,232,3.2
+PC135F-10M0,rail press very low error,222,3.06
+PC135F-10M0,air cleaner clogging sensor(1)+open circuit,207,2.86
+PC135F-10M0,alternator+defective charging,206,2.84
+PC135F-10M0,blow-by pressure sensor+defective function,188,2.59
+PC135F-10M0,swing brake solenoid valve+open circuit,178,2.46
+PC135F-10M0,komtrax gps antenna cable+open circuit,172,2.37
+PC135F-10M0,coolant+servicing,108,1.49
+PC135F-10M0,eng ne speed sensor error,94,1.3
+PC135F-10M0,personal code relay+open circut or short circuit,84,1.16
+PC135F-10M0,front pump oil pressure sensor+defective function,72,0.99
+PC135F-10M0,bucket dump ppc pressure sensor+defective function,70,0.97
+PC135F-10M0,swing left ppc pressure sensor+defective function,70,0.97
+PC135F-10M0,monitor cntrlr can communicaton 2+communication error (compo line),64,0.88
+PC135F-10M0,pc-epc(f) solenoide valve+open circuit,64,0.88
+PC135F-10M0,swing right ppc pressure sensor+defective function,64,0.88
+PC135F-10M0,swing ls divide solenoid+open circuit,58,0.8
+PC135F-10M0,g/p controller operating lamp+open circuit,56,0.77
+PC135F-10M0,arm in ppc pressure sensor+defective function,52,0.72
+PC135F-10M0,bucket curl ppc pressure sensor+defective function,52,0.72
+PC135F-10M0,swing ls divide solenoid+short circuit,52,0.72
+PC135F-10M0,c/r eng cntrlr can communication 2+communication error (compo line),46,0.63
+PC135F-10M0,travel speed solenoid valve+open circuit,46,0.63
+PC135F-10M0,ambient press sens low error,44,0.61
+PC135F-10M0,boom down ppc pressure sensor+defective function,44,0.61
+PC135F-10M0,komtrax operating lamp+open circuit,42,0.58
+PC135F-10M0,arm dump ppc pressure sensor+defective function,40,0.55
+PC135F-10M0,back-up alarm buzzer+short circuit,40,0.55
+PC135F-10M0,monitor cntrlr operating lamp+open circuit,40,0.55
+PC135F-10M0,throttle sensor low error,40,0.55
+PC135F-10M0,2stage back pressure solenoid valve+open circuit,39,0.54
+PC135F-10M0,2-stage relief solenoid valve+open circuit,38,0.52
+PC135F-10M0,rail press high error,36,0.5
+PC135F-10M0,air controller can communication 2+communication error (compo line),35,0.48
+PC135F-10M0,boom up ppc pressure sensor+defective function,34,0.47
+PC135F-10M0,pump merger-divider solenoid valve+open circuit,34,0.47
+PC135F-10M0,pump merger-divider solenoid valve+short circuit,34,0.47
+PC135F-10M0,engine oil+low oil pressure,32,0.44
+PC135F-10M0,g/p controller output power line+source voltage drop,32,0.44
+PC135F-10M0,2stage back pressure solenoid valve+short circuit,30,0.41
+PC135F-10M0,eng bkup speed sensor error,30,0.41
+PC135F-10M0,travel ppc p.sensor;backward right+defective function,28,0.39
+PC135F-10M0,g/p controller output sensor line 2+out put voltage drop,26,0.36
+PC135F-10M0,2-stage relief solenoid valve+short circuit,25,0.35
+PC135F-10M0,imv/pcv1 open error,24,0.33
+PC135F-10M0,travel neutral solenoid valve+short circuit,24,0.33
+PC135F-10M0,travel ppc p.sensor;forward left+defective function,24,0.33
+PC135F-10M0,travel ppc p.sensor;forward right+defective function,24,0.33
+PC135F-10M0,hydraulic oil+overheat,22,0.3
+PC135F-10M0,throttle sensor high error,22,0.3
+PC135F-10M0,travel ppc p.sensor;backward left+defective function,22,0.3
+PC135F-10M0,att serv valve changeover solenoid+open circuit,20,0.28
+PC135F-10M0,g/p controller can communication 2+communication error (compo line),20,0.28
+PC135F-10M0,monitor ctllr model select harness+model select signal mismatch,20,0.28
+PC135F-10M0,coolant+overheat,18,0.25
+PC135F-10M0,travel neutral solenoid valve+open circuit,16,0.22
+PC135F-10M0,chg air temp sensor high error,14,0.19
+PC135F-10M0,monitor cntrlr operating lamp+short circuit,14,0.19
+PC135F-10M0,pump merger-divider solenoid valve+short circut of power source line,14,0.19
+PC135F-10M0,rail press sensor high error,14,0.19
+PC135F-10M0,wiper motor+open circuit,14,0.19
+PC135F-10M0,coolant temp sens high error,12,0.17
+PC135F-10M0,hydraulic oil temperature sensor+short circuit,12,0.17
+PC135F-10M0,g/p controller model select line+model select signal mismatch,10,0.14
+PC135F-10M0,governor and pump controller+malfunction,10,0.14
+PC135F-10M0,inj #1(l#1) open/short error,10,0.14
+PC135F-10M0,komtrax operating lamp+short circuit,10,0.14
+PC135F-10M0,battery relay+short circuit,8,0.11
+PC135F-10M0,f-o-v aux camera2 image reverse i/p+input signal out of scope,8,0.11
+PC135F-10M0,g/p controller can communication+communication error (compo line),8,0.11
+PC135F-10M0,g/p controller operating lamp+short circuit,8,0.11
+PC135F-10M0,komtrax cntrlr can communication 2+communication error (compo line),8,0.11
+PC135F-10M0,rail press very high error,8,0.11
+PC135F-10M0,chg air press sensor low error,6,0.08
+PC135F-10M0,f-o-v aux camera3 image reverse i/p+input signal out of scope,6,0.08
+PC135F-10M0,g/p controller output sensor line 1+out put voltage drop,6,0.08
+PC135F-10M0,imv solenoid error,6,0.08
+PC135F-10M0,inj #3(l#3) open/short error,6,0.08
+PC135F-10M0,inj #4(l#4) open/short error,6,0.08
+PC135F-10M0,injectors drive circuit error,6,0.08
+PC135F-10M0,throt sens sup volt low error,6,0.08
+PC135F-10M0,chg air press sensor high error,4,0.06
+PC135F-10M0,inj #2(l#2) open/short error,4,0.06
+PC135F-10M0,komtrax(gw) power 24v+short circuit,4,0.06
+PC135F-10M0,komtrax(gw) power 24v-2+short circuit,4,0.06
+PC135F-10M0,rail press sensor low error,4,0.06
+PC135F-10M0,wind washer motor+short circuit,4,0.06
+PC135F-10M0,att. flow ppc adjust solenoid valve+open circuit,2,0.03
+PC135F-10M0,eng ne and bkup speed sens error,2,0.03
+PC135F-10M0,komtrax(gw) controller+controller inside failure,2,0.03
+PC135F-10M0,sens supply 1 volt low error,2,0.03
+PC135F-10M0,travel speed solenoid valve+short circuit,2,0.03
+PC135F-10M0,wiper motor (clockwise)+short circuit,2,0.03
+PC160LC-8,engine oil+decrease in quantity,30,20.41
+PC160LC-8,komtrax gps antenna cable+open circuit,20,13.61
+PC160LC-8,coolant+decrease in quantity,14,9.52
+PC160LC-8,wind washer motor+open circuit,14,9.52
+PC160LC-8,water in fuel sensor high error,12,8.16
+PC160LC-8,air cleaner element+clogging,10,6.8
+PC160LC-8,rear pump oil pressure sensor+defective function,10,6.8
+PC160LC-8,2-stage relief solenoid valve+open circuit,7,4.76
+PC160LC-8,coolant temp sens high error,6,4.08
+PC160LC-8,eng oil press sw error,6,4.08
+PC160LC-8,eng bkup speed sens phase error,4,2.72
+PC160LC-8,rail press low error,4,2.72
+PC160LC-8,throttle sensor high error,4,2.72
+PC160LC-8,alternator+defective charging,2,1.36
+PC160LC-8,g/p controller output power line+source voltage drop,2,1.36
+PC160LC-8,rail press very low error,2,1.36
+PC195LC-8,engine oil+decrease in quantity,316,21.15
+PC195LC-8,alternator+defective charging,156,10.44
+PC195LC-8,wind washer motor+open circuit,134,8.97
+PC195LC-8,coolant+decrease in quantity,112,7.5
+PC195LC-8,komtrax gps antenna cable+open circuit,112,7.5
+PC195LC-8,water in fuel sensor high error,74,4.95
+PC195LC-8,air cleaner element+clogging,52,3.48
+PC195LC-8,rail press low error,46,3.08
+PC195LC-8,front pump oil pressure sensor+defective function,44,2.95
+PC195LC-8,engine oil+low oil pressure,24,1.61
+PC195LC-8,rail press very low error,24,1.61
+PC195LC-8,rear pump oil pressure sensor+defective function,22,1.47
+PC195LC-8,wiper motor+defective function,20,1.34
+PC195LC-8,coolant temp sens high error,18,1.2
+PC195LC-8,coolant+overheat,18,1.2
+PC195LC-8,ambient press sens low error,16,1.07
+PC195LC-8,pc-epc(f) solenoide valve+open circuit,16,1.07
+PC195LC-8,travel neutral solenoid valve+open circuit,16,1.07
+PC195LC-8,swing brake solenoid valve+open circuit,14,0.94
+PC195LC-8,water in fuel sensor low error,14,0.94
+PC195LC-8,eng oil press sw error,12,0.8
+PC195LC-8,monitor controller can communicaton+malfunction,12,0.8
+PC195LC-8,throttle sensor high error,12,0.8
+PC195LC-8,wiper motor (clockwise)+short circuit,12,0.8
+PC195LC-8,eng ne speed sensor error,10,0.67
+PC195LC-8,rail press sensor high error,10,0.67
+PC195LC-8,swing brake solenoid valve+short circuit,10,0.67
+PC195LC-8,throttle sensor low error,10,0.67
+PC195LC-8,ambient press sens high error,8,0.54
+PC195LC-8,g/p controller output power line+source voltage drop,8,0.54
+PC195LC-8,hydraulic oil temperature sensor+short circuit,8,0.54
+PC195LC-8,inj #1(l#1) open/short error,8,0.54
+PC195LC-8,inj #4(l#4) open/short error,8,0.54
+PC195LC-8,injectors drive circuit error,8,0.54
+PC195LC-8,komnet datalink timeout error,8,0.54
+PC195LC-8,monitor cntrlr pwr source (r-camera)+short circuit,8,0.54
+PC195LC-8,pump merger-divider solenoid valve+open circuit,8,0.54
+PC195LC-8,rail press high error,8,0.54
+PC195LC-8,swing right ppc pressure sensor+defective function,8,0.54
+PC195LC-8,2-stage relief solenoid valve+open circuit,6,0.4
+PC195LC-8,chg air press sensor low error,6,0.4
+PC195LC-8,chg air temp sensor high error,6,0.4
+PC195LC-8,g/p controller can communication+malfunction,6,0.4
+PC195LC-8,g/p controller output sensor line 1+out put voltage drop,6,0.4
+PC195LC-8,hydraulic oil+overheat,6,0.4
+PC195LC-8,imv/pcv1 open error,6,0.4
+PC195LC-8,travel neutral solenoid valve+short circuit,6,0.4
+PC195LC-8,eng bkup speed sensor error,4,0.27
+PC195LC-8,pump merger-divider solenoid valve+short circuit,4,0.27
+PC195LC-8,2-stage relief solenoid valve+short circuit,2,0.13
+PC195LC-8,coolant temp sens low error,2,0.13
+PC195LC-8,grid htr relay volt low error,2,0.13
+PC195LC-8,pc-epc(f) solenoide valve+short circuit,2,0.13
+PC195LC-8,rail press very high error,2,0.13
+PC195LC-8,sens supply 2 volt low error,2,0.13
+PC195LC-8,swing left ppc pressure sensor+defective function,2,0.13
+PC200-10M0,water in fuel sensor high error,1552,20.39
+PC200-10M0,coolant+decrease in quantity,461,6.06
+PC200-10M0,eng.blow-by pressure+pressure high error,458,6.02
+PC200-10M0,air mix damper+malfunction,457,6.0
+PC200-10M0,rail press low error,414,5.44
+PC200-10M0,back-up alarm buzzer+short circuit,394,5.18
+PC200-10M0,hyd filter bypass valve sensor 1+clogging,330,4.33
+PC200-10M0,ventilation damper+malfunction,264,3.47
+PC200-10M0,rail press very low error,164,2.15
+PC200-10M0,water in fuel sensor low error,160,2.1
+PC200-10M0,hyd filter bypass valve sensor 1+defective function,140,1.84
+PC200-10M0,wiper motor+defective function,140,1.84
+PC200-10M0,komtrax gps antenna cable+open circuit,122,1.6
+PC200-10M0,coolant+servicing,120,1.58
+PC200-10M0,ventilating sensor+open circuit,117,1.54
+PC200-10M0,alternator+defective charging,114,1.5
+PC200-10M0,engine oil+decrease in quantity,94,1.23
+PC200-10M0,personal code relay+open circut or short circuit,90,1.18
+PC200-10M0,air cleaner element+clogging,86,1.13
+PC200-10M0,swing brake solenoid valve+open circuit,76,1.0
+PC200-10M0,air controller can communication 2+communication error (compo line),66,0.87
+PC200-10M0,ambient press sens low error,56,0.74
+PC200-10M0,air cleaner clogging sensor(1)+open circuit,54,0.71
+PC200-10M0,blow-by pressure sensor+defective function,50,0.66
+PC200-10M0,c/r eng cntrlr can communication 2+communication error (compo line),46,0.6
+PC200-10M0,work equipment lever lock switch+open circuit,46,0.6
+PC200-10M0,ls control epc solenoid valve+open circuit,42,0.55
+PC200-10M0,monitor cntrlr can communicaton 2+communication error (compo line),42,0.55
+PC200-10M0,monitor ctllr model select harness+model select signal mismatch,42,0.55
+PC200-10M0,coolant+overheat,40,0.53
+PC200-10M0,arm in ppc pressure sensor+defective function,38,0.5
+PC200-10M0,bucket curl ppc pressure sensor+defective function,38,0.5
+PC200-10M0,bucket dump ppc pressure sensor+defective function,38,0.5
+PC200-10M0,outer sensor+open circuit,36,0.47
+PC200-10M0,refrigerant+input signal out of scope,36,0.47
+PC200-10M0,boom down ppc pressure sensor+defective function,34,0.45
+PC200-10M0,eng oil press sw error,32,0.42
+PC200-10M0,swing left ppc pressure sensor+defective function,32,0.42
+PC200-10M0,2-stage relief solenoid valve+open circuit,31,0.41
+PC200-10M0,eng ne speed sensor error,30,0.39
+PC200-10M0,front pump oil pressure sensor+defective function,30,0.39
+PC200-10M0,g/p controller can communication 2+communication error (compo line),30,0.39
+PC200-10M0,swing right ppc pressure sensor+defective function,30,0.39
+PC200-10M0,2stage back pressure solenoid valve+open circuit,28,0.37
+PC200-10M0,merge-divider main epc solenoid vlv+open circuit,28,0.37
+PC200-10M0,rail press high error,28,0.37
+PC200-10M0,rail press sensor high error,28,0.37
+PC200-10M0,arm dump ppc pressure sensor+defective function,26,0.34
+PC200-10M0,rear pump oil pressure sensor+defective function,26,0.34
+PC200-10M0,travel ppc p.sensor;forward left+defective function,26,0.34
+PC200-10M0,boom up ppc pressure sensor+defective function,24,0.32
+PC200-10M0,g/p controller output power line+source voltage drop,24,0.32
+PC200-10M0,hydraulic oil temperature sensor+open circuit,24,0.32
+PC200-10M0,pc-epc(r) solenoide valve+open circuit,24,0.32
+PC200-10M0,throttle sensor low error,22,0.29
+PC200-10M0,2stage back pressure solenoid valve+short circuit,21,0.28
+PC200-10M0,att serv valve changeover solenoid+open circuit,20,0.26
+PC200-10M0,engine oil+low oil pressure,20,0.26
+PC200-10M0,merge-divider ls epc solenoid vlv+open circuit,20,0.26
+PC200-10M0,pc-epc(f) solenoide valve+open circuit,20,0.26
+PC200-10M0,rail press sensor low error,20,0.26
+PC200-10M0,inner sensor+open circuit,18,0.24
+PC200-10M0,merge-divider ls epc solenoid vlv+short circuit,18,0.24
+PC200-10M0,monitor cntrlr operating lamp+short circuit,18,0.24
+PC200-10M0,throttle sensor high error,18,0.24
+PC200-10M0,travel ppc p.sensor;forward right+defective function,18,0.24
+PC200-10M0,wiper motor+open circuit,18,0.24
+PC200-10M0,work equipment lever lock switch+short circut of power source line,18,0.24
+PC200-10M0,g/p controller can communication+communication error (compo line),16,0.21
+PC200-10M0,coolant temp sens high error,14,0.18
+PC200-10M0,g/p controller model select line+model select signal mismatch,14,0.18
+PC200-10M0,hyd pump swash plate angle sensor f+defective function,12,0.16
+PC200-10M0,hyd pump swash plate angle sensor r+defective function,12,0.16
+PC200-10M0,swing motor 2stage relief solenoid+open circuit,12,0.16
+PC200-10M0,swing stroke control solenoid valve+open circuit,12,0.16
+PC200-10M0,travel ppc p.sensor;backward left+defective function,12,0.16
+PC200-10M0,water in fuel sensor main or (r)+input signal out of scope,12,0.16
+PC200-10M0,2stage back pressure solenoid valve+short circut of power source line,11,0.14
+PC200-10M0,ventilating sensor+short circuit,11,0.14
+PC200-10M0,g/p controller output sensor line 2+out put voltage drop,10,0.13
+PC200-10M0,komtrax cntrlr can communication 2+communication error (compo line),10,0.13
+PC200-10M0,ls control epc solenoid valve+short circuit,10,0.13
+PC200-10M0,rail press very high error,10,0.13
+PC200-10M0,sunlight sensor+open circut or short circuit,10,0.13
+PC200-10M0,2-stage relief solenoid valve+short circuit,8,0.11
+PC200-10M0,f-o-v aux camera2 image reverse i/p+input signal out of scope,8,0.11
+PC200-10M0,hydraulic oil temperature sensor+short circuit,8,0.11
+PC200-10M0,imv/pcv1 open error,8,0.11
+PC200-10M0,inj #1(l#1) open/short error,8,0.11
+PC200-10M0,komtrax(gw) power 24v+short circuit,8,0.11
+PC200-10M0,komtrax(gw) power 24v-2+short circuit,8,0.11
+PC200-10M0,travel ppc p.sensor;backward right+defective function,8,0.11
+PC200-10M0,c/r eng cntrlr can communication+communication error (compo line),6,0.08
+PC200-10M0,eng bkup speed sensor error,6,0.08
+PC200-10M0,eng ne and bkup speed sens error,6,0.08
+PC200-10M0,fan control solenoid valve+open circuit,6,0.08
+PC200-10M0,g/p controller operating lamp+open circuit,6,0.08
+PC200-10M0,governor and pump controller+malfunction,6,0.08
+PC200-10M0,imv/pcv1 short error,6,0.08
+PC200-10M0,inj #3(l#3) open/short error,6,0.08
+PC200-10M0,injectors drive circuit error,6,0.08
+PC200-10M0,travel neutral solenoid valve+open circuit,6,0.08
+PC200-10M0,wind washer motor+short circuit,6,0.08
+PC200-10M0,wiper motor (clockwise)+short circuit,6,0.08
+PC200-10M0,chg air press sensor low error,4,0.05
+PC200-10M0,chg air temp sensor high error,4,0.05
+PC200-10M0,fan clutch fan speed sensor+deterioration,4,0.05
+PC200-10M0,fan clutch fan speed sensor+open circuit,4,0.05
+PC200-10M0,inj #2(l#2) open/short error,4,0.05
+PC200-10M0,inj #4(l#4) open/short error,4,0.05
+PC200-10M0,travel speed solenoid valve+open circuit,4,0.05
+PC200-10M0,2-stage relief solenoid valve+short circut of power source line,2,0.03
+PC200-10M0,additional hyd oil filter clog sw+open circuit,2,0.03
+PC200-10M0,att. flow ppc adjust solenoid valve+open circuit,2,0.03
+PC200-10M0,eng bkup speed sens phase error,2,0.03
+PC200-10M0,eng overspeed,2,0.03
+PC200-10M0,komtrax communication terminal+controller inside failure,2,0.03
+PC200-10M0,komtrax controller+malfunction,2,0.03
+PC200-10M0,komtrax operating lamp+open circuit,2,0.03
+PC200-10M0,komtrax operating lamp+short circuit,2,0.03
+PC200-10M0,komtrax(gw) controller+controller inside failure,2,0.03
+PC200-10M0,merge-divider main epc solenoid vlv+short circuit,2,0.03
+PC200-10M0,monitor cntrlr operating lamp+open circuit,2,0.03
+PC200-10M0,outer sensor+short circuit,2,0.03
+PC200-10M0,swing motor 2stage relief solenoid+short circut of power source line,2,0.03
+PC200-10M0,travel neutral solenoid valve+short circut of power source line,2,0.03
+PC200-10M0,travel speed solenoid valve+short circut of power source line,2,0.03
+PC200-10M0,turbocharger+revolution high error,2,0.03
+PC200-8,wind washer motor+open circuit,4,66.67
+PC200-8,wiper motor+defective function,2,33.33
+PC200-8M0,coolant+decrease in quantity,1108,8.23
+PC200-8M0,wind washer motor+open circuit,1058,7.86
+PC200-8M0,water in fuel sensor high error,870,6.46
+PC200-8M0,engine oil+decrease in quantity,834,6.19
+PC200-8M0,air controller can communication 2+communication error (compo line),461,3.42
+PC200-8M0,alternator+defective charging,443,3.29
+PC200-8M0,rail press low error,406,3.02
+PC200-8M0,rear pump oil pressure sensor+defective function,340,2.53
+PC200-8M0,front pump oil pressure sensor+defective function,336,2.5
+PC200-8M0,air cleaner element+clogging,271,2.01
+PC200-8M0,gps module+malfunction,268,1.99
+PC200-8M0,bucket curl ppc pressure sensor+defective function,244,1.81
+PC200-8M0,personal code relay+open circut or short circuit,244,1.81
+PC200-8M0,2stage back pressure solenoid valve+short circuit,243,1.8
+PC200-8M0,back-up alarm buzzer+short circuit,238,1.77
+PC200-8M0,boom up ppc pressure sensor+defective function,238,1.77
+PC200-8M0,boom down ppc pressure sensor+defective function,234,1.74
+PC200-8M0,arm dump ppc pressure sensor+defective function,230,1.71
+PC200-8M0,swing left ppc pressure sensor+defective function,228,1.69
+PC200-8M0,arm in ppc pressure sensor+defective function,224,1.66
+PC200-8M0,swing right ppc pressure sensor+defective function,222,1.65
+PC200-8M0,bucket dump ppc pressure sensor+defective function,212,1.57
+PC200-8M0,throttle sensor low error,190,1.41
+PC200-8M0,2stage back pressure solenoid valve+open circuit,189,1.4
+PC200-8M0,swing brake solenoid valve+open circuit,188,1.4
+PC200-8M0,ls control epc solenoid valve+open circuit,184,1.37
+PC200-8M0,merge-divider main epc solenoid vlv+open circuit,180,1.34
+PC200-8M0,eng oil press sw error,158,1.17
+PC200-8M0,monitor cntrlr can communicaton 2+communication error (compo line),158,1.17
+PC200-8M0,g/p controller output sensor line 1+out put voltage drop,152,1.13
+PC200-8M0,rail press very low error,148,1.1
+PC200-8M0,wiper motor+defective function,132,0.98
+PC200-8M0,throttle sensor high error,130,0.97
+PC200-8M0,merge-divider ls epc solenoid vlv+open circuit,120,0.89
+PC200-8M0,pc-epc(f) solenoide valve+open circuit,116,0.86
+PC200-8M0,travel ppc p.sensor;forward left+defective function,100,0.74
+PC200-8M0,travel ppc p.sensor;forward right+defective function,100,0.74
+PC200-8M0,pc-epc(r) solenoide valve+open circuit,98,0.73
+PC200-8M0,travel ppc p.sensor;backward left+defective function,90,0.67
+PC200-8M0,rail press high error,88,0.65
+PC200-8M0,travel neutral solenoid valve+open circuit,80,0.59
+PC200-8M0,komtrax gps antenna cable+open circuit,78,0.58
+PC200-8M0,att serv valve changeover solenoid+open circuit,76,0.56
+PC200-8M0,imv/pcv1 open error,76,0.56
+PC200-8M0,travel ppc p.sensor;backward right+defective function,76,0.56
+PC200-8M0,ambient press sens low error,72,0.53
+PC200-8M0,c/r eng cntrlr can communication 2+communication error (compo line),68,0.51
+PC200-8M0,engine oil+low oil pressure,62,0.46
+PC200-8M0,hydraulic oil temperature sensor+short circuit,62,0.46
+PC200-8M0,air cleaner clogging sensor(1)+open circuit,61,0.45
+PC200-8M0,2-stage relief solenoid valve+open circuit,60,0.45
+PC200-8M0,rail press sensor high error,58,0.43
+PC200-8M0,g/p controller output power line+source voltage drop,56,0.42
+PC200-8M0,2-stage relief solenoid valve+short circuit,55,0.41
+PC200-8M0,merge-divider main epc solenoid vlv+short circuit,52,0.39
+PC200-8M0,water in fuel sensor low error,52,0.39
+PC200-8M0,eng ne speed sensor error,48,0.36
+PC200-8M0,merge-divider ls epc solenoid vlv+short circuit,42,0.31
+PC200-8M0,g/p controller model select line+model select signal mismatch,38,0.28
+PC200-8M0,swing brake solenoid valve+short circuit,38,0.28
+PC200-8M0,chg air temp high torque derate,36,0.27
+PC200-8M0,eng bkup speed sens phase error,34,0.25
+PC200-8M0,chg air temp sensor high error,30,0.22
+PC200-8M0,inj #4(l#4) open/short error,30,0.22
+PC200-8M0,chg air press sensor low error,28,0.21
+PC200-8M0,coolant+overheat,28,0.21
+PC200-8M0,f-o-v aux camera2 image reverse i/p+input signal out of scope,28,0.21
+PC200-8M0,g/p controller output sensor line 2+out put voltage drop,28,0.21
+PC200-8M0,rail press very high error,28,0.21
+PC200-8M0,grid htr relay volt low error,26,0.19
+PC200-8M0,hydraulic oil+overheat,26,0.19
+PC200-8M0,inj #1(l#1) open/short error,26,0.19
+PC200-8M0,inj #2(l#2) open/short error,26,0.19
+PC200-8M0,inj #3(l#3) open/short error,26,0.19
+PC200-8M0,ls control epc solenoid valve+short circuit,26,0.19
+PC200-8M0,f-o-v aux camera3 image reverse i/p+input signal out of scope,24,0.18
+PC200-8M0,att. flow ppc adjust solenoid valve+open circuit,20,0.15
+PC200-8M0,inj #6(l#6) open/short error,20,0.15
+PC200-8M0,monitor cntrlr pwr source (r-camera)+short circuit,20,0.15
+PC200-8M0,eng bkup speed sensor error,18,0.13
+PC200-8M0,rail press sensor low error,18,0.13
+PC200-8M0,travel speed solenoid valve+short circuit,17,0.13
+PC200-8M0,coolant temp sens high error,16,0.12
+PC200-8M0,coolant+servicing,16,0.12
+PC200-8M0,g/p controller can communication 2+communication error (compo line),16,0.12
+PC200-8M0,inj #5(l#5) open/short error,16,0.12
+PC200-8M0,pc-epc(f) solenoide valve+short circuit,16,0.12
+PC200-8M0,pc-epc(r) solenoide valve+short circuit,16,0.12
+PC200-8M0,sens supply 1 volt low error,12,0.09
+PC200-8M0,wiper motor (clockwise)+short circuit,12,0.09
+PC200-8M0,imv/pcv1 short error,10,0.07
+PC200-8M0,komtrax controller+malfunction,10,0.07
+PC200-8M0,travel neutral solenoid valve+short circuit,10,0.07
+PC200-8M0,chg air press sensor high error,8,0.06
+PC200-8M0,komtrax cntrlr can communication 2+communication error (compo line),8,0.06
+PC200-8M0,travel speed solenoid valve+open circuit,8,0.06
+PC200-8M0,monitor cntrlr serial communication+malfunction,6,0.04
+PC200-8M0,wiper motor+open circuit,6,0.04
+PC200-8M0,att serv valve changeover solenoid+short circuit,4,0.03
+PC200-8M0,chg air temp sensor low error,4,0.03
+PC200-8M0,fuel feed pump open error,4,0.03
+PC200-8M0,injectors drive circuit error,4,0.03
+PC200-8M0,pump merger-divider solenoid valve+short circuit,4,0.03
+PC200-8M0,wiper motor (counter clockwise)+short circuit,4,0.03
+PC200-8M0,ambient press sens high error,2,0.01
+PC200-8M0,eng oil press sensor low error,2,0.01
+PC200-8M0,fuel feed pump short error,2,0.01
+PC200-8M0,sens supply 2 volt low error,2,0.01
+PC200-8M1,wind washer motor+open circuit,142,11.54
+PC200-8M1,air mix damper+malfunction,131,10.64
+PC200-8M1,engine oil+decrease in quantity,68,5.52
+PC200-8M1,coolant+decrease in quantity,67,5.44
+PC200-8M1,water in fuel sensor high error,56,4.55
+PC200-8M1,ventilation damper+malfunction,50,4.06
+PC200-8M1,alternator+defective charging,47,3.82
+PC200-8M1,back-up alarm buzzer+short circuit,44,3.57
+PC200-8M1,rail press low error,32,2.6
+PC200-8M1,ventilating sensor+open circuit,30,2.44
+PC200-8M1,air cleaner element+clogging,27,2.19
+PC200-8M1,merge-divider main epc solenoid vlv+open circuit,22,1.79
+PC200-8M1,coolant+servicing,20,1.62
+PC200-8M1,eng oil press sw error,20,1.62
+PC200-8M1,throttle sensor low error,18,1.46
+PC200-8M1,c/r eng cntrlr can communication 2+communication error (compo line),16,1.3
+PC200-8M1,personal code relay+open circut or short circuit,16,1.3
+PC200-8M1,travel ppc p.sensor;backward right+defective function,16,1.3
+PC200-8M1,bucket curl ppc pressure sensor+defective function,14,1.14
+PC200-8M1,ls control epc solenoid valve+open circuit,14,1.14
+PC200-8M1,pc-epc(f) solenoide valve+open circuit,14,1.14
+PC200-8M1,throttle sensor high error,14,1.14
+PC200-8M1,air controller can communication 2+communication error (compo line),13,1.06
+PC200-8M1,arm dump ppc pressure sensor+defective function,12,0.97
+PC200-8M1,front pump oil pressure sensor+defective function,12,0.97
+PC200-8M1,merge-divider main epc solenoid vlv+short circuit,12,0.97
+PC200-8M1,monitor cntrlr can communicaton 2+communication error (compo line),12,0.97
+PC200-8M1,rear pump oil pressure sensor+defective function,12,0.97
+PC200-8M1,travel ppc p.sensor;forward left+defective function,12,0.97
+PC200-8M1,travel ppc p.sensor;forward right+defective function,12,0.97
+PC200-8M1,ventilating sensor+short circuit,11,0.89
+PC200-8M1,arm in ppc pressure sensor+defective function,10,0.81
+PC200-8M1,ls control epc solenoid valve+short circuit,10,0.81
+PC200-8M1,pc-epc(r) solenoide valve+open circuit,10,0.81
+PC200-8M1,rail press high error,10,0.81
+PC200-8M1,rail press sensor low error,10,0.81
+PC200-8M1,swing brake solenoid valve+open circuit,10,0.81
+PC200-8M1,boom down ppc pressure sensor+defective function,8,0.65
+PC200-8M1,boom up ppc pressure sensor+defective function,8,0.65
+PC200-8M1,bucket dump ppc pressure sensor+defective function,8,0.65
+PC200-8M1,engine oil+low oil pressure,8,0.65
+PC200-8M1,g/p controller output power line+source voltage drop,8,0.65
+PC200-8M1,g/p controller output sensor line 1+out put voltage drop,8,0.65
+PC200-8M1,komtrax gps antenna cable+open circuit,8,0.65
+PC200-8M1,merge-divider ls epc solenoid vlv+open circuit,8,0.65
+PC200-8M1,rail press sensor high error,8,0.65
+PC200-8M1,rail press very low error,8,0.65
+PC200-8M1,swing left ppc pressure sensor+defective function,8,0.65
+PC200-8M1,swing right ppc pressure sensor+defective function,8,0.65
+PC200-8M1,f-o-v aux camera2 image reverse i/p+input signal out of scope,6,0.49
+PC200-8M1,grid htr relay volt low error,6,0.49
+PC200-8M1,imv/pcv1 open error,6,0.49
+PC200-8M1,inj #1(l#1) open/short error,6,0.49
+PC200-8M1,ambient press sens high error,4,0.32
+PC200-8M1,f-o-v aux camera3 image reverse i/p+input signal out of scope,4,0.32
+PC200-8M1,g/p controller can communication 2+communication error (compo line),4,0.32
+PC200-8M1,inner sensor+open circuit,4,0.32
+PC200-8M1,outer sensor+open circuit,4,0.32
+PC200-8M1,rail press very high error,4,0.32
+PC200-8M1,travel neutral solenoid valve+open circuit,4,0.32
+PC200-8M1,travel ppc p.sensor;backward left+defective function,4,0.32
+PC200-8M1,water in fuel sensor low error,4,0.32
+PC200-8M1,wiper motor (counter clockwise)+short circuit,4,0.32
+PC200-8M1,wiper motor+defective function,4,0.32
+PC200-8M1,wiper motor+open circuit,4,0.32
+PC200-8M1,air cleaner clogging sensor(1)+open circuit,3,0.24
+PC200-8M1,battery voltage high error,2,0.16
+PC200-8M1,chg air temp high torque derate,2,0.16
+PC200-8M1,hydraulic oil temperature sensor+short circuit,2,0.16
+PC200-8M1,hydraulic oil+overheat,2,0.16
+PC200-8M1,komtrax cntrlr can communication 2+communication error (compo line),2,0.16
+PC200-8M1,travel speed solenoid valve+open circuit,2,0.16
+PC200-8M1,wiper motor (clockwise)+short circuit,2,0.16
+PC2000-11R,g/p controller model select line+model select signal mismatch,76,7.22
+PC2000-11R,"komtrax plus,ethernet comm 1+communication error (compo line)",64,6.08
+PC2000-11R,grease lubrication system+low oil pressure,56,5.32
+PC2000-11R,auto grease pressure sensor+defective function,48,4.56
+PC2000-11R,f-o-v aux camera2 image reverse i/p+input signal out of scope,48,4.56
+PC2000-11R,f-o-v aux camera3 image reverse i/p+input signal out of scope,48,4.56
+PC2000-11R,field-of-view check aux camera 2+open circuit,48,4.56
+PC2000-11R,auto grease solenoid valve+open circuit,40,3.8
+PC2000-11R,field-of-view check aux camera 3+open circuit,36,3.42
+PC2000-11R,"komtrax plus,ethernet comm 2+communication error (compo line)",34,3.23
+PC2000-11R,camera controller+controller inside failure,32,3.04
+PC2000-11R,ladder_proximity_switch+on/off signal doesnt match,32,3.04
+PC2000-11R,c/r eng cntrlr can communication 2+communication error (compo line),30,2.85
+PC2000-11R,c/r eng cntrlr can communication+communication error (compo line),30,2.85
+PC2000-11R,engine oil+decrease in quantity,28,2.66
+PC2000-11R,persistent data lost error,28,2.66
+PC2000-11R,hyd filter bypass valve sensor 3+clogging,22,2.09
+PC2000-11R,rgb monitor+controller inside failure,18,1.71
+PC2000-11R,camera5+open circuit,16,1.52
+PC2000-11R,hyd filter bypass valve sensor 1+clogging,16,1.52
+PC2000-11R,camera controller+malfunction,14,1.33
+PC2000-11R,valve/s1 con. operating lamp output+open circuit,11,1.05
+PC2000-11R,valve/s2 con. operating lamp output+open circuit,11,1.05
+PC2000-11R,arm cyl pressure sensor3+input signal out of scope,10,0.95
+PC2000-11R,camera controller operating lamp+open circuit,10,0.95
+PC2000-11R,g/p controller operating lamp+open circuit,10,0.95
+PC2000-11R,hyd filter bypass valve sensor 2+clogging,10,0.95
+PC2000-11R,hyd filter bypass valve sensor 3+open circuit,10,0.95
+PC2000-11R,"komtrax plus,system operating lamp+open circuit",10,0.95
+PC2000-11R,monitor cntrlr operating lamp+open circuit,10,0.95
+PC2000-11R,2-stage relief solenoid valve+open circuit,9,0.86
+PC2000-11R,ambient press sens low error,8,0.76
+PC2000-11R,camera controller+miss operation or miss setting,8,0.76
+PC2000-11R,camera4+open circuit,8,0.76
+PC2000-11R,engine exhaust temp sensor(fl)+short circut of power source line,8,0.76
+PC2000-11R,hyd fan pump pressure sensor 2+defective function,8,0.76
+PC2000-11R,hydraulic fan speed sensor 2+deterioration,8,0.76
+PC2000-11R,hydraulic fan speed sensor+deterioration,8,0.76
+PC2000-11R,"komtrax plus,output sensor line 4+short circuit",8,0.76
+PC2000-11R,shutdown relay+short circuit,8,0.76
+PC2000-11R,step light relay+open circuit,8,0.76
+PC2000-11R,air cleaner element+clogging,7,0.67
+PC2000-11R,alternator+defective charging,7,0.67
+PC2000-11R,turbocharger+revolution high error,7,0.67
+PC2000-11R,camera controller can2+communication error (compo line),6,0.57
+PC2000-11R,komtrax gps antenna cable+open circuit,6,0.57
+PC2000-11R,wiper motor 2+defective function,6,0.57
+PC2000-11R,engine exhaust temp sensor(rr)+short circut of power source line,4,0.38
+PC2000-11R,valve/m con. can communication 2+communication error (compo line),4,0.38
+PC2000-11R,valve/s1 con. can communication 2+communication error (compo line),4,0.38
+PC2000-11R,work equipment lever lock switch+open circuit,4,0.38
+PC2000-11R,arm dump ppc pressure sensor 2+defective function,2,0.19
+PC2000-11R,arm dump ppc pressure sensor+defective function,2,0.19
+PC2000-11R,arm in ppc pressure sensor 2+defective function,2,0.19
+PC2000-11R,arm in ppc pressure sensor+defective function,2,0.19
+PC2000-11R,boom down ppc pressure sensor+defective function,2,0.19
+PC2000-11R,boom up ppc pressure sensor 2+defective function,2,0.19
+PC2000-11R,boom up ppc pressure sensor+defective function,2,0.19
+PC2000-11R,bucket curl ppc pressure sensor 2+defective function,2,0.19
+PC2000-11R,bucket curl ppc pressure sensor+defective function,2,0.19
+PC2000-11R,bucket dump ppc pressure sensor 2+defective function,2,0.19
+PC2000-11R,bucket dump ppc pressure sensor+defective function,2,0.19
+PC2000-11R,camera controller can1+communication error (compo line),2,0.19
+PC2000-11R,engine exhaust temp sensor(rl)+short circut of power source line,2,0.19
+PC2000-11R,grid htr relay volt low error,2,0.19
+PC2000-11R,komtrax plus controller+malfunction,2,0.19
+PC2000-11R,rail press low error,2,0.19
+PC2000-11R,rail press sensor high error,2,0.19
+PC2000-11R,sensor 5 supply volt high error,2,0.19
+PC2000-11R,swing brake solenoid valve+open circuit,2,0.19
+PC2000-11R,swing left ppc pressure sensor+defective function,2,0.19
+PC2000-11R,swing right ppc pressure sensor+defective function,2,0.19
+PC2000-11R,travel ppc p.sensor;backward left+defective function,2,0.19
+PC2000-11R,travel ppc p.sensor;backward right+defective function,2,0.19
+PC2000-11R,travel ppc p.sensor;forward left+defective function,2,0.19
+PC2000-11R,travel ppc p.sensor;forward right+defective function,2,0.19
+PC2000-11R,valve/s2 con. output sensor line 2+out put voltage drop,2,0.19
+PC2000-8,very high lbr cyl. exhaust temp,86,14.14
+PC2000-8,high lbr cyl. exhaust temp,79,12.99
+PC2000-8,exhaust temp. sensor lbr failure,55,9.05
+PC2000-8,komtrax gps antenna cable+open circuit,38,6.25
+PC2000-8,exhaust temp. sensor rbf failure,35,5.76
+PC2000-8,kom-net/c error,32,5.26
+PC2000-8,very high rbr cyl. exhaust temp,32,5.26
+PC2000-8,very high rbf cyl. exhaust temp,29,4.77
+PC2000-8,high rbf cyl. exhaust temp,28,4.61
+PC2000-8,high rbr cyl. exhaust temp,26,4.28
+PC2000-8,exhaust temp. sensor rbr failure,19,3.12
+PC2000-8,high blowby pressure,18,2.96
+PC2000-8,rail press. low error,15,2.47
+PC2000-8,auto grease press sensor abnormality,14,2.3
+PC2000-8,auto grease abnormality,12,1.97
+PC2000-8,throttle sensor low error,12,1.97
+PC2000-8,auto grease sol.open circuit,9,1.48
+PC2000-8,eng. oil level low,7,1.15
+PC2000-8,rad fan pump press sensor abnormality,7,1.15
+PC2000-8,arm throttle valve/l sol. short circuit,6,0.99
+PC2000-8,bucket curl hi cancel sol. short circuit,6,0.99
+PC2000-8,low upper alr.charge voltage,6,0.99
+PC2000-8,very high lbf cyl. exhaust temp,6,0.99
+PC2000-8,rail press. very low error,5,0.82
+PC2000-8,high lbf cyl. exhaust temp,4,0.66
+PC2000-8,komnet datalink timeout error,4,0.66
+PC2000-8,vhms source voltage error,4,0.66
+PC2000-8,vl1/p1r relief press abnormality,3,0.49
+PC2000-8,eng. backup speed sensor error,2,0.33
+PC2000-8,exhaust temp. sensor lbf failure,2,0.33
+PC2000-8,grid heater relay open error,2,0.33
+PC2000-8,rail press. sensor high error,2,0.33
+PC2000-8,blowby pres. sensor failure,1,0.16
+PC2000-8,bucket curl hi cancel sol. open circuit,1,0.16
+PC2000-8,vl1/p1r pump press sensor abnormality,1,0.16
+PC210-10M0,water in fuel sensor main or (r)+input signal out of scope,1328,9.49
+PC210-10M0,fan clutch fan speed sensor+deterioration,998,7.13
+PC210-10M0,air mix damper+malfunction,877,6.26
+PC210-10M0,fan control solenoid valve+open circuit,737,5.26
+PC210-10M0,eng.blow-by pressure+pressure high error,722,5.16
+PC210-10M0,fan clutch fan speed sensor+open circuit,668,4.77
+PC210-10M0,coolant+decrease in quantity,650,4.64
+PC210-10M0,hyd filter bypass valve sensor 1+defective function,470,3.36
+PC210-10M0,hyd filter bypass valve sensor 1+clogging,450,3.21
+PC210-10M0,rail press low error,438,3.13
+PC210-10M0,ventilation damper+malfunction,401,2.86
+PC210-10M0,hyd pump swash plate angle sensor f+defective function,356,2.54
+PC210-10M0,hyd pump swash plate angle sensor r+defective function,354,2.53
+PC210-10M0,engine oil+decrease in quantity,314,2.24
+PC210-10M0,eng oil press sw error,244,1.74
+PC210-10M0,blow-by pressure sensor+defective function,228,1.63
+PC210-10M0,ventilating sensor+open circuit,226,1.61
+PC210-10M0,alternator+defective charging,191,1.36
+PC210-10M0,back-up alarm buzzer+short circuit,162,1.16
+PC210-10M0,rail press very low error,158,1.13
+PC210-10M0,wiper motor+defective function,154,1.1
+PC210-10M0,coolant+servicing,148,1.06
+PC210-10M0,bucket curl ppc pressure sensor+defective function,144,1.03
+PC210-10M0,air cleaner element+clogging,138,0.99
+PC210-10M0,merge-divider main epc solenoid vlv+open circuit,114,0.81
+PC210-10M0,bucket dump ppc pressure sensor+defective function,112,0.8
+PC210-10M0,rear pump oil pressure sensor+defective function,108,0.77
+PC210-10M0,arm in ppc pressure sensor+defective function,106,0.76
+PC210-10M0,hydraulic oil temperature sensor+open circuit,100,0.71
+PC210-10M0,swing left ppc pressure sensor+defective function,100,0.71
+PC210-10M0,air controller can communication 2+communication error (compo line),97,0.69
+PC210-10M0,arm dump ppc pressure sensor+defective function,96,0.69
+PC210-10M0,front pump oil pressure sensor+defective function,94,0.67
+PC210-10M0,personal code relay+open circut or short circuit,94,0.67
+PC210-10M0,swing right ppc pressure sensor+defective function,94,0.67
+PC210-10M0,rail press sensor high error,88,0.63
+PC210-10M0,throttle sensor low error,84,0.6
+PC210-10M0,boom down ppc pressure sensor+defective function,80,0.57
+PC210-10M0,pc-epc(r) solenoide valve+open circuit,80,0.57
+PC210-10M0,boom up ppc pressure sensor+defective function,76,0.54
+PC210-10M0,g/p controller output sensor line 2+out put voltage drop,74,0.53
+PC210-10M0,2stage back pressure solenoid valve+short circuit,69,0.49
+PC210-10M0,swing brake solenoid valve+open circuit,66,0.47
+PC210-10M0,komtrax gps antenna cable+open circuit,58,0.41
+PC210-10M0,ls control epc solenoid valve+open circuit,58,0.41
+PC210-10M0,pc-epc(f) solenoide valve+open circuit,58,0.41
+PC210-10M0,travel ppc p.sensor;forward right+defective function,56,0.4
+PC210-10M0,inner sensor+open circuit,54,0.39
+PC210-10M0,monitor cntrlr can communicaton 2+communication error (compo line),54,0.39
+PC210-10M0,2stage back pressure solenoid valve+open circuit,50,0.36
+PC210-10M0,rail press high error,50,0.36
+PC210-10M0,coolant+overheat,46,0.33
+PC210-10M0,merge-divider ls epc solenoid vlv+open circuit,46,0.33
+PC210-10M0,outer sensor+open circuit,46,0.33
+PC210-10M0,fan control solenoid valve+short circuit,42,0.3
+PC210-10M0,engine oil+low oil pressure,40,0.29
+PC210-10M0,throttle sensor high error,38,0.27
+PC210-10M0,imv/pcv1 open error,36,0.26
+PC210-10M0,refrigerant+input signal out of scope,34,0.24
+PC210-10M0,gps module+malfunction,32,0.23
+PC210-10M0,swing stroke control solenoid valve+open circuit,32,0.23
+PC210-10M0,travel ppc p.sensor;forward left+defective function,32,0.23
+PC210-10M0,merge-divider ls epc solenoid vlv+short circuit,30,0.21
+PC210-10M0,2-stage relief solenoid valve+open circuit,28,0.2
+PC210-10M0,att. flow ppc adjust solenoid valve+open circuit,28,0.2
+PC210-10M0,g/p controller can communication 2+communication error (compo line),28,0.2
+PC210-10M0,rail press sensor low error,28,0.2
+PC210-10M0,travel ppc p.sensor;backward left+defective function,28,0.2
+PC210-10M0,inj #2(l#2) open/short error,26,0.19
+PC210-10M0,chg air temp sensor high error,24,0.17
+PC210-10M0,g/p controller model select line+model select signal mismatch,22,0.16
+PC210-10M0,governor and pump controller+malfunction,22,0.16
+PC210-10M0,wiper motor+open circuit,22,0.16
+PC210-10M0,travel speed solenoid valve+open circuit,21,0.15
+PC210-10M0,att serv valve changeover solenoid+open circuit,20,0.14
+PC210-10M0,c/r eng cntrlr can communication 2+communication error (compo line),20,0.14
+PC210-10M0,grid htr relay volt low error,20,0.14
+PC210-10M0,sunlight sensor+open circut or short circuit,20,0.14
+PC210-10M0,swing motor 2stage relief solenoid+open circuit,20,0.14
+PC210-10M0,chg air temp high torque derate,18,0.13
+PC210-10M0,g/p controller output power line+source voltage drop,18,0.13
+PC210-10M0,inj #5(l#5) open/short error,18,0.13
+PC210-10M0,travel ppc p.sensor;backward right+defective function,18,0.13
+PC210-10M0,air cleaner clogging sensor(1)+open circuit,16,0.11
+PC210-10M0,battery relay+short circuit,16,0.11
+PC210-10M0,chg air press sensor high error,16,0.11
+PC210-10M0,g/p controller can communication+communication error (compo line),16,0.11
+PC210-10M0,hydraulic oil+overheat,16,0.11
+PC210-10M0,inj #4(l#4) open/short error,16,0.11
+PC210-10M0,rail press very high error,16,0.11
+PC210-10M0,eng ne speed sensor error,14,0.1
+PC210-10M0,inj #3(l#3) open/short error,14,0.1
+PC210-10M0,ls control epc solenoid valve+short circuit,14,0.1
+PC210-10M0,merge-divider main epc solenoid vlv+short circuit,14,0.1
+PC210-10M0,monitor cntrlr operating lamp+short circuit,14,0.1
+PC210-10M0,outer sensor+short circuit,14,0.1
+PC210-10M0,chg air press sensor low error,12,0.09
+PC210-10M0,f-o-v aux camera2 image reverse i/p+input signal out of scope,12,0.09
+PC210-10M0,throt sens sup volt low error,12,0.09
+PC210-10M0,eng bkup speed sensor error,10,0.07
+PC210-10M0,hydraulic oil temperature sensor+short circuit,10,0.07
+PC210-10M0,travel neutral solenoid valve+open circuit,10,0.07
+PC210-10M0,additional hyd oil filter clog sw+open circuit,9,0.06
+PC210-10M0,ambient press sens low error,8,0.06
+PC210-10M0,komtrax operating lamp+open circuit,8,0.06
+PC210-10M0,monitor cntrlr operating lamp+open circuit,8,0.06
+PC210-10M0,pc-epc(f) solenoide valve+short circuit,8,0.06
+PC210-10M0,pc-epc(r) solenoide valve+short circuit,8,0.06
+PC210-10M0,komtrax operating lamp+short circuit,6,0.04
+PC210-10M0,sens supply 2 volt low error,6,0.04
+PC210-10M0,water in fuel sensor high error,6,0.04
+PC210-10M0,battery voltage high error,4,0.03
+PC210-10M0,g/p controller can communication+malfunction,4,0.03
+PC210-10M0,komtrax(gw) controller+controller inside failure,4,0.03
+PC210-10M0,att serv valve changeover solenoid+short circuit,2,0.01
+PC210-10M0,c/r eng cntrlr can communication+communication error (compo line),2,0.01
+PC210-10M0,electric priming pump relay+open circuit,2,0.01
+PC210-10M0,eng ne and bkup speed sens error,2,0.01
+PC210-10M0,eng oil press sensor low error,2,0.01
+PC210-10M0,f-o-v aux camera3 image reverse i/p+input signal out of scope,2,0.01
+PC210-10M0,g/p controller output sensor line 1+out put voltage drop,2,0.01
+PC210-10M0,imv solenoid error,2,0.01
+PC210-10M0,inj #1(l#1) open/short error,2,0.01
+PC210-10M0,inj #6(l#6) open/short error,2,0.01
+PC210-10M0,komtrax cntrlr can communication 2+communication error (compo line),2,0.01
+PC210-10M0,sens supply 2 volt high error,2,0.01
+PC210-10M0,wind washer motor+short circuit,2,0.01
+PC210-10M0,wiper motor (clockwise)+short circuit,2,0.01
+PC210-10M0,ventilating sensor+short circuit,1,0.01
+PC210LC-10M0,fan clutch fan speed sensor+deterioration,6,50.0
+PC210LC-10M0,outer sensor+open circuit,6,50.0
+PC300-8,komtrax gps antenna cable+open circuit,8,80.0
+PC300-8,engine oil+low oil pressure,2,20.0
+PC300-8M0,water in fuel sensor high error,1190,18.5
+PC300-8M0,engine oil+decrease in quantity,934,14.52
+PC300-8M0,rail press low error,326,5.07
+PC300-8M0,air mix damper+malfunction,318,4.94
+PC300-8M0,air cleaner element+clogging,296,4.6
+PC300-8M0,coolant+decrease in quantity,283,4.4
+PC300-8M0,water in fuel sensor low error,224,3.48
+PC300-8M0,back-up alarm buzzer+short circuit,220,3.42
+PC300-8M0,ventilating sensor+open circuit,185,2.88
+PC300-8M0,ventilation damper+malfunction,175,2.72
+PC300-8M0,air cleaner clogging sensor(1)+open circuit,101,1.57
+PC300-8M0,eng oil press sw error,98,1.52
+PC300-8M0,imv/pcv1 open error,98,1.52
+PC300-8M0,alternator+defective charging,95,1.48
+PC300-8M0,rail press very low error,94,1.46
+PC300-8M0,personal code relay+open circut or short circuit,90,1.4
+PC300-8M0,bucket curl ppc pressure sensor+defective function,70,1.09
+PC300-8M0,outer sensor+open circuit,68,1.06
+PC300-8M0,travel ppc p.sensor;forward left+defective function,66,1.03
+PC300-8M0,g/p controller output power line+source voltage drop,58,0.9
+PC300-8M0,air controller can communication 2+communication error (compo line),57,0.89
+PC300-8M0,boom down ppc pressure sensor+defective function,54,0.84
+PC300-8M0,travel ppc p.sensor;backward right+defective function,52,0.81
+PC300-8M0,travel ppc p.sensor;forward right+defective function,52,0.81
+PC300-8M0,coolant+servicing,50,0.78
+PC300-8M0,rail press very high error,46,0.72
+PC300-8M0,eng ne speed sensor error,44,0.68
+PC300-8M0,fuel feed pump open error,44,0.68
+PC300-8M0,travel ppc p.sensor;backward left+defective function,44,0.68
+PC300-8M0,2stage back pressure solenoid valve+open circuit,43,0.67
+PC300-8M0,arm dump ppc pressure sensor+defective function,34,0.53
+PC300-8M0,arm in ppc pressure sensor+defective function,34,0.53
+PC300-8M0,bucket dump ppc pressure sensor+defective function,34,0.53
+PC300-8M0,boom up ppc pressure sensor+defective function,32,0.5
+PC300-8M0,gps module+malfunction,30,0.47
+PC300-8M0,swing right ppc pressure sensor+defective function,30,0.47
+PC300-8M0,c/r eng cntrlr can communication 2+communication error (compo line),28,0.44
+PC300-8M0,pump merger-divider solenoid valve+open circuit,28,0.44
+PC300-8M0,rail press sensor high error,28,0.44
+PC300-8M0,wiper motor+defective function,28,0.44
+PC300-8M0,coolant+overheat,26,0.4
+PC300-8M0,ls control epc solenoid valve+open circuit,26,0.4
+PC300-8M0,travel neutral solenoid valve+open circuit,26,0.4
+PC300-8M0,2stage back pressure solenoid valve+short circuit,24,0.37
+PC300-8M0,pc-epc(f) solenoide valve+open circuit,24,0.37
+PC300-8M0,swing left ppc pressure sensor+defective function,24,0.37
+PC300-8M0,throttle sensor low error,24,0.37
+PC300-8M0,engine oil+low oil pressure,22,0.34
+PC300-8M0,g/p controller output sensor line 2+out put voltage drop,22,0.34
+PC300-8M0,refrigerant+input signal out of scope,22,0.34
+PC300-8M0,swing brake solenoid valve+open circuit,22,0.34
+PC300-8M0,front pump oil pressure sensor+defective function,20,0.31
+PC300-8M0,2-stage relief solenoid valve+open circuit,19,0.3
+PC300-8M0,throttle sensor high error,18,0.28
+PC300-8M0,imv solenoid error,16,0.25
+PC300-8M0,rail press high error,14,0.22
+PC300-8M0,rear pump oil pressure sensor+defective function,14,0.22
+PC300-8M0,g/p controller can communication 2+communication error (compo line),12,0.19
+PC300-8M0,inj #1(l#1) open/short error,12,0.19
+PC300-8M0,inj #3(l#3) open/short error,12,0.19
+PC300-8M0,monitor cntrlr serial communication+malfunction,12,0.19
+PC300-8M0,outer sensor+short circuit,12,0.19
+PC300-8M0,2-stage relief solenoid valve+short circuit,11,0.17
+PC300-8M0,att serv valve changeover solenoid+open circuit,10,0.16
+PC300-8M0,coolant temp sens high error,10,0.16
+PC300-8M0,g/p controller output sensor line 1+out put voltage drop,10,0.16
+PC300-8M0,grid htr relay volt low error,10,0.16
+PC300-8M0,inner sensor+open circuit,10,0.16
+PC300-8M0,ambient press sens high error,8,0.12
+PC300-8M0,chg air press sensor low error,8,0.12
+PC300-8M0,eng bkup speed sensor error,8,0.12
+PC300-8M0,fuel feed pump short error,8,0.12
+PC300-8M0,inner sensor+short circuit,8,0.12
+PC300-8M0,komtrax cntrlr can communication 2+communication error (compo line),8,0.12
+PC300-8M0,komtrax gps antenna cable+open circuit,8,0.12
+PC300-8M0,wiper motor (clockwise)+short circuit,8,0.12
+PC300-8M0,att. flow ppc adjust solenoid valve+open circuit,6,0.09
+PC300-8M0,chg air temp sensor high error,6,0.09
+PC300-8M0,eng oil press sensor low error,6,0.09
+PC300-8M0,pump press balance error,6,0.09
+PC300-8M0,rail press sensor low error,6,0.09
+PC300-8M0,wind washer motor+open circuit,6,0.09
+PC300-8M0,battery relay+short circuit,4,0.06
+PC300-8M0,chg air temp high torque derate,4,0.06
+PC300-8M0,egr valve sol current high error,4,0.06
+PC300-8M0,egr valve sol current low error,4,0.06
+PC300-8M0,inj #2(l#2) open/short error,4,0.06
+PC300-8M0,monitor cntrlr can communicaton 2+communication error (compo line),4,0.06
+PC300-8M0,ne speed sens supply volt error,4,0.06
+PC300-8M0,swing brake solenoid valve+short circuit,4,0.06
+PC300-8M0,travel neutral solenoid valve+short circuit,4,0.06
+PC300-8M0,travel speed solenoid valve+open circuit,4,0.06
+PC300-8M0,wind washer motor+short circuit,4,0.06
+PC300-8M0,chg air press sensor high error,2,0.03
+PC300-8M0,coolant temp sens low error,2,0.03
+PC300-8M0,eng ne and bkup speed sens error,2,0.03
+PC300-8M0,hydraulic oil+overheat,2,0.03
+PC300-8M0,inj #4(l#4) open/short error,2,0.03
+PC300-8M0,inj #5(l#5) open/short error,2,0.03
+PC300-8M0,inj #6(l#6) open/short error,2,0.03
+PC300-8M0,injectors drive circuit error,2,0.03
+PC300-8M0,travel speed solenoid valve+short circuit,2,0.03
+PC300-8M0,ventilating sensor+short circuit,2,0.03
+PC300-8M0,wiper motor (counter clockwise)+short circuit,2,0.03
+PC300-8M0,wiper motor+open circuit,2,0.03
+PC300-8M2,hyd filter bypass valve sensor 1+clogging,98,24.5
+PC300-8M2,water in fuel sensor high error,68,17.0
+PC300-8M2,eng.blow-by pressure+pressure high error,60,15.0
+PC300-8M2,rail press low error,32,8.0
+PC300-8M2,blow-by pressure sensor+defective function,24,6.0
+PC300-8M2,air cleaner element+clogging,19,4.75
+PC300-8M2,air cleaner clogging sensor(1)+open circuit,14,3.5
+PC300-8M2,additional hyd oil filter clog sw+open circuit,9,2.25
+PC300-8M2,coolant+decrease in quantity,8,2.0
+PC300-8M2,personal code relay+open circut or short circuit,8,2.0
+PC300-8M2,rail press very high error,8,2.0
+PC300-8M2,rail press very low error,8,2.0
+PC300-8M2,water in fuel sensor low error,8,2.0
+PC300-8M2,monitor ctllr model select harness+model select signal mismatch,6,1.5
+PC300-8M2,swing brake solenoid valve+open circuit,4,1.0
+PC300-8M2,alternator+defective charging,2,0.5
+PC300-8M2,coolant+overheat,2,0.5
+PC300-8M2,coolant+servicing,2,0.5
+PC300-8M2,engine oil+decrease in quantity,2,0.5
+PC300-8M2,f-o-v aux camera2 image reverse i/p+input signal out of scope,2,0.5
+PC300-8M2,f-o-v aux camera3 image reverse i/p+input signal out of scope,2,0.5
+PC300-8M2,g/p controller output power line+source voltage drop,2,0.5
+PC300-8M2,inj #6(l#6) open/short error,2,0.5
+PC300-8M2,rail press sensor high error,2,0.5
+PC300-8M2,refrigerant+input signal out of scope,2,0.5
+PC300-8M2,sunlight sensor+open circut or short circuit,2,0.5
+PC300-8M2,ventilation damper+malfunction,2,0.5
+PC300-8M2,wind washer motor+short circuit,2,0.5
+PC300LC-8,engine oil+decrease in quantity,14,24.14
+PC300LC-8,arm in ppc pressure sensor+defective function,6,10.34
+PC300LC-8,bucket curl ppc pressure sensor+defective function,6,10.34
+PC300LC-8,coolant+decrease in quantity,6,10.34
+PC300LC-8,rail press low error,6,10.34
+PC300LC-8,water in fuel sensor high error,6,10.34
+PC300LC-8,eng oil press sw error,4,6.9
+PC300LC-8,rail press very low error,4,6.9
+PC300LC-8,imv/pcv1 open error,2,3.45
+PC300LC-8,pump press balance error,2,3.45
+PC300LC-8,wiper motor+defective function,2,3.45
+PC3400-11M0,engine coolant temperature - data valid but above normal operating range - moderately severe level,22,11.7
+PC3400-11M0,at least one module has a most severe fault - condition exists,20,10.64
+PC3400-11M0,persistent data lost error,20,10.64
+PC3400-11M0,camera7+open circuit,18,9.57
+PC3400-11M0,boom cylinder head press sensor+defective function,12,6.38
+PC3400-11M0,arm cyl pressure sensor3+defective function,8,4.26
+PC3400-11M0,hyd pump 3 oil pressure sensor+defective function,8,4.26
+PC3400-11M0,"power supply lost with ignition on - data erratic, intermittent, or incorrect",8,4.26
+PC3400-11M0,boom angle sensor+defective function,6,3.19
+PC3400-11M0,exhaust gas temperature deviation low for cylinder 2 - data valid but below normal operating range - least severe level,6,3.19
+PC3400-11M0,ladder_proximity_switch+on/off signal doesnt match,6,3.19
+PC3400-11M0,exhaust gas temperature cylinder 1 - data valid but above normal operational range - moderately severe level,4,2.13
+PC3400-11M0,hyd fan pump pressure sensor 2+defective function,4,2.13
+PC3400-11M0,service arm upper position switch+on/off signal doesnt match,4,2.13
+PC3400-11M0,arm cyl pressure sensor1+defective function,2,1.06
+PC3400-11M0,boom spool stroke sensor1+defective function,2,1.06
+PC3400-11M0,c/r eng cntrlr can communication 2+communication error (compo line),2,1.06
+PC3400-11M0,chg air temp sensor high error,2,1.06
+PC3400-11M0,coolant temp sens high error,2,1.06
+PC3400-11M0,engine fuel temperature - data valid but above normal operating range - moderately severe level,2,1.06
+PC3400-11M0,exhaust gas temperature cylinder 6 - data valid but above normal operational range - moderately severe level,2,1.06
+PC3400-11M0,exhaust gas temperature deviation low for cylinder 5 - data valid but below normal operating range - least severe level,2,1.06
+PC3400-11M0,fuel pump delivery pressure - data valid but below normal operating range - least severe level,2,1.06
+PC3400-11M0,fuel pump delivery pressure - data valid but below normal operating range - moderately severe level,2,1.06
+PC3400-11M0,"intake manifold 2 temperature sensor circuit - voltage above normal, or shorted to high source",2,1.06
+PC3400-11M0,"intake manifold 3 temperature sensor circuit - voltage above normal, or shorted to high source",2,1.06
+PC3400-11M0,"intake manifold 4 temperature sensor circuit - voltage above normal, or shorted to high source",2,1.06
+PC3400-11M0,komtrax plus controller+malfunction,2,1.06
+PC3400-11M0,"komtrax plus,ethernet comm 2+communication error (compo line)",2,1.06
+PC3400-11M0,leak oil filter+clogging,2,1.06
+PC3400-11M0,ppc pressure lock solenoid valve+defective function,2,1.06
+PC3400-11M0,rail press low error,2,1.06
+PC3400-11M0,service arm up solenoid+open circuit,2,1.06
+PC3400-11M0,swing brake solenoid valve+open circuit,2,1.06
+PC3400-11M0,water in fuel indicator - data valid but above normal operational range - least severe level,2,1.06
+PC350LC-8M2,hyd filter bypass valve sensor 1+clogging,94,25.75
+PC350LC-8M2,air cleaner element+clogging,58,15.89
+PC350LC-8M2,air cleaner clogging sensor(1)+open circuit,54,14.79
+PC350LC-8M2,water in fuel sensor high error,30,8.22
+PC350LC-8M2,eng.blow-by pressure+pressure high error,28,7.67
+PC350LC-8M2,back-up alarm buzzer+short circuit,18,4.93
+PC350LC-8M2,blow-by pressure sensor+defective function,16,4.38
+PC350LC-8M2,rail press low error,12,3.29
+PC350LC-8M2,coolant+overheat,8,2.19
+PC350LC-8M2,water in fuel sensor low error,8,2.19
+PC350LC-8M2,coolant+decrease in quantity,7,1.92
+PC350LC-8M2,g/p controller output power line+source voltage drop,6,1.64
+PC350LC-8M2,personal code relay+open circut or short circuit,6,1.64
+PC350LC-8M2,swing brake solenoid valve+open circuit,6,1.64
+PC350LC-8M2,rail press very low error,4,1.1
+PC350LC-8M2,alternator+defective charging,2,0.55
+PC350LC-8M2,bucket curl ppc pressure sensor+defective function,2,0.55
+PC350LC-8M2,c/r eng cntrlr can communication 2+communication error (compo line),2,0.55
+PC350LC-8M2,chg air temp high torque derate,2,0.55
+PC350LC-8M2,refrigerant+input signal out of scope,2,0.55
+PC400LC-8R,wind washer motor+open circuit,588,24.84
+PC400LC-8R,komtrax gps antenna cable+open circuit,240,10.14
+PC400LC-8R,att serv valve changeover solenoid+open circuit,150,6.34
+PC400LC-8R,coolant+decrease in quantity,144,6.08
+PC400LC-8R,air cleaner element+clogging,134,5.66
+PC400LC-8R,alternator+defective charging,116,4.9
+PC400LC-8R,engine oil+decrease in quantity,78,3.3
+PC400LC-8R,rail press low error,56,2.37
+PC400LC-8R,arm in ppc pressure sensor+defective function,52,2.2
+PC400LC-8R,bucket curl ppc pressure sensor+defective function,48,2.03
+PC400LC-8R,rear pump oil pressure sensor+defective function,42,1.77
+PC400LC-8R,front pump oil pressure sensor+defective function,40,1.69
+PC400LC-8R,ls control epc solenoid valve+open circuit,40,1.69
+PC400LC-8R,travel neutral solenoid valve+open circuit,34,1.44
+PC400LC-8R,ambient press sens low error,32,1.35
+PC400LC-8R,pump merger-divider solenoid valve+open circuit,32,1.35
+PC400LC-8R,throttle sensor high error,32,1.35
+PC400LC-8R,2-stage relief solenoid valve+open circuit,30,1.27
+PC400LC-8R,2-stage relief solenoid valve+short circuit,30,1.27
+PC400LC-8R,monitor cntrlr pwr source (r-camera)+short circuit,30,1.27
+PC400LC-8R,rail press very low error,30,1.27
+PC400LC-8R,throttle sensor low error,28,1.18
+PC400LC-8R,g/p controller output power line+source voltage drop,26,1.1
+PC400LC-8R,eng bkup speed sensor error,20,0.84
+PC400LC-8R,eng bkup speed sens phase error,16,0.68
+PC400LC-8R,rail press sensor high error,16,0.68
+PC400LC-8R,g/p controller model select line+model select signal mismatch,14,0.59
+PC400LC-8R,monitor controller can communicaton+malfunction,14,0.59
+PC400LC-8R,pcv2 open error,14,0.59
+PC400LC-8R,eng ne speed sensor error,12,0.51
+PC400LC-8R,g/p controller can communication+malfunction,12,0.51
+PC400LC-8R,inj #3(l#3) open/short error,12,0.51
+PC400LC-8R,tvc solenoid valve+open circuit,12,0.51
+PC400LC-8R,ambient press sens high error,10,0.42
+PC400LC-8R,g/p controller output sensor line 1+out put voltage drop,10,0.42
+PC400LC-8R,imv/pcv1 open error,10,0.42
+PC400LC-8R,pump merger-divider solenoid valve+short circuit,10,0.42
+PC400LC-8R,swing brake solenoid valve+open circuit,10,0.42
+PC400LC-8R,throt sens sup volt low error,10,0.42
+PC400LC-8R,wiper motor+defective function,10,0.42
+PC400LC-8R,coolant+overheat,8,0.34
+PC400LC-8R,eng oil press sensor high error,8,0.34
+PC400LC-8R,eng oil press sensor low error,8,0.34
+PC400LC-8R,inj #1(l#1) open/short error,8,0.34
+PC400LC-8R,inj #2(l#2) open/short error,8,0.34
+PC400LC-8R,travel neutral solenoid valve+short circuit,8,0.34
+PC400LC-8R,travel speed solenoid valve+short circuit,7,0.3
+PC400LC-8R,sens supply 2 volt low error,6,0.25
+PC400LC-8R,travel speed solenoid valve+open circuit,6,0.25
+PC400LC-8R,egr valve pos sens low error,4,0.17
+PC400LC-8R,egr valve sol current low error,4,0.17
+PC400LC-8R,eng ne and bkup speed sens error,4,0.17
+PC400LC-8R,engine oil+low oil pressure,4,0.17
+PC400LC-8R,gps module+malfunction,4,0.17
+PC400LC-8R,imv/pcv1 short error,4,0.17
+PC400LC-8R,pcv2 short error,4,0.17
+PC400LC-8R,wind washer motor+short circuit,4,0.17
+PC400LC-8R,att. flow ppc adjust solenoid valve+open circuit,2,0.08
+PC400LC-8R,battery relay+short circuit,2,0.08
+PC400LC-8R,chg air press sensor high error,2,0.08
+PC400LC-8R,chg air press sensor low error,2,0.08
+PC400LC-8R,coolant temp sens high error,2,0.08
+PC400LC-8R,grid htr relay volt low error,2,0.08
+PC400LC-8R,hydraulic oil+overheat,2,0.08
+PC400LC-8R,inj #4(l#4) open/short error,2,0.08
+PC400LC-8R,inj #5(l#5) open/short error,2,0.08
+PC400LC-8R,inj #6(l#6) open/short error,2,0.08
+PC400LC-8R,ls control epc solenoid valve+short circuit,2,0.08
+PC400LC-8R,wiper motor (counter clockwise)+short circuit,2,0.08
+PC45MR-3,komtrax gps antenna cable+open circuit,12,54.55
+PC45MR-3,monitor cntrlr can communicaton 2+communication error (compo line),8,36.36
+PC45MR-3,gps module+malfunction,2,9.09
+PC500LC-10R,fan clutch fan speed sensor+deterioration,148,16.16
+PC500LC-10R,lock lever auto lock release switch+operation,98,10.7
+PC500LC-10R,hyd filter bypass valve sensor 1+clogging,94,10.26
+PC500LC-10R,air mix damper+malfunction,73,7.97
+PC500LC-10R,fan clutch fan speed sensor+open circuit,52,5.68
+PC500LC-10R,eng.blow-by pressure+pressure high error,46,5.02
+PC500LC-10R,coolant+decrease in quantity,28,3.06
+PC500LC-10R,ventilating sensor+open circuit,25,2.73
+PC500LC-10R,engine oil+decrease in quantity,24,2.62
+PC500LC-10R,komtrax gps antenna cable+open circuit,24,2.62
+PC500LC-10R,ambient press sens low error,20,2.18
+PC500LC-10R,rail press low error,20,2.18
+PC500LC-10R,coolant+servicing,18,1.97
+PC500LC-10R,fan control solenoid valve+open circuit,16,1.75
+PC500LC-10R,rear pump oil pressure sensor+defective function,12,1.31
+PC500LC-10R,f-o-v aux camera2 image reverse i/p+input signal out of scope,10,1.09
+PC500LC-10R,hyd filter bypass valve sensor 1+defective function,10,1.09
+PC500LC-10R,rail press sensor high error,10,1.09
+PC500LC-10R,throttle sensor low error,10,1.09
+PC500LC-10R,travel ppc p.sensor;forward left+defective function,10,1.09
+PC500LC-10R,arm dump ppc pressure sensor+defective function,8,0.87
+PC500LC-10R,arm in ppc pressure sensor+defective function,8,0.87
+PC500LC-10R,eng ne speed sensor error,8,0.87
+PC500LC-10R,f-o-v aux camera3 image reverse i/p+input signal out of scope,8,0.87
+PC500LC-10R,outer sensor+open circuit,8,0.87
+PC500LC-10R,travel neutral solenoid valve+open circuit,8,0.87
+PC500LC-10R,water in fuel sensor main or (r)+input signal out of scope,8,0.87
+PC500LC-10R,front pump oil pressure sensor+defective function,6,0.66
+PC500LC-10R,hydraulic oil temperature sensor+open circuit,6,0.66
+PC500LC-10R,throttle sensor high error,6,0.66
+PC500LC-10R,ventilation damper+malfunction,6,0.66
+PC500LC-10R,blow-by pressure sensor+defective function,4,0.44
+PC500LC-10R,boom up ppc pressure sensor+defective function,4,0.44
+PC500LC-10R,camera controller can2+communication error (compo line),4,0.44
+PC500LC-10R,chg air press sensor low error,4,0.44
+PC500LC-10R,pc-epc(r) solenoide valve+open circuit,4,0.44
+PC500LC-10R,personal code relay+open circut or short circuit,4,0.44
+PC500LC-10R,rail press sensor low error,4,0.44
+PC500LC-10R,rail press very low error,4,0.44
+PC500LC-10R,swing left ppc pressure sensor+defective function,4,0.44
+PC500LC-10R,travel ppc p.sensor;backward left+defective function,4,0.44
+PC500LC-10R,travel ppc p.sensor;backward right+defective function,4,0.44
+PC500LC-10R,travel ppc p.sensor;forward right+defective function,4,0.44
+PC500LC-10R,work equipment lever lock switch+open circuit,4,0.44
+PC500LC-10R,2-stage relief solenoid valve+open circuit,3,0.33
+PC500LC-10R,2stage back pressure solenoid valve+short circuit,3,0.33
+PC500LC-10R,air controller can communication 2+communication error (compo line),2,0.22
+PC500LC-10R,ambient press sens high error,2,0.22
+PC500LC-10R,boom down ppc pressure sensor+defective function,2,0.22
+PC500LC-10R,bucket curl ppc pressure sensor+defective function,2,0.22
+PC500LC-10R,bucket dump ppc pressure sensor+defective function,2,0.22
+PC500LC-10R,g/p controller output sensor line 1+out put voltage drop,2,0.22
+PC500LC-10R,governor and pump controller+malfunction,2,0.22
+PC500LC-10R,imv/pcv1 open error,2,0.22
+PC500LC-10R,merge-divider ls epc solenoid vlv+open circuit,2,0.22
+PC500LC-10R,monitor cntrlr operating lamp+short circuit,2,0.22
+PC500LC-10R,swing brake solenoid valve+open circuit,2,0.22
+PC500LC-10R,swing motor 2stage relief solenoid+open circuit,2,0.22
+PC500LC-10R,swing right ppc pressure sensor+defective function,2,0.22
+PC500LC-10R,wind washer motor+short circuit,2,0.22
+PC500LC-10R,wiper motor+open circuit,2,0.22
+PC70-8,komtrax gps antenna cable+open circuit,56,33.53
+PC70-8,wind washer motor+open circuit,48,28.74
+PC70-8,swing right ppc pressure sensor+defective function,10,5.99
+PC70-8,eng oil press sw error,6,3.59
+PC70-8,imv/pcv1 open error,6,3.59
+PC70-8,pc-epc(f) solenoide valve+open circuit,6,3.59
+PC70-8,rail press high error,6,3.59
+PC70-8,rail press low error,6,3.59
+PC70-8,throttle sensor high error,6,3.59
+PC70-8,travelng ppc pressure presusor sensor+input signal out of scope,5,2.99
+PC70-8,engine oil+low oil pressure,4,2.4
+PC70-8,g/p controller output power line+source voltage drop,4,2.4
+PC70-8,coolant+overheat,2,1.2
+PC70-8,rail press very low error,2,1.2
+PC850-8R1,komtrax gps antenna cable+open circuit,72,27.07
+PC850-8R1,wind washer motor+open circuit,44,16.54
+PC850-8R1,engine oil+decrease in quantity,22,8.27
+PC850-8R1,coolant+decrease in quantity,21,7.89
+PC850-8R1,swing solenoid valve+short circuit,12,4.51
+PC850-8R1,throttle sensor high error,10,3.76
+PC850-8R1,step light relay+open circuit,8,3.01
+PC850-8R1,g/p controller output power line+source voltage drop,6,2.26
+PC850-8R1,hyd pump 1 oil pressure sensor+open circuit,6,2.26
+PC850-8R1,imv/pcv1 open error,6,2.26
+PC850-8R1,swing brake solenoid valve+open circuit,6,2.26
+PC850-8R1,eng ne and bkup speed sens error,4,1.5
+PC850-8R1,eng ne speed sensor error,4,1.5
+PC850-8R1,fan pump epc solenoid valve+open circuit,4,1.5
+PC850-8R1,hyd pump epc solenoid valve1+open circuit,4,1.5
+PC850-8R1,hyd pump epc solenoid valve2+open circuit,4,1.5
+PC850-8R1,2-stage relief solenoid valve+open circuit,3,1.13
+PC850-8R1,air cleaner element+clogging,2,0.75
+PC850-8R1,alternator+defective charging,2,0.75
+PC850-8R1,ambient press sens low error,2,0.75
+PC850-8R1,coolant temp sens low error,2,0.75
+PC850-8R1,coolant+overheat,2,0.75
+PC850-8R1,fuel temp sensor low error,2,0.75
+PC850-8R1,hyd pump 2 oil pressure sensor+open circuit,2,0.75
+PC850-8R1,j/s differental pressure 2+open circuit,2,0.75
+PC850-8R1,j/s differental pressure 2+short circuit,2,0.75
+PC850-8R1,pcv2 open error,2,0.75
+PC850-8R1,rail press low error,2,0.75
+PC850-8R1,rail press sensor high error,2,0.75
+PC850-8R1,rail press very low error,2,0.75
+PC850-8R1,throttle sensor low error,2,0.75
+PC850-8R1,travel speed solenoid valve+open circuit,2,0.75
+WA150-5,komtrax gps antenna cable+open circuit,28,23.73
+WA150-5,boom angle sensor+input signal out of scope,14,11.86
+WA150-5,bottom oil pressure sensor+input signal out of scope,14,11.86
+WA150-5,rod oil pressure sensor+input signal out of scope,14,11.86
+WA150-5,monitor cntrlr can communicaton 2+communication error (compo line),12,10.17
+WA150-5,c terminal signal+eng condition and signal not match,8,6.78
+WA150-5,air cleaner (1)+clogging,6,5.08
+WA150-5,front accumulator+low oil pressure,6,5.08
+WA150-5,panel switch(2)+switch depressed too long,4,3.39
+WA150-5,alternator+defective function,2,1.69
+WA150-5,coolant+decrease in quantity,2,1.69
+WA150-5,coolant+overheat,2,1.69
+WA150-5,panel switch(1)+switch depressed too long,2,1.69
+WA150-5,panel switch(3)+switch depressed too long,2,1.69
+WA150-5,panel switch(4)+switch depressed too long,2,1.69
+WA150-6,komtrax gps antenna cable+open circuit,16,20.0
+WA150-6,rail press high error,10,12.5
+WA150-6,coolant+overheat,6,7.5
+WA150-6,eng ne speed sensor error,4,5.0
+WA150-6,fuel level sensor+open circuit,4,5.0
+WA150-6,hst pump+engine over running,4,5.0
+WA150-6,imv/pcv1 open error,4,5.0
+WA150-6,inj #1(l#1) open/short error,4,5.0
+WA150-6,inj #2(l#2) open/short error,4,5.0
+WA150-6,inj #3(l#3) open/short error,4,5.0
+WA150-6,inj #4(l#4) open/short error,4,5.0
+WA150-6,rail press sensor high error,4,5.0
+WA150-6,steering pump+engine over running,4,5.0
+WA150-6,forward & reverse lever+open circuit,2,2.5
+WA150-6,hst controller power source line+on/off signal doesnt match,2,2.5
+WA150-6,rail press low error,2,2.5
+WA150-6,tm shift lever+open circuit,2,2.5
+WA200-5,komtrax gps antenna cable+open circuit,40,19.42
+WA200-5,coolant+decrease in quantity,24,11.65
+WA200-5,c terminal signal+eng condition and signal not match,18,8.74
+WA200-5,hst controller+communication error (compo line),18,8.74
+WA200-5,boom angle sensor+input signal out of scope,14,6.8
+WA200-5,bottom oil pressure sensor+input signal out of scope,14,6.8
+WA200-5,rod oil pressure sensor+input signal out of scope,14,6.8
+WA200-5,coolant+overheat,10,4.85
+WA200-5,hst clutch solenoid valve+open circut or short circuit,10,4.85
+WA200-5,alternator+defective function,8,3.88
+WA200-5,monitor cntrlr can communicaton 2+communication error (compo line),8,3.88
+WA200-5,engine oil+decrease in quantity,6,2.91
+WA200-5,front accumulator+low oil pressure,6,2.91
+WA200-5,hst ep solenoid valve+open circut or short circuit,4,1.94
+WA200-5,panel switch(1)+switch depressed too long,4,1.94
+WA200-5,panel switch(3)+switch depressed too long,4,1.94
+WA200-5,monitor cntrlr battery direct line+source voltage drop,2,0.97
+WA200-5,panel switch(4)+switch depressed too long,2,0.97
+WA200-6,komtrax gps antenna cable+open circuit,14,31.82
+WA200-6,coolant+overheat,10,22.73
+WA200-6,coolant+decrease in quantity,4,9.09
+WA200-6,tm shift lever+open circuit,4,9.09
+WA200-6,water in fuel sensor high error,4,9.09
+WA200-6,alternator+defective function,2,4.55
+WA200-6,forward & reverse lever+open circuit,2,4.55
+WA200-6,komnet datalink timeout error,2,4.55
+WA200-6,rail press low error,2,4.55
+WA320-5,komtrax gps antenna cable+open circuit,40,62.5
+WA320-5,alternator+defective function,8,12.5
+WA320-5,transmission oil filter+clogging,8,12.5
+WA320-5,coolant+decrease in quantity,6,9.38
+WA320-5,front brake oil temperature sensor+open circuit,2,3.12
+WA380-6,water in fuel sensor high error,56,20.51
+WA380-6,engine oil+decrease in quantity,26,9.52
+WA380-6,steering pressure sensor+open circuit,26,9.52
+WA380-6,air cleaner (1)+clogging,19,6.96
+WA380-6,grid htr relay volt low error,18,6.59
+WA380-6,fan pump epc solenoid valve+open circuit,16,5.86
+WA380-6,alternator+defective function,14,5.13
+WA380-6,coolant+overheat,12,4.4
+WA380-6,tm shift lever+open circuit,12,4.4
+WA380-6,rail press low error,10,3.66
+WA380-6,"ecmv tm 2nd clutch+command curency on, fill signal off",8,2.93
+WA380-6,komtrax gps antenna cable+open circuit,8,2.93
+WA380-6,parking brake switch+on/off signal doesnt match,8,2.93
+WA380-6,pump pc-epc valve+open circuit,6,2.2
+WA380-6,t/m valve oil temperature sensor+open circuit,6,2.2
+WA380-6,eng oil press sw error,4,1.47
+WA380-6,forward & reverse lever+open circuit,4,1.47
+WA380-6,hydraulic oil+overheat,4,1.47
+WA380-6,c/r eng cntrlr can communication+communication error (compo line),2,0.73
+WA380-6,chg air press sensor low error,2,0.73
+WA380-6,coolant+decrease in quantity,2,0.73
+WA380-6,"ecmv tm 1st clutch+command curency on, fill signal off",2,0.73
+WA380-6,eng bkup speed sens phase error,2,0.73
+WA380-6,parking brake+defective function,2,0.73
+WA380-6,t/m controller output power line+source voltage drop,2,0.73
+WA380-6,tm cut off pressure sensor+input signal out of scope,2,0.73
+WA380Z-6,komtrax gps antenna cable+open circuit,32,15.38
+WA380Z-6,engine oil+decrease in quantity,24,11.54
+WA380Z-6,fan pump epc solenoid valve+open circuit,22,10.58
+WA380Z-6,water in fuel sensor high error,14,6.73
+WA380Z-6,steering pressure sensor+open circuit,12,5.77
+WA380Z-6,coolant+overheat,10,4.81
+WA380Z-6,"ecmv tm 2nd clutch+command curency on, fill signal off",8,3.85
+WA380Z-6,parking brake switch+on/off signal doesnt match,8,3.85
+WA380Z-6,c/r eng cntrlr can communication+communication error (compo line),6,2.88
+WA380Z-6,hydraulic oil+overheat,6,2.88
+WA380Z-6,hydraulic pump oil pressure sensor+open circuit,6,2.88
+WA380Z-6,komnet datalink timeout error,6,2.88
+WA380Z-6,pump pc-epc valve+open circuit,6,2.88
+WA380Z-6,steering pressure sensor+short circuit,6,2.88
+WA380Z-6,back lamp relay+open circuit,4,1.92
+WA380Z-6,"ecmv tm r-clutch+command curency on, fill signal off",4,1.92
+WA380Z-6,idle validation sw error,4,1.92
+WA380Z-6,monitor controller can communicaton+communication error (compo line),4,1.92
+WA380Z-6,rail press low error,4,1.92
+WA380Z-6,t/m controller can communication+communication error (compo line),4,1.92
+WA380Z-6,tm shift lever+open circuit,4,1.92
+WA380Z-6,air cleaner (1)+clogging,2,0.96
+WA380Z-6,chg air temp high torque derate,2,0.96
+WA380Z-6,coolant+decrease in quantity,2,0.96
+WA380Z-6,"ecmv tm f-clutch+command curency on, fill signal off",2,0.96
+WA380Z-6,forward & reverse lever+open circuit,2,0.96
+WA380Z-6,parking brake+defective function,2,0.96
+WA380Z-6,tm cut off pressure sensor+input signal out of scope,2,0.96
+WA480-6,water in fuel sensor high error,56,19.93
+WA480-6,ambient press sens low error,26,9.25
+WA480-6,komtrax gps antenna cable+open circuit,18,6.41
+WA480-6,t/m input shaft speed sensor+open circuit,16,5.69
+WA480-6,tm shift lever+open circuit,14,4.98
+WA480-6,air cleaner (1)+clogging,13,4.63
+WA480-6,forward & reverse lever+open circuit,12,4.27
+WA480-6,rail press low error,12,4.27
+WA480-6,coolant+decrease in quantity,10,3.56
+WA480-6,engine oil+decrease in quantity,10,3.56
+WA480-6,egr valve pos sens low error,8,2.85
+WA480-6,hydraulic oil+overheat,8,2.85
+WA480-6,rail press very low error,8,2.85
+WA480-6,alternator+defective function,6,2.14
+WA480-6,hydraulic pump oil pressure sensor+short circuit,6,2.14
+WA480-6,imv/pcv1 open error,6,2.14
+WA480-6,eng bkup speed sensor error,4,1.42
+WA480-6,hydraulic pump oil pressure sensor+open circuit,4,1.42
+WA480-6,pcv2 open error,4,1.42
+WA480-6,t/m controller output power line+source voltage drop,4,1.42
+WA480-6,tm cut off switch+switch depressed too long,4,1.42
+WA480-6,alternator+eng condition and signal not match,2,0.71
+WA480-6,brake cooling oil(rear right)+overheat,2,0.71
+WA480-6,c/r eng cntrlr can communication+communication error (compo line),2,0.71
+WA480-6,coolant+overheat,2,0.71
+WA480-6,cooling fan reverse rotation switch+switch depressed too long,2,0.71
+WA480-6,eng oil press sensor low error,2,0.71
+WA480-6,engine oil+low oil pressure,2,0.71
+WA480-6,hydraulic fan speed sensor+open circuit,2,0.71
+WA480-6,hydraulic fan speed sensor+rotating speed signal doesnt match,2,0.71
+WA480-6,kickdwon switch+switch depressed too long,2,0.71
+WA480-6,monitor controller op sensor 1+out put voltage drop,2,0.71
+WA480-6,parking brake switch+on/off signal doesnt match,2,0.71
+WA480-6,rail press sensor high error,2,0.71
+WA480-6,rear accumulator+low oil pressure,2,0.71
+WA480-6,steering pressure sensor+open circuit,2,0.71
+WA480-6,tm shift controller+source voltage drop,2,0.71
+WA500-6R,boom angle sensor+duplicate engagement of tm clutches,102,17.99
+WA500-6R,tm shift lever+open circuit,56,9.88
+WA500-6R,boom angle sensor+open circuit,42,7.41
+WA500-6R,bucket positioner+on/off signal doesnt match,32,5.64
+WA500-6R,forward & reverse lever+open circuit,24,4.23
+WA500-6R,bottom oil pressure sensor+input signal out of scope,20,3.53
+WA500-6R,"ecmv tm 2nd clutch+command curency on, fill signal off",18,3.17
+WA500-6R,fan pump epc solenoid valve+open circuit,18,3.17
+WA500-6R,brake oil temperature sensor(1)+open circuit,14,2.47
+WA500-6R,monitor controller op sensor 1+out put voltage drop,14,2.47
+WA500-6R,parking brake+defective function,14,2.47
+WA500-6R,pump pc-epc valve+open circuit,12,2.12
+WA500-6R,rail press low error,12,2.12
+WA500-6R,komtrax gps antenna cable+open circuit,10,1.76
+WA500-6R,air cleaner (1)+clogging,9,1.59
+WA500-6R,chg air press sensor high error,8,1.41
+WA500-6R,coolant+overheat,8,1.41
+WA500-6R,hydraulic oil+overheat,8,1.41
+WA500-6R,travel speed sensor+short circuit,8,1.41
+WA500-6R,3rd clutch solenoid valve+open circuit,6,1.06
+WA500-6R,boom angle sensor+short circut of power source line,6,1.06
+WA500-6R,boom float magnet detent solenoid v+open circuit,6,1.06
+WA500-6R,boom float magnet detent solenoid v+short circut of power source line,6,1.06
+WA500-6R,boom up magnet deadened solenoid v+open circuit,6,1.06
+WA500-6R,buket tilt magnet detent solenoid v+short circut of power source line,6,1.06
+WA500-6R,coolant+decrease in quantity,6,1.06
+WA500-6R,eng oil press sensor low error,6,1.06
+WA500-6R,engine oil+low oil pressure,6,1.06
+WA500-6R,hydraulic pump oil pressure sensor+open circuit,6,1.06
+WA500-6R,parking brake switch+on/off signal doesnt match,6,1.06
+WA500-6R,t/m input shaft speed sensor+rotating speed signal doesnt match,6,1.06
+WA500-6R,t/m valve oil temperature sensor+open circuit,6,1.06
+WA500-6R,tm cut off pressure sensor+input signal out of scope,6,1.06
+WA500-6R,boom (main) epc potentiometer+analog signal doesnt match,4,0.71
+WA500-6R,boom up magnet deadened solenoid v+short circut of power source line,4,0.71
+WA500-6R,c terminal signal+open circut or short circuit,4,0.71
+WA500-6R,"ecmv tm 1st clutch+command curency on, fill signal off",4,0.71
+WA500-6R,epc potentiometer arm(main)+analog signal doesnt match,4,0.71
+WA500-6R,kickdwon switch+switch depressed too long,4,0.71
+WA500-6R,1st clutch solenoid valve+open circuit,2,0.35
+WA500-6R,2nd clutch solenoid valve+open circuit,2,0.35
+WA500-6R,c/r eng cntrlr can communication+communication error (compo line),2,0.35
+WA500-6R,dump control switch+switch depressed too long,2,0.35
+WA500-6R,"ecmv tm r-clutch+command curency off, fill signal on",2,0.35
+WA500-6R,f clutch solenoid valve+open circuit,2,0.35
+WA500-6R,r clutch solenoid valve+open circuit,2,0.35
+WA500-6R,rail press sensor high error,2,0.35
+WA500-6R,t/m controller output power line+source voltage drop,2,0.35
+WA500-6R,t/m input shaft speed sensor+open circuit,2,0.35
+WA500-6R,t/m valve oil temperature sensor+short circuit,2,0.35
+WA500-6R,travel speed sensor+input signal out of scope,2,0.35
+WA500-6R,w-equip cntrlr can communication+malfunction,2,0.35
+WA500-6R,w-equip cntrlr output power line+source voltage drop,2,0.35
+WA500-6R,3rd extend epc solenoid valve+open circuit,1,0.18
+WA500-6R,3rd shrink epc solenoid valve+short circuit,1,0.18
+WA600-3A,komtrax gps antenna cable+open circuit,6,100.0
+WA800-3,komtrax gps antenna cable+open circuit,54,58.7
+WA800-3,directional switch signal failure,22,23.91
+WA800-3,vhms 12v source sys error,14,15.22
+WA800-3,range switch signal failure,2,2.17
+WA900-8R,boom angle sensor+duplicate engagement of tm clutches,20,15.38
+WA900-8R,swing angle sensor+analog signal doesnt match,14,10.77
+WA900-8R,coolant+decrease in quantity,10,7.69
+WA900-8R,water in fuel sensor (l)+input signal out of scope,10,7.69
+WA900-8R,komtrax plus controller+malfunction,8,6.15
+WA900-8R,"komtrax plus,ethernet comm 2+communication error (compo line)",8,6.15
+WA900-8R,steering angle sensor+open circuit,8,6.15
+WA900-8R,wheel speed sensor (front wheel)+rotating speed signal doesnt match,8,6.15
+WA900-8R,lubricating pressure sensor+input signal out of scope,6,4.62
+WA900-8R,bucket angle sensor+open circuit,4,3.08
+WA900-8R,engine oil+decrease in quantity,4,3.08
+WA900-8R,joystick switch forward/reverse+open circuit,4,3.08
+WA900-8R,steering pressure sensor+open circuit,4,3.08
+WA900-8R,transmission middle clutch+overheat,4,3.08
+WA900-8R,water in fuel sensor main or (r)+input signal out of scope,4,3.08
+WA900-8R,air mix damper+malfunction,2,1.54
+WA900-8R,hydraulic fan speed sensor+open circuit,2,1.54
+WA900-8R,hydraulic fan speed sensor+rotating speed signal doesnt match,2,1.54
+WA900-8R,monitor cntrlr can communicaton 2+communication error (compo line),2,1.54
+WA900-8R,rear view monitor+communication error (compo line),2,1.54
+WA900-8R,rod oil pressure sensor+open circuit,2,1.54
+WA900-8R,trottle lock set/accelerator switch+short circuit,2,1.54
