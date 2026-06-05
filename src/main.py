@@ -38,6 +38,7 @@ class ChatResponse(BaseModel):
     answer: str
     chunks: Optional[List[str]] = []
     sql: Optional[str] = None
+    graph_traversal: Optional[Dict[str, Any]] = None
     token_usage: Optional[Dict[str, int]] = {}
 
 # ===== Endpoints =====
@@ -61,6 +62,7 @@ def chat(request: ChatRequest):
             answer=response.get("answer", ""),
             chunks=response.get("chunks", []),
             sql=response.get("sql"),
+            graph_traversal=response.get("graph_traversal"),
             token_usage=response.get("token_usage", {})
         )
     except Exception as e:

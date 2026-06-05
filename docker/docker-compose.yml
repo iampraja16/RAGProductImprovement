@@ -17,7 +17,18 @@ services:
       - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/data
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      - NEO4J_AUTH=neo4j/mypassword
+      - NEO4J_PLUGINS=["apoc"]
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
 
 volumes:
   pgdata:
   qdrant_data:
+  neo4j_data:

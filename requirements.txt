@@ -25,6 +25,9 @@ pydantic-settings>=2.0.0
 qdrant-client>=1.7.0
 langchain-qdrant>=0.1.0
 
+# --- Graph Database ---
+neo4j>=5.0.0
+
 # --- SQL Analytics ---
 vanna==0.7.4
 psycopg2-binary>=2.9.0

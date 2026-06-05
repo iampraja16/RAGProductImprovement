@@ -3,9 +3,10 @@ from pydantic import BaseModel, Field
 from typing import List, Callable, Dict, Any, Type
 import logging
 
-from .utils import get_vector_store, get_vanna
+from .utils import get_vector_store, get_vanna, get_graph_client, get_embeddings
 from .config import settings
 from .executive_summary import generate_summary
+from .graph_client import format_graph_result
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +91,9 @@ def ask_emr_knowledge(query: str) -> Dict[str, Any]:
 @register_tool(args_schema=QueryArgs)
 def ask_emr_database(query: str) -> Dict[str, Any]:
     """
-    Queries the structured EMR database using SQL.
+    Queries the structured EMR database.
+    The 'query' argument MUST be the original user's question in natural language (Bahasa Indonesia/Inggris).
+    DO NOT generate or pass a SQL query as the argument. Pass the raw question as is.
     Use this tool ONLY for quantitative and analytical questions, such as:
     - Counts (e.g., berapa banyak, total, jumlah)
     - Trends over time
@@ -100,7 +103,7 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
     logger.info(f"Using tool ask_emr_database for query: {query}")
     try:
         vn = get_vanna()
-        sql = vn.generate_sql(query)
+        sql = vn.generate_sql(query, allow_llm_to_see_data=True)
         logger.info(f"Generated SQL: {sql}")
         
         if not sql:
@@ -121,6 +124,62 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error in ask_emr_database: {e}")
         return {"answer": f"Error querying database: {e}", "chunks": None, "sql": None}
+
+@register_tool(args_schema=QueryArgs)
+def ask_emr_graph(query: str) -> Dict[str, Any]:
+    """
+    Searches the EMR knowledge graph for causal relationships between symptoms and solutions.
+    Use this tool when the user describes a symptom or problem and asks for:
+    - Recommended solutions or corrective actions (solusi, tindakan, apa yang harus dilakukan)
+    - Historical fixes for similar problems (bagaimana cara perbaiki, fix)
+    - Parts needed for a specific repair
+    - Relationship between symptoms, problems, and corrective actions
+    DO NOT use this for counting data (use ask_emr_database) or open-ended explanations (use ask_emr_knowledge).
+    """
+    logger.info(f"Using tool ask_emr_graph for query: {query}")
+    try:
+        graph = get_graph_client()
+        embeddings = get_embeddings()
+        query_embedding = embeddings.embed_query(query)
+        
+        import numpy as np
+        query_emb = np.array(query_embedding)
+        
+        result = graph.find_solutions_for_symptom(query_emb)
+        
+        if result.get("cold_start"):
+            # Fallback to Qdrant vector search
+            logger.info(f"Cold start detected (similarity: {result.get('similarity', 0):.2f}). Falling back to Qdrant.")
+            store = get_vector_store()
+            docs = store.similarity_search(query, k=settings.retriever_k)
+            chunks = [doc.page_content for doc in docs]
+            context = "\n\n".join(chunks[:5])
+            
+            fallback_msg = (
+                f"[COLD START] {result.get('message', '')}\n\n"
+                f"Gejala terdekat yang tercatat: **{result.get('best_guess', 'N/A')}** "
+                f"(kecocokan: {result.get('similarity', 0):.0%})\n\n"
+                f"Berikut data historis terkait dari pencarian semantik:\n\n{context}"
+            )
+            
+            return {
+                "answer": fallback_msg,
+                "chunks": chunks,
+                "sql": None,
+                "graph_traversal": None
+            }
+        
+        # Normal graph result
+        formatted = format_graph_result(result)
+        return {
+            "answer": formatted,
+            "chunks": None,
+            "sql": None,
+            "graph_traversal": result.get("traversal_path")
+        }
+    except Exception as e:
+        logger.error(f"Error in ask_emr_graph: {e}")
+        return {"answer": f"Error querying knowledge graph: {e}", "chunks": None, "sql": None, "graph_traversal": None}
 
 @register_tool(args_schema=ReportArgs)
 def generate_executive_summary(family: str) -> Dict[str, Any]:
@@ -146,3 +205,4 @@ def generate_executive_summary(family: str) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error in generate_executive_summary: {e}")
         return {"answer": f"Error generating report: {e}", "chunks": None, "sql": None}
+

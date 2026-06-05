@@ -18,15 +18,18 @@ class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add]
     chunks: List[str]
     sql: str
+    graph_traversal: Dict[str, Any]
     token_usage: Dict[str, int]
 
 class Agent:
     def __init__(self):
         # We don't bind tools to the LLM directly here if using local Ollama.
         # Instead, we will pass the schemas to the Ollama client in call_llm
+        from .config import settings
         self.llm = get_llm(temperature=0.0)
         self.tools = {t.__name__: t for t in REGISTERED_TOOLS}
         self.tool_schemas = get_tool_schemas()
+        self.ollama_client = ollama.Client(host=settings.ollama_base_url)
         
         self.graph = self._build_graph()
 
@@ -86,9 +89,8 @@ class Agent:
         try:
             logger.info("Calling Ollama with tools")
             from .config import settings
-            client = ollama.Client(host=settings.ollama_base_url)
             
-            response = client.chat(
+            response = self.ollama_client.chat(
                 model=settings.ollama_model,
                 messages=ollama_msgs,
                 tools=self.tool_schemas,
@@ -132,6 +134,7 @@ class Agent:
         results = []
         chunks = []
         sql = None
+        graph_traversal = None
         
         for tool_call in tool_calls:
             tool_name = tool_call["name"]
@@ -147,7 +150,7 @@ class Agent:
                 
             try:
                 tool_func = self.tools[tool_name]
-                # Assuming the tool returns a dictionary with 'answer', 'chunks', 'sql'
+                # Assuming the tool returns a dictionary with 'answer', 'chunks', 'sql', 'graph_traversal'
                 output = tool_func(**tool_args)
                 
                 tool_msg_content = str(output.get("answer", output))
@@ -155,6 +158,8 @@ class Agent:
                     chunks.extend(output.get("chunks", []))
                 if output.get("sql"):
                     sql = output.get("sql")
+                if output.get("graph_traversal"):
+                    graph_traversal = output.get("graph_traversal")
                     
                 results.append(ToolMessage(
                     content=tool_msg_content, 
@@ -174,6 +179,8 @@ class Agent:
             state_update["chunks"] = chunks
         if sql:
             state_update["sql"] = sql
+        if graph_traversal:
+            state_update["graph_traversal"] = graph_traversal
             
         return state_update
 
@@ -194,6 +201,7 @@ class Agent:
             "messages": messages,
             "chunks": [],
             "sql": None,
+            "graph_traversal": None,
             "token_usage": {}
         }
         
@@ -208,6 +216,7 @@ class Agent:
                 "answer": final_msg,
                 "chunks": result.get("chunks", []),
                 "sql": result.get("sql"),
+                "graph_traversal": result.get("graph_traversal"),
                 "token_usage": result.get("token_usage", {})
             }
         except Exception as e:
@@ -216,5 +225,6 @@ class Agent:
                 "answer": f"An error occurred: {str(e)}",
                 "chunks": [],
                 "sql": None,
+                "graph_traversal": None,
                 "token_usage": {}
             }

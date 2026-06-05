@@ -14,6 +14,7 @@ from vanna.base import VannaBase
 from vanna.qdrant import Qdrant_VectorStore as VannaQdrant_VectorStore
 
 from .config import settings
+from .graph_client import GraphClient
 
 @lru_cache(maxsize=1)
 def get_embeddings() -> HuggingFaceEmbeddings:
@@ -24,6 +25,7 @@ def get_embeddings() -> HuggingFaceEmbeddings:
         encode_kwargs={"normalize_embeddings": True},
     )
 
+@lru_cache(maxsize=4)
 def get_llm(temperature: float = 0.0) -> ChatOllama:
     """Return a local ChatOllama model."""
     return ChatOllama(
@@ -32,20 +34,23 @@ def get_llm(temperature: float = 0.0) -> ChatOllama:
         temperature=temperature,
     )
 
+@lru_cache(maxsize=1)
 def get_qdrant_client(url: Optional[str] = None) -> QdrantClient:
     """Return a Qdrant client."""
     return QdrantClient(url=url or settings.qdrant_url)
 
+@lru_cache(maxsize=1)
 def get_vector_store(
     collection_name: str = None,
     embeddings: Optional[HuggingFaceEmbeddings] = None,
     qdrant_url: Optional[str] = None,
 ) -> QdrantVectorStore:
     """Return a Qdrant VectorStore for an existing collection."""
-    return QdrantVectorStore.from_existing_collection(
+    client = get_qdrant_client(url=qdrant_url)
+    return QdrantVectorStore(
+        client=client,
         collection_name=collection_name or settings.qdrant_collection,
         embedding=embeddings or get_embeddings(),
-        url=qdrant_url or settings.qdrant_url,
     )
 
 # ===== Vanna Customization for Ollama =====
@@ -118,6 +123,7 @@ def get_vanna(
     """Return a cached MyVanna instance."""
     client = get_qdrant_client(url=qdrant_url)
     vn = MyVanna(config={"client": client})
+    vn.allow_llm_to_see_data = True
 
     if connect_postgres:
         pg_url = postgres_url or settings.postgres_url
@@ -127,3 +133,12 @@ def get_vanna(
         vn.connect_to_postgres(**conn_kwargs)
 
     return vn
+
+@lru_cache(maxsize=1)
+def get_graph_client() -> GraphClient:
+    """Return a cached GraphClient instance."""
+    return GraphClient(
+        uri=settings.neo4j_uri,
+        user=settings.neo4j_user,
+        password=settings.neo4j_password,
+    )

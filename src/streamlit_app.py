@@ -23,7 +23,7 @@ with st.sidebar:
     
     # Status Check
     try:
-        res = requests.get(f"{API_URL}/health", timeout=2)
+        res = requests.get(f"{API_URL}/health", timeout=5)
         if res.status_code == 200:
             st.success("✅ Backend Connected")
         else:
@@ -74,6 +74,22 @@ for message in st.session_state.messages:
         
         # Display extra info if available (only for assistant messages)
         if message["role"] == "assistant":
+            if "graph_traversal" in message and message["graph_traversal"]:
+                gt = message["graph_traversal"]
+                with st.expander("🔗 View Graph Traversal Path", expanded=True):
+                    st.markdown("### 🛠️ Causal Resolution Path")
+                    st.markdown(
+                        f"**Symptom Pattern:** `{gt.get('symptom_matched')}` "
+                        f"(Similarity: **{gt.get('similarity', 0):.0%}**)"
+                    )
+                    st.markdown(f"➔ **Problem Cluster:** `{gt.get('problem_cluster')}` (ID: `{gt.get('cluster_id')}`)")
+                    st.markdown("➔ **Recommended Actions:**")
+                    for a in gt.get("actions", [])[:5]:
+                        st.markdown(f"- **{a['action']}** ({a['frequency']} cases)")
+                        valid_parts = [p for p in a.get("parts", []) if p.get("part_no") and p["part_no"] != "None"]
+                        if valid_parts:
+                            part_list = ", ".join([f"{p.get('description', '')} ({p['part_no']})" for p in valid_parts[:3]])
+                            st.caption(f"  *Parts needed:* {part_list}")
             if "sql" in message and message["sql"]:
                 with st.expander("🔍 View SQL Query"):
                     st.code(message["sql"], language="sql")
@@ -105,16 +121,32 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                     "chat_history": history_for_api
                 }
                 
-                response = requests.post(f"{API_URL}/chat", json=payload, timeout=60)
+                response = requests.post(f"{API_URL}/chat", json=payload, timeout=300)
                 
                 if response.status_code == 200:
                     data = response.json()
                     answer = data.get("answer", "")
                     sql = data.get("sql", None)
                     chunks = data.get("chunks", [])
+                    graph_traversal = data.get("graph_traversal", None)
                     
                     st.markdown(answer)
                     
+                    if graph_traversal:
+                        with st.expander("🔗 View Graph Traversal Path", expanded=True):
+                            st.markdown("### 🛠️ Causal Resolution Path")
+                            st.markdown(
+                                f"**Symptom Pattern:** `{graph_traversal.get('symptom_matched')}` "
+                                f"(Similarity: **{graph_traversal.get('similarity', 0):.0%}**)"
+                            )
+                            st.markdown(f"➔ **Problem Cluster:** `{graph_traversal.get('problem_cluster')}` (ID: `{graph_traversal.get('cluster_id')}`)")
+                            st.markdown("➔ **Recommended Actions:**")
+                            for a in graph_traversal.get("actions", [])[:5]:
+                                st.markdown(f"- **{a['action']}** ({a['frequency']} cases)")
+                                valid_parts = [p for p in a.get("parts", []) if p.get("part_no") and p["part_no"] != "None"]
+                                if valid_parts:
+                                    part_list = ", ".join([f"{p.get('description', '')} ({p['part_no']})" for p in valid_parts[:3]])
+                                    st.caption(f"  *Parts needed:* {part_list}")
                     if sql:
                         with st.expander("🔍 View SQL Query"):
                             st.code(sql, language="sql")
@@ -130,7 +162,8 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                         "role": "assistant", 
                         "content": answer,
                         "sql": sql,
-                        "chunks": chunks
+                        "chunks": chunks,
+                        "graph_traversal": graph_traversal
                     })
                 else:
                     error_msg = f"API Error: {response.text}"

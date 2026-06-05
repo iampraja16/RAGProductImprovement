@@ -56,7 +56,7 @@ def extract_model_family(model: str) -> str:
 # ===================================================================
 def load_emr_data(file_path: Optional[str] = None) -> pd.DataFrame:
     """
-    Load Dashboard EMR.xlsx and return the main sheet as a DataFrame.
+    Load EMR data from Excel or CSV and return as a DataFrame.
     """
     if not file_path:
         file_path = os.path.join(settings.data_dir, settings.emr_file_name)
@@ -68,8 +68,17 @@ def load_emr_data(file_path: Optional[str] = None) -> pd.DataFrame:
             f"File EMR tidak ditemukan: '{p}'.\n"
         )
 
-    logger.info("Loading EMR data: %s (sheet: %s)", p.name, settings.emr_sheet_name)
-    df = pd.read_excel(p, sheet_name=settings.emr_sheet_name)
+    logger.info("Loading EMR data: %s", p.name)
+    if p.suffix.lower() == '.csv':
+        try:
+            df = pd.read_csv(p, encoding='utf-8-sig')
+        except UnicodeDecodeError:
+            logger.info("  UTF-8 decoding failed — falling back to 'latin1' encoding")
+            df = pd.read_csv(p, encoding='latin1')
+    else:
+        logger.info("  (sheet: %s)", settings.emr_sheet_name)
+        df = pd.read_excel(p, sheet_name=settings.emr_sheet_name)
+        
     logger.info("  Loaded %d rows, %d columns.", len(df), len(df.columns))
 
     # Basic cleaning - strip spaces but keep duplicate names unique
@@ -344,3 +353,15 @@ def aggregate_site_summaries(df: pd.DataFrame) -> List[Document]:
 
     logger.info("Generated %d site summary documents.", len(docs))
     return docs
+
+
+def get_model_summaries(df: pd.DataFrame) -> Dict[str, str]:
+    """Helper to return dict of model name to its summary text."""
+    docs = aggregate_model_summaries(df)
+    return {doc.metadata["machine_model"]: doc.page_content for doc in docs}
+
+
+def get_site_summaries(df: pd.DataFrame) -> Dict[str, str]:
+    """Helper to return dict of site name to its summary text."""
+    docs = aggregate_site_summaries(df)
+    return {doc.metadata["branch_site"]: doc.page_content for doc in docs}
