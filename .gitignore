@@ -14,8 +14,9 @@ Include/
 share/
 pyvenv.cfg
 
-# Vector database and local storage
-database_vektor/
+# Local data volumes
+qdrant_data/
+pgdata/
 output/
 output_test.html
 output_test.pdf

@@ -20,7 +20,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from dotenv import load_dotenv
+
+from .config import settings
 
 # ---------------------------------------------------------------------------
 # Logger
@@ -38,18 +39,6 @@ logger.addHandler(_handler)
 # Config
 # ---------------------------------------------------------------------------
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
-load_dotenv(_PROJECT_ROOT / ".env")
-
-EMBEDDING_MODEL: str = os.getenv(
-    "EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L12-v2"
-)
-HDBSCAN_MIN_CLUSTER_SIZE: int = int(os.getenv("HDBSCAN_MIN_CLUSTER_SIZE", "5"))
-HDBSCAN_MIN_SAMPLES: int = int(os.getenv("HDBSCAN_MIN_SAMPLES", "3"))
-UMAP_N_COMPONENTS: int = int(os.getenv("UMAP_N_COMPONENTS", "10"))
-UMAP_N_NEIGHBORS: int = int(os.getenv("UMAP_N_NEIGHBORS", "15"))
-OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "llama3")
-OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-
 _OUTPUT_DIR = _PROJECT_ROOT / "output"
 
 
@@ -88,8 +77,8 @@ def embed_texts(texts: List[str]) -> np.ndarray:
     """Embed texts using sentence-transformers (batch, CPU)."""
     from sentence_transformers import SentenceTransformer
 
-    logger.info("Loading embedding model: %s …", EMBEDDING_MODEL)
-    model = SentenceTransformer(EMBEDDING_MODEL)
+    logger.info("Loading embedding model: %s …", settings.embedding_model)
+    model = SentenceTransformer(settings.embedding_model)
 
     logger.info("Embedding %d texts …", len(texts))
     embeddings = model.encode(
@@ -108,12 +97,12 @@ def reduce_dimensions(
     """UMAP dimensionality reduction."""
     import umap
 
-    n_comp = n_components or UMAP_N_COMPONENTS
+    n_comp = n_components or settings.umap_n_components
     logger.info("UMAP: %d -> %d dims ...", embeddings.shape[1], n_comp)
 
     reducer = umap.UMAP(
         n_components=n_comp,
-        n_neighbors=UMAP_N_NEIGHBORS,
+        n_neighbors=settings.umap_n_neighbors,
         min_dist=0.1,
         metric="cosine",
         random_state=42,
@@ -127,12 +116,12 @@ def cluster_embeddings(reduced: np.ndarray) -> np.ndarray:
 
     logger.info(
         "HDBSCAN (min_cluster_size=%d, min_samples=%d) …",
-        HDBSCAN_MIN_CLUSTER_SIZE,
-        HDBSCAN_MIN_SAMPLES,
+        settings.hdbscan_min_cluster_size,
+        settings.hdbscan_min_samples,
     )
     clusterer = hdbscan.HDBSCAN(
-        min_cluster_size=HDBSCAN_MIN_CLUSTER_SIZE,
-        min_samples=HDBSCAN_MIN_SAMPLES,
+        min_cluster_size=settings.hdbscan_min_cluster_size,
+        min_samples=settings.hdbscan_min_samples,
         metric="euclidean",
         cluster_selection_method="eom",
     )
@@ -181,12 +170,10 @@ def get_cluster_representatives(
 
 def _label_one_cluster(cluster_id: int, reps: List[str]) -> Dict[str, Any]:
     """Ask Ollama to label a single cluster."""
-    from langchain_ollama import ChatOllama
+    from .utils import get_llm
     from langchain_core.messages import HumanMessage
 
-    llm = ChatOllama(
-        model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.0
-    )
+    llm = get_llm(temperature=0.0)
 
     samples = "\n".join(
         f"  {i + 1}. {t[:300]}" for i, t in enumerate(reps)

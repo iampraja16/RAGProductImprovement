@@ -11,10 +11,14 @@ from __future__ import annotations
 
 import logging
 import sys
+import os
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from langchain_core.documents import Document
+
+from .config import settings
 
 # ---------------------------------------------------------------------------
 # Logger
@@ -48,6 +52,57 @@ def extract_model_family(model: str) -> str:
 
 
 # ===================================================================
+# Loading Data
+# ===================================================================
+def load_emr_data(file_path: Optional[str] = None) -> pd.DataFrame:
+    """
+    Load EMR data from Excel or CSV and return as a DataFrame.
+    """
+    if not file_path:
+        file_path = os.path.join(settings.data_dir, settings.emr_file_name)
+        
+    p = Path(file_path)
+
+    if not p.exists():
+        raise FileNotFoundError(
+            f"File EMR tidak ditemukan: '{p}'.\n"
+        )
+
+    logger.info("Loading EMR data: %s", p.name)
+    if p.suffix.lower() == '.csv':
+        try:
+            df = pd.read_csv(p, encoding='utf-8-sig')
+        except UnicodeDecodeError:
+            logger.info("  UTF-8 decoding failed — falling back to 'latin1' encoding")
+            df = pd.read_csv(p, encoding='latin1')
+    else:
+        logger.info("  (sheet: %s)", settings.emr_sheet_name)
+        df = pd.read_excel(p, sheet_name=settings.emr_sheet_name)
+        
+    logger.info("  Loaded %d rows, %d columns.", len(df), len(df.columns))
+
+    # Basic cleaning - strip spaces but keep duplicate names unique
+    new_cols = []
+    seen = {}
+    for col in df.columns:
+        clean_col = str(col).strip()
+        if clean_col in seen:
+            seen[clean_col] += 1
+            new_cols.append(f"{clean_col}.{seen[clean_col]}")
+        else:
+            seen[clean_col] = 0
+            new_cols.append(clean_col)
+    df.columns = new_cols
+
+    # Ensure key text columns exist
+    for col in ("Subjects", "Symptom", "Caused of Problem"):
+        if col not in df.columns:
+            logger.warning("  Column '%s' not found — filling with empty.", col)
+            df[col] = ""
+
+    return df
+
+# ===================================================================
 # Row -> Prompt-Ready Text
 # ===================================================================
 def transform_emr_row_to_text(row: pd.Series) -> str:
@@ -79,6 +134,11 @@ def transform_emr_row_to_text(row: pd.Series) -> str:
     symptom = _safe(row.get("Symptom"))
     caused = _safe(row.get("Caused of Problem"))
 
+    # Dynamic check for canonical fields from LLM-normalization pipeline
+    symptom_clean = _safe(row.get("symptom_canonical"), "")
+    cause_clean = _safe(row.get("cause_canonical"), "")
+    action_clean = _safe(row.get("action_canonical"), "")
+
     tc = _safe(row.get("Techcare Component"))
     tc_sub = _safe(row.get("Techcare Sub Component"))
     part_no = _safe(row.get("Main Cause Part No"))
@@ -97,9 +157,20 @@ def transform_emr_row_to_text(row: pd.Series) -> str:
         f"Site: {site} | Customer: {account}]",
         f"Kategori Masalah: {cluster_label}",
         f"Kejadian: {subjects}",
-        f"Gejala: {symptom}",
-        f"Penyebab: {caused_display}",
     ]
+
+    if symptom_clean and symptom_clean != "N/A" and symptom_clean != "":
+        lines.append(f"Gejala (Clean): {symptom_clean} (Mentah: {symptom})")
+    else:
+        lines.append(f"Gejala: {symptom}")
+
+    if cause_clean and cause_clean != "N/A" and cause_clean != "":
+        lines.append(f"Penyebab (Clean): {cause_clean} (Mentah: {caused_display})")
+    else:
+        lines.append(f"Penyebab: {caused_display}")
+
+    if action_clean and action_clean != "N/A" and action_clean != "":
+        lines.append(f"Tindakan Perbaikan (Clean): {action_clean}")
 
     if tc != "N/A" or tc_sub != "N/A":
         lines.append(f"Komponen: {tc} | Sub: {tc_sub}")
@@ -298,3 +369,15 @@ def aggregate_site_summaries(df: pd.DataFrame) -> List[Document]:
 
     logger.info("Generated %d site summary documents.", len(docs))
     return docs
+
+
+def get_model_summaries(df: pd.DataFrame) -> Dict[str, str]:
+    """Helper to return dict of model name to its summary text."""
+    docs = aggregate_model_summaries(df)
+    return {doc.metadata["machine_model"]: doc.page_content for doc in docs}
+
+
+def get_site_summaries(df: pd.DataFrame) -> Dict[str, str]:
+    """Helper to return dict of site name to its summary text."""
+    docs = aggregate_site_summaries(df)
+    return {doc.metadata["branch_site"]: doc.page_content for doc in docs}
