@@ -5,10 +5,11 @@ from typing import Optional, Dict
 from urllib.parse import urlparse
 import requests
 
-from langchain_huggingface import HuggingFaceEmbeddings
+# BEFORE: from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from langchain_ollama import ChatOllama
+from .embedding_service import EmbeddingService, embedding_svc
 
 from vanna.base import VannaBase
 from vanna.qdrant import Qdrant_VectorStore as VannaQdrant_VectorStore
@@ -16,14 +17,10 @@ from vanna.qdrant import Qdrant_VectorStore as VannaQdrant_VectorStore
 from .config import settings
 from .graph_client import GraphClient
 
-@lru_cache(maxsize=1)
-def get_embeddings() -> HuggingFaceEmbeddings:
-    """Return a HuggingFace embeddings model."""
-    return HuggingFaceEmbeddings(
-        model_name=settings.embedding_model,
-        model_kwargs={"device": "cpu"},
-        encode_kwargs={"normalize_embeddings": True},
-    )
+# BEFORE: @lru_cache → HuggingFaceEmbeddings (loaded lazily, no result cache)
+def get_embeddings() -> EmbeddingService:
+    """Return the global EmbeddingService singleton (loaded at startup, LRU cached)."""
+    return embedding_svc
 
 @lru_cache(maxsize=4)
 def get_llm(temperature: float = 0.0) -> ChatOllama:
@@ -32,12 +29,17 @@ def get_llm(temperature: float = 0.0) -> ChatOllama:
         model=settings.ollama_model,
         base_url=settings.ollama_base_url,
         temperature=temperature,
+        num_ctx=4096,
     )
 
 @lru_cache(maxsize=1)
 def get_qdrant_client(url: Optional[str] = None) -> QdrantClient:
-    """Return a Qdrant client."""
-    return QdrantClient(url=url or settings.qdrant_url)
+    """Return a Qdrant client with gRPC preferred."""
+    # BEFORE: QdrantClient(url=url or settings.qdrant_url)  # REST only
+    target = url or settings.qdrant_url
+    parsed = urlparse(target)
+    host = parsed.hostname or "localhost"
+    return QdrantClient(host=host, port=6333, grpc_port=6334, prefer_grpc=True)
 
 @lru_cache(maxsize=1)
 def get_vector_store(

@@ -67,3 +67,9 @@ pikepdf>=8.0.0
 # --- Misc ---
 pydantic>=2.0.0
 numpy>=1.24.0
+
+# --- Cache (FASE 2) ---
+redis>=5.0.0
+
+# --- Visualization (FASE 5) ---
+streamlit-agraph>=0.0.45

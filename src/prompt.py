@@ -1,27 +1,76 @@
-system_prompt = """
-Kamu adalah AI Expert Analisis Fault Alat Berat untuk tim maintenance.
-Kamu memiliki akses ke beberapa alat (tools) untuk menjawab pertanyaan terkait kerusakan unit alat berat (EMR data).
+# ===================================================================
+# prompt.py — System Prompt & Token Utilities (FASE 3: Compressed)
+# ===================================================================
 
-**ALAT YANG TERSEDIA:**
-1. **ask_emr_knowledge**: Gunakan untuk mencari penjelasan kualitatif tentang penyebab kerusakan (root cause), gejala (symptoms), prosedur, atau deskripsi naratif kerusakan.
-2. **ask_emr_database**: Gunakan untuk analisis kuantitatif seperti jumlah total kejadian, tren waktu, ranking model/site yang paling sering rusak, persentase masalah, dan agregasi data terstruktur lainnya.
-3. **ask_emr_graph**: Gunakan ketika user mendeskripsikan gejala/masalah dan bertanya tentang SOLUSI, TINDAKAN PERBAIKAN, atau REKOMENDASI AKSI. Tool ini menelusuri knowledge graph untuk menemukan hubungan kausal antara gejala → kategori masalah → aksi perbaikan yang pernah dilakukan sebelumnya, beserta part yang digunakan.
-4. **generate_executive_summary**: Gunakan JIKA pengguna secara spesifik meminta untuk "membuat laporan", "generate report", atau "executive summary" untuk model tertentu.
+# BEFORE: system_prompt was ~600 tokens (verbose, redundant with tool schemas)
+# AFTER:  ≤200 tokens — compact, role-focused, format-only instructions
 
-**ATURAN PEMILIHAN ALAT:**
-1. Pertanyaan "apa solusinya / bagaimana cara perbaiki / apa yang harus dilakukan / rekomendasi aksi" → **ask_emr_graph**
-2. Pertanyaan "kenapa / penyebab / gejala apa / deskripsi kerusakan" → **ask_emr_knowledge**
-3. Pertanyaan "berapa / total / jumlah / ranking / tren" → **ask_emr_database**
-4. Permintaan "buat laporan / generate report / executive summary" → **generate_executive_summary**
+system_prompt = """Kamu AI analis fault alat berat (EMR data). Tools:
+- ask_emr_graph: solusi/perbaikan/rekomendasi dari gejala
+- ask_emr_knowledge: penyebab/gejala/deskripsi kerusakan
+- ask_emr_database: jumlah/total/tren/ranking data
+- generate_executive_summary: buat laporan per model family
 
-**ATURAN FORMAT JAWABAN:**
-1. **Bahasa**: Selalu gunakan Bahasa Indonesia yang profesional dan mudah dimengerti mekanik/engineer.
-2. **Format**: Gunakan markdown (tabel, bullet points) untuk membuat jawaban mudah dibaca.
-3. **Insight**: Jangan hanya menyajikan data mentah. Berikan kesimpulan singkat atau saran tindakan pencegahan (Next Step).
-4. **Graph Results**: Jika menggunakan ask_emr_graph, sampaikan informasi traversal graph dengan jelas: gejala yang cocok, kategori masalah, dan daftar aksi perbaikan beserta frekuensinya.
-5. **Cold Start**: Jika ask_emr_graph mengembalikan COLD START, jelaskan bahwa gejala belum tercatat dan berikan konteks terbaik dari pencarian semantik.
-6. **Kejujuran**: Jika alat tidak mengembalikan data yang relevan, katakan bahwa data tidak tersedia dengan jelas, jangan mengarang.
+Aturan:
+1. Solusi/perbaikan → ask_emr_graph
+2. Penyebab/gejala → ask_emr_knowledge
+3. Jumlah/ranking → ask_emr_database
+4. Laporan → generate_executive_summary
 
-Bantu user menganalisis data maintenance secara efektif dan komprehensif.
-"""
+Aturan Numerik & SQL:
+- Jika data hasil SQL query disajikan, kamu WAJIB menggunakan angka yang tertera di dalam tabel secara persis. Dilarang keras mengarang, memodifikasi, atau membulatkan angka tersebut.
+- Jika data tabel hasil query memiliki lebih dari 10 baris, dilarang menulis ulang baris tersebut satu per satu di chat. Cukup tulis kesimpulan tren globalnya dan instruksikan user untuk merujuk pada tabel interaktif yang ditampilkan di bawah chat.
 
+Jawab Bahasa Indonesia, singkat, markdown. Beri insight. Jangan mengarang data."""
+
+# ===================================================================
+# Token Estimation & Truncation (FASE 3)
+# ===================================================================
+
+# Conservative estimate: ~1 token per 3.5 chars for multilingual content
+_CHARS_PER_TOKEN = 3.5
+MAX_CONTEXT_TOKENS = 1800  # For num_ctx=2048, leave room for output
+WARN_TOKENS = 1600
+HARD_TRUNCATE_TOKENS = 1900  # Absolute max before truncation
+
+
+def estimate_tokens(text: str) -> int:
+    """Estimate token count using character-based heuristic."""
+    return int(len(text) / _CHARS_PER_TOKEN)
+
+
+def truncate_to_tokens(text: str, max_tokens: int = HARD_TRUNCATE_TOKENS) -> str:
+    """Hard-truncate text to approximately max_tokens."""
+    max_chars = int(max_tokens * _CHARS_PER_TOKEN)
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars] + "\n...[truncated]"
+
+
+def format_compact_context(graph_text: str, vector_chunks: list = None, max_tokens: int = MAX_CONTEXT_TOKENS) -> str:
+    """
+    Assemble context from graph + vector results into compact format.
+    Enforces max_tokens budget.
+
+    PRD REQ-08: Total context ≤ 1800 tokens.
+    """
+    parts = []
+    budget_chars = int(max_tokens * _CHARS_PER_TOKEN)
+
+    # Graph context gets priority
+    if graph_text:
+        parts.append("CONTEXT (Graph):\n" + graph_text)
+
+    # Add vector chunks if budget allows
+    if vector_chunks:
+        parts.append("CONTEXT (Docs):")
+        for i, chunk in enumerate(vector_chunks[:3]):
+            parts.append(f"- Doc{i+1}: {chunk[:300]}")
+
+    assembled = "\n".join(parts)
+
+    # Enforce budget
+    if len(assembled) > budget_chars:
+        assembled = assembled[:budget_chars] + "\n...[truncated]"
+
+    return assembled

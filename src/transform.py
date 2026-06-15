@@ -134,6 +134,11 @@ def transform_emr_row_to_text(row: pd.Series) -> str:
     symptom = _safe(row.get("Symptom"))
     caused = _safe(row.get("Caused of Problem"))
 
+    # Dynamic check for canonical fields from LLM-normalization pipeline
+    symptom_clean = _safe(row.get("symptom_canonical"), "")
+    cause_clean = _safe(row.get("cause_canonical"), "")
+    action_clean = _safe(row.get("action_canonical"), "")
+
     tc = _safe(row.get("Techcare Component"))
     tc_sub = _safe(row.get("Techcare Sub Component"))
     part_no = _safe(row.get("Main Cause Part No"))
@@ -152,9 +157,20 @@ def transform_emr_row_to_text(row: pd.Series) -> str:
         f"Site: {site} | Customer: {account}]",
         f"Kategori Masalah: {cluster_label}",
         f"Kejadian: {subjects}",
-        f"Gejala: {symptom}",
-        f"Penyebab: {caused_display}",
     ]
+
+    if symptom_clean and symptom_clean != "N/A" and symptom_clean != "":
+        lines.append(f"Gejala (Clean): {symptom_clean} (Mentah: {symptom})")
+    else:
+        lines.append(f"Gejala: {symptom}")
+
+    if cause_clean and cause_clean != "N/A" and cause_clean != "":
+        lines.append(f"Penyebab (Clean): {cause_clean} (Mentah: {caused_display})")
+    else:
+        lines.append(f"Penyebab: {caused_display}")
+
+    if action_clean and action_clean != "N/A" and action_clean != "":
+        lines.append(f"Tindakan Perbaikan (Clean): {action_clean}")
 
     if tc != "N/A" or tc_sub != "N/A":
         lines.append(f"Komponen: {tc} | Sub: {tc_sub}")

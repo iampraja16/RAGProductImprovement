@@ -7,7 +7,8 @@ load_dotenv(_ENV_FILE)
 
 class Settings(BaseSettings):
     # LLM (Local Ollama)
-    ollama_model: str = "llama3.1"
+    # BEFORE: ollama_model: str = "llama3.1"
+    ollama_model: str = "qwen2.5:7b"
     ollama_base_url: str = "http://localhost:11434"
 
     # Embeddings
@@ -25,6 +26,9 @@ class Settings(BaseSettings):
     neo4j_user: str = "neo4j"
     neo4j_password: str = "mypassword"
     graph_similarity_threshold: float = 0.65
+
+    # Redis Cache (FASE 2)
+    redis_url: str = "redis://localhost:6379/0"
 
     # Retriever
     retriever_k: int = 8

@@ -77,8 +77,11 @@ def ask_emr_knowledge(query: str) -> Dict[str, Any]:
         docs = store.similarity_search(query, k=settings.retriever_k)
         
         chunks = [doc.page_content for doc in docs]
-        context = "\n\n".join([f"Document {i+1}:\n{chunk}" for i, chunk in enumerate(chunks)])
-        
+
+        # FASE 3: Compact context + hard truncation
+        from .prompt import format_compact_context
+        context = format_compact_context("", vector_chunks=chunks)
+
         return {
             "answer": context,
             "chunks": chunks,
@@ -113,17 +116,22 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
         
         if df is None or df.empty:
             result_str = "No data returned from database."
+            sql_data = []
         else:
             result_str = df.to_markdown(index=False)
+            # Replace NaN and Inf values with None/0 to ensure valid JSON serialization
+            df_cleaned = df.replace({float('nan'): None, float('inf'): None, float('-inf'): None})
+            sql_data = df_cleaned.to_dict(orient="records")
             
         return {
             "answer": result_str,
             "chunks": None,
-            "sql": sql
+            "sql": sql,
+            "sql_data": sql_data
         }
     except Exception as e:
         logger.error(f"Error in ask_emr_database: {e}")
-        return {"answer": f"Error querying database: {e}", "chunks": None, "sql": None}
+        return {"answer": f"Error querying database: {e}", "chunks": None, "sql": None, "sql_data": None}
 
 @register_tool(args_schema=QueryArgs)
 def ask_emr_graph(query: str) -> Dict[str, Any]:
@@ -138,44 +146,91 @@ def ask_emr_graph(query: str) -> Dict[str, Any]:
     """
     logger.info(f"Using tool ask_emr_graph for query: {query}")
     try:
+        # FASE 3: Import parallelization utilities
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
+        from .prompt import format_compact_context, truncate_to_tokens, estimate_tokens
+        import numpy as np
+
         graph = get_graph_client()
         embeddings = get_embeddings()
         query_embedding = embeddings.embed_query(query)
-        
-        import numpy as np
         query_emb = np.array(query_embedding)
-        
-        result = graph.find_solutions_for_symptom(query_emb)
-        
-        if result.get("cold_start"):
-            # Fallback to Qdrant vector search
-            logger.info(f"Cold start detected (similarity: {result.get('similarity', 0):.2f}). Falling back to Qdrant.")
-            store = get_vector_store()
-            docs = store.similarity_search(query, k=settings.retriever_k)
-            chunks = [doc.page_content for doc in docs]
-            context = "\n\n".join(chunks[:5])
-            
-            fallback_msg = (
-                f"[COLD START] {result.get('message', '')}\n\n"
-                f"Gejala terdekat yang tercatat: **{result.get('best_guess', 'N/A')}** "
-                f"(kecocokan: {result.get('similarity', 0):.0%})\n\n"
-                f"Berikut data historis terkait dari pencarian semantik:\n\n{context}"
+
+        store = get_vector_store()
+
+        # ---------------------------------------------------------------
+        # FASE 3: PARALLEL retrieval with 5s timeout per step
+        # BEFORE: Sequential — graph first, then vector only on cold start
+        # AFTER:  Concurrent — graph + vector run simultaneously
+        # ---------------------------------------------------------------
+        graph_result = None
+        vector_docs = []
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            graph_future = executor.submit(
+                graph.find_solutions_for_symptom, query_emb
             )
-            
+            vector_future = executor.submit(
+                store.similarity_search, query, settings.retriever_k
+            )
+
+            # Collect graph result (5s timeout)
+            try:
+                graph_result = graph_future.result(timeout=5)
+            except (FutureTimeout, Exception) as e:
+                logger.warning("Graph search timeout/error (5s): %s", e)
+                graph_result = {
+                    "cold_start": True,
+                    "message": f"Graph query timed out ({e})",
+                }
+
+            # Collect vector result (5s timeout)
+            try:
+                vector_docs = vector_future.result(timeout=5)
+            except (FutureTimeout, Exception) as e:
+                logger.warning("Vector search timeout/error (5s): %s", e)
+                vector_docs = []
+
+        chunks = [doc.page_content for doc in vector_docs]
+
+        # ---------------------------------------------------------------
+        # Assemble results
+        # ---------------------------------------------------------------
+        if graph_result.get("cold_start"):
+            logger.info("Cold start — using vector results as primary.")
+            context = format_compact_context("", vector_chunks=chunks)
+
+            fallback_msg = (
+                f"[COLD START] {graph_result.get('message', '')}\n"
+                f"Nearest: {graph_result.get('best_guess', 'N/A')} "
+                f"(sim: {graph_result.get('similarity', 0):.2f})\n\n"
+                f"{context}"
+            )
+            # FASE 3: Hard truncation
+            fallback_msg = truncate_to_tokens(fallback_msg)
+
             return {
                 "answer": fallback_msg,
                 "chunks": chunks,
                 "sql": None,
-                "graph_traversal": None
+                "graph_traversal": None,
             }
-        
-        # Normal graph result
-        formatted = format_graph_result(result)
+
+        # Normal graph result — combine with vector context
+        formatted_graph = format_graph_result(graph_result)
+        combined = format_compact_context(formatted_graph, vector_chunks=chunks)
+
+        # FASE 3: Hard truncation + token warning
+        token_count = estimate_tokens(combined)
+        if token_count > 1600:
+            logger.warning("Context tokens (%d) exceeds 1600, truncating.", token_count)
+            combined = truncate_to_tokens(combined)
+
         return {
-            "answer": formatted,
-            "chunks": None,
+            "answer": combined,
+            "chunks": chunks,
             "sql": None,
-            "graph_traversal": result.get("traversal_path")
+            "graph_traversal": graph_result.get("traversal_path"),
         }
     except Exception as e:
         logger.error(f"Error in ask_emr_graph: {e}")

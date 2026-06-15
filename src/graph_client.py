@@ -25,7 +25,12 @@ class GraphClient:
     """Client for querying the EMR knowledge graph in Neo4j."""
 
     def __init__(self, uri: str, user: str, password: str):
-        self.driver = GraphDatabase.driver(uri, auth=(user, password))
+        # BEFORE: self.driver = GraphDatabase.driver(uri, auth=(user, password))
+        self.driver = GraphDatabase.driver(
+            uri, auth=(user, password),
+            max_connection_pool_size=10,
+            connection_timeout=5,
+        )
         self._symptom_cache: Optional[List[Dict]] = None
 
     def close(self):
@@ -68,7 +73,7 @@ class GraphClient:
             "similarity": similarities[best_idx],
         }
 
-    def find_solutions_for_symptom(self, query_embedding: np.ndarray) -> Dict[str, Any]:
+    def find_solutions_for_symptom(self, query_embedding: np.ndarray, symptom_name: Optional[str] = None) -> Dict[str, Any]:
         """
         Core GraphRAG query:
         1. Find nearest SymptomPattern node (cosine similarity)
@@ -76,8 +81,12 @@ class GraphClient:
         3. IF similarity < threshold: return cold_start=True (fallback)
         """
         threshold = settings.graph_similarity_threshold
-        best_match = self._find_nearest_symptom(query_embedding)
-
+        
+        if symptom_name:
+            best_match = {"name": symptom_name, "similarity": 1.0}
+        else:
+            best_match = self._find_nearest_symptom(query_embedding)
+            
         if best_match["name"] is None or best_match["similarity"] < threshold:
             return {
                 "cold_start": True,
@@ -88,27 +97,40 @@ class GraphClient:
                     "Berikut hasil pencarian semantik terdekat sebagai referensi."
                 ),
             }
-
-        # Traverse graph: Symptom -> ProblemCluster -> Actions
+ 
+        # Traverse graph: Symptom -> ProblemCluster -> RootCausePattern (Top 5) -> Actions
         with self.driver.session() as session:
             result = session.run("""
-                MATCH (sp:SymptomPattern {name: $symptom_name})
-                      -[i:INDICATES]->(pc:ProblemCluster)
-                      -[cr:COMMONLY_RESOLVED_BY]->(ap:ActionPattern)
+                MATCH (sp:SymptomPattern {name: $symptom_name})-[i:INDICATES]->(pc:ProblemCluster)
+                WITH sp, pc, i
+                MATCH (pc)-[hrc:HAS_ROOT_CAUSE]->(rc:RootCausePattern)
+                WITH sp, pc, i, rc, hrc
+                ORDER BY hrc.frequency DESC
+                LIMIT 5
+                
+                // Cari ActionPattern yang terhubung ke RootCausePattern
+                MATCH (rc)-[cr:RESOLVED_BY]->(ap:ActionPattern)
+                
+                // Validasi ketat: Pastikan ada tiket EMRRecord yang menghubungkan pc, rc, dan ap secara bersamaan
+                MATCH (pc)<-[:BELONGS_TO]-(emr:EMRRecord)-[:RESOLVED_BY]->(ap)
+                WHERE (emr)-[:CAUSED_BY]->(rc)
+                
                 OPTIONAL MATCH (ap)-[up:USES_PART]->(p:Part)
                 RETURN sp.name AS symptom,
                        pc.label AS problem_cluster,
                        pc.cluster_id AS cluster_id,
                        i.frequency AS indicate_freq,
                        i.strength AS indicate_strength,
+                       rc.name AS root_cause,
+                       hrc.frequency AS cause_freq,
                        ap.name AS action,
                        cr.frequency AS action_freq,
                        COLLECT(DISTINCT {part_no: p.part_no, description: p.description, freq: up.frequency}) AS parts
-                ORDER BY cr.frequency DESC
+                ORDER BY i.strength DESC, hrc.frequency DESC, cr.frequency DESC
             """, symptom_name=best_match["name"])
-
+ 
             records = list(result)
-
+ 
         if not records:
             return {
                 "cold_start": True,
@@ -120,12 +142,12 @@ class GraphClient:
                     "namun tidak ditemukan aksi perbaikan terkait di knowledge graph."
                 ),
             }
-
+ 
         # Build structured result
         symptom = records[0]["symptom"]
         problem_cluster = records[0]["problem_cluster"]
         cluster_id = records[0]["cluster_id"]
-
+ 
         actions = []
         for r in records:
             parts = [
@@ -135,9 +157,11 @@ class GraphClient:
             actions.append({
                 "action": r["action"],
                 "frequency": r["action_freq"],
+                "root_cause": r["root_cause"],
+                "cause_freq": r["cause_freq"],
                 "parts": parts,
             })
-
+ 
         # Build traversal path for UI display
         traversal_path = {
             "symptom_matched": symptom,
@@ -147,12 +171,12 @@ class GraphClient:
             "indicate_freq": records[0]["indicate_freq"],
             "actions": actions,
         }
-
+ 
         return {
             "cold_start": False,
             "traversal_path": traversal_path,
         }
-
+ 
     def get_cluster_actions(self, cluster_id: int) -> List[Dict]:
         """Get all actions for a specific problem cluster, ranked by frequency."""
         with self.driver.session() as session:
@@ -161,9 +185,10 @@ class GraphClient:
                       -[cr:COMMONLY_RESOLVED_BY]->(ap:ActionPattern)
                 RETURN ap.name AS action, cr.frequency AS frequency
                 ORDER BY cr.frequency DESC
+                LIMIT 50
             """, cid=cluster_id)
             return [dict(r) for r in result]
-
+ 
     def get_action_details(self, action_name: str, model: Optional[str] = None) -> Dict:
         """Get parts and frequency for a specific action, optionally filtered by model."""
         with self.driver.session() as session:
@@ -177,6 +202,7 @@ class GraphClient:
                            mm.model AS model,
                            COUNT(DISTINCT emr) AS total_cases,
                            COLLECT(DISTINCT {part_no: p.part_no, desc: p.description}) AS parts
+                    LIMIT 50
                 """, action=action_name, model=model)
             else:
                 result = session.run("""
@@ -186,17 +212,18 @@ class GraphClient:
                     RETURN ap.name AS action,
                            COUNT(DISTINCT emr) AS total_cases,
                            COLLECT(DISTINCT {part_no: p.part_no, desc: p.description}) AS parts
+                    LIMIT 50
                 """, action=action_name)
-
+ 
             record = result.single()
             if record:
                 return dict(record)
             return {}
-
+ 
     def find_solutions_hybrid(self, query_embedding: np.ndarray, qdrant_chunks: List[str]) -> Dict[str, Any]:
         """
         Phase 4: Hybrid retrieval combining graph traversal + Qdrant results.
-
+ 
         1. Find top SymptomPattern matches from Neo4j
         2. For each match above threshold, traverse graph
         3. Merge with Qdrant results
@@ -204,7 +231,7 @@ class GraphClient:
         """
         threshold = settings.graph_similarity_threshold
         patterns = self._get_symptom_patterns_with_embeddings()
-
+ 
         if not patterns:
             return {
                 "cold_start": True,
@@ -212,7 +239,7 @@ class GraphClient:
                 "vector_results": qdrant_chunks,
                 "message": "Knowledge graph kosong. Menggunakan pencarian semantik saja.",
             }
-
+ 
         # Find top-3 matches
         similarities = [float(np.dot(query_embedding, p["embedding"])) for p in patterns]
         top_indices = np.argsort(similarities)[-3:][::-1]
@@ -221,7 +248,7 @@ class GraphClient:
             for i in top_indices
             if similarities[i] >= threshold
         ]
-
+ 
         if not top_matches:
             return {
                 "cold_start": True,
@@ -234,14 +261,17 @@ class GraphClient:
                     "Menggabungkan hasil pencarian semantik."
                 ),
             }
-
+ 
         # Traverse graph for each match
         graph_results = []
         for match in top_matches:
-            result = self.find_solutions_for_symptom(query_embedding)
+            result = self.find_solutions_for_symptom(query_embedding, symptom_name=match["name"])
             if not result.get("cold_start"):
-                graph_results.append(result["traversal_path"])
-
+                # Sinkronisasi nilai similarity riil dari kecocokan hybrid ini
+                path = result["traversal_path"]
+                path["similarity"] = match["similarity"]
+                graph_results.append(path)
+ 
         return {
             "cold_start": False,
             "graph_results": graph_results,
@@ -250,27 +280,43 @@ class GraphClient:
 
 
 def format_graph_result(result: Dict[str, Any]) -> str:
-    """Format a graph traversal result into a human-readable string for the LLM."""
+    """
+    Format graph traversal into compact bullets for LLM context.
+    Includes Root Cause Failure Analysis (RCFA) relationships.
+    """
     if result.get("cold_start"):
-        return result.get("message", "Tidak ada data yang cocok di knowledge graph.")
-
+        return result.get("message", "Tidak ada data di knowledge graph.")
+ 
     path = result.get("traversal_path", {})
+    symptom = path.get("symptom_matched", "N/A")
+    sim = path.get("similarity", 0)
+    cluster = path.get("problem_cluster", "N/A")
+    freq = path.get("indicate_freq", 0)
+ 
     lines = [
-        f"**Gejala Terdeteksi:** {path.get('symptom_matched', 'N/A')} "
-        f"(kecocokan: {path.get('similarity', 0):.0%})",
-        f"**Kategori Masalah:** {path.get('problem_cluster', 'N/A')}",
-        f"**Jumlah kasus historis:** {path.get('indicate_freq', 0)} kejadian\n",
-        "**Rekomendasi Aksi Perbaikan (berdasarkan data historis):**",
+        f"- {symptom} --[INDICATES]--> {cluster} (score: {sim:.2f}, freq: {freq})",
     ]
-
-    actions = path.get("actions", [])
-    for i, a in enumerate(actions[:5]):
-        line = f"{i+1}. **{a['action']}** ({a['frequency']} kasus)"
-        parts = a.get("parts", [])
-        valid_parts = [p for p in parts if p.get("part_no") and p["part_no"] != "None"]
-        if valid_parts:
-            part_strs = [f"{p.get('description', '')} ({p['part_no']})" for p in valid_parts[:3]]
-            line += f"\n   - Part terkait: {', '.join(part_strs)}"
-        lines.append(line)
-
+ 
+    # Group actions by root cause to keep it sync with the graph UI
+    rc_counts = {}
+    for a in path.get("actions", []):
+        rc = a.get("root_cause", "Penyebab Tidak Terdefinisi")
+        if rc not in rc_counts:
+            rc_counts[rc] = []
+        rc_counts[rc].append(a)
+ 
+    # Output up to 5 root causes, and up to 2 actions per root cause
+    for rc, rc_actions in list(rc_counts.items())[:5]:
+        rc_freq = rc_actions[0].get("cause_freq", 0)
+        lines.append(f"  - {cluster} --[HAS_ROOT_CAUSE]--> {rc} ({rc_freq} cases)")
+        
+        for a in rc_actions[:2]:
+            line = f"    - {rc} --[RESOLVED_BY]--> {a['action']} ({a['frequency']} cases)"
+            parts = a.get("parts", [])
+            valid = [p for p in parts if p.get("part_no") and p["part_no"] != "None"]
+            if valid:
+                pstr = ", ".join(f"{p.get('description','')}({p['part_no']})" for p in valid[:2])
+                line += f"\n      Parts: {pstr}"
+            lines.append(line)
+ 
     return "\n".join(lines)

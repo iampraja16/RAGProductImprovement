@@ -1,0 +1,21 @@
+# ============================================================
+# Ollama Modelfile — qwen2.5:3b optimized for CPU-only GraphRAG
+# ============================================================
+# Usage:
+#   ollama create graphrag-qwen -f docker/Modelfile
+#
+# This creates a custom model "graphrag-qwen" with tuned parameters
+# for CPU inference on 16GB RAM VM.
+# ============================================================
+
+FROM qwen2.5:3b
+
+# --- Performance Parameters ---
+PARAMETER num_ctx 2048          # Reduced from default 4096/8192 to save KV-cache memory
+PARAMETER num_thread 4          # Match available vCPU (prevent over-subscription)
+PARAMETER num_predict 512       # Max output tokens (sufficient for RAG answers)
+PARAMETER repeat_penalty 1.1    # Slight repeat penalty for cleaner output
+PARAMETER temperature 0.1       # Low temp = more deterministic, faster convergence
+
+# --- System Prompt (embedded in model) ---
+SYSTEM """Kamu adalah AI analis maintenance alat berat. Jawab singkat, akurat, dalam Bahasa Indonesia. Gunakan hanya konteks yang diberikan."""
