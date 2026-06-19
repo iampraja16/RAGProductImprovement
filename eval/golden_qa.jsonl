@@ -1,0 +1,30 @@
+{"question": "Berapa total fault per model?", "target_tool": "ask_emr_database", "expected_sql": ["machine_model", "COUNT"]}
+{"question": "Model apa yang paling sering rusak?", "target_tool": "ask_emr_database", "expected_sql": ["machine_model", "COUNT", "LIMIT 1"]}
+{"question": "Tampilkan 5 site dengan masalah terbanyak", "target_tool": "ask_emr_database", "expected_sql": ["branch_site", "COUNT", "LIMIT 5"]}
+{"question": "Tampilkan tren kerusakan per bulan", "target_tool": "ask_emr_database", "expected_sql": ["DATE_TRUNC", "COUNT", "created_date"]}
+{"question": "Tampilkan tren masalah pada PC200 per bulan", "target_tool": "ask_emr_database", "expected_sql": ["model_family", "PC200", "COUNT"]}
+{"question": "Berapa banyak kasus kerusakan pada model HD785-7 yang memiliki ringkasan GraphRAG?", "target_tool": "ask_emr_database", "expected_sql": ["HD785-7", "graph_community_summary", "IS NOT NULL"]}
+{"question": "Tampilkan 5 komponen yang paling sering rusak", "target_tool": "ask_emr_database", "expected_sql": ["techcare_component", "COUNT", "LIMIT 5"]}
+{"question": "Berapa total unit yang rusak berdasarkan branch site?", "target_tool": "ask_emr_database", "expected_sql": ["branch_site", "COUNT", "serial_number"]}
+{"question": "Ada berapa banyak serial number unik yang tercatat?", "target_tool": "ask_emr_database", "expected_sql": ["COUNT", "DISTINCT", "serial_number"]}
+{"question": "Hitung jumlah kasus untuk setiap jenis status", "target_tool": "ask_emr_database", "expected_sql": ["status", "COUNT"]}
+{"question": "Tampilkan 3 model heavy machinery yang memiliki jumlah kerusakan paling sedikit", "target_tool": "ask_emr_database", "expected_sql": ["machine_model", "COUNT", "ASC", "LIMIT 3"]}
+{"question": "Tampilkan detail data EMR untuk serial number 12345", "target_tool": "ask_emr_database", "expected_sql": ["serial_number", "12345"]}
+{"question": "Berapa banyak kerusakan yang dilaporkan pada tahun 2026?", "target_tool": "ask_emr_database", "expected_sql": ["created_date", "2026"]}
+{"question": "Tampilkan total part supply per machine model", "target_tool": "ask_emr_database", "expected_sql": ["part_suply", "SUM", "machine_model"]}
+{"question": "Berapa total part supply yang digunakan oleh model PC200-8?", "target_tool": "ask_emr_database", "expected_sql": ["machine_model", "PC200-8", "SUM", "part_suply"]}
+{"question": "Tampilkan daftar branch site unik", "target_tool": "ask_emr_database", "expected_sql": ["DISTINCT", "branch_site"]}
+{"question": "Ada berapa kasus EMR yang terdaftar?", "target_tool": "ask_emr_database", "expected_sql": ["COUNT"]}
+{"question": "Tampilkan daftar model heavy machinery yang unik", "target_tool": "ask_emr_database", "expected_sql": ["DISTINCT", "machine_model"]}
+{"question": "Tampilkan 5 main cause part no yang paling sering menjadi penyebab masalah", "target_tool": "ask_emr_database", "expected_sql": ["main_cause_part_no", "COUNT", "LIMIT 5"]}
+{"question": "Berapa kasus yang disebabkan oleh part no 785-12-34567?", "target_tool": "ask_emr_database", "expected_sql": ["main_cause_part_no", "785-12-34567"]}
+{"question": "Apa penyebab utama kegagalan pada swing motor?", "target_tool": "ask_emr_graph", "expected_entities": ["SWING MOTOR"]}
+{"question": "Bagaimana cara memperbaiki kebocoran oli hidrolik?", "target_tool": "ask_emr_graph", "expected_entities": ["leak", "oil"]}
+{"question": "Apa hubungan antara final drive dengan float seal?", "target_tool": "ask_emr_graph", "expected_entities": ["FINAL DRIVE", "Floating Seal"]}
+{"question": "Tolong jelaskan analisis kegagalan alternator berdasarkan GraphRAG", "target_tool": "ask_emr_graph", "expected_entities": ["ALTERNATOR"]}
+{"question": "Apa saja gejala kerusakan pada hydraulic pump?", "target_tool": "ask_emr_graph", "expected_entities": ["HYDRAULIC PUMP"]}
+{"question": "Bagaimana pola tindakan perbaikan untuk masalah engine overheat?", "target_tool": "ask_emr_graph", "expected_entities": ["overheat", "engine"]}
+{"question": "Jelaskan hubungan komponen drive shaft dengan kegagalan universal joint", "target_tool": "ask_emr_graph", "expected_entities": ["DRIVE SHAFT", "UNIVERSAL JOINT"]}
+{"question": "Apa rekomendasi perbaikan jika terjadi low pressure pada sistem kemudi?", "target_tool": "ask_emr_graph", "expected_entities": ["STEERING SYSTEM"]}
+{"question": "Bagaimana analisis komunitas GraphRAG terkait kebocoran silinder arm?", "target_tool": "ask_emr_graph", "expected_entities": ["ARM CYLINDER"]}
+{"question": "Jelaskan hubungan antara battery charging warning light dengan kegagalan alternator", "target_tool": "ask_emr_graph", "expected_entities": ["ALTERNATOR", "battery"]}
