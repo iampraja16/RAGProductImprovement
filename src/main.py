@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 
-from .agent import Agent
+from src.agent.agent import Agent
 
 # ===================================================================
 # FASE 4: Structured JSON Logging
@@ -47,8 +47,8 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize long-running services at startup."""
-    from .embedding_service import embedding_svc
-    from .cache_service import semantic_cache, redis_cache
+    from src.services.embedding_service import embedding_svc
+    from src.services.cache_service import semantic_cache, redis_cache
 
     logger.info("=== STARTUP: Loading embedding model ===")
     embedding_svc.load_model()
@@ -120,7 +120,7 @@ def health_check():
 
     # Neo4j
     try:
-        from .utils import get_graph_client
+        from src.services.providers import get_graph_client
         gc = get_graph_client()
         with gc.driver.session() as s:
             s.run("RETURN 1").consume()
@@ -131,7 +131,7 @@ def health_check():
 
     # Qdrant
     try:
-        from .utils import get_qdrant_client
+        from src.services.providers import get_qdrant_client
         qc = get_qdrant_client()
         qc.get_collections()
         checks["qdrant"] = "ok"
@@ -141,7 +141,7 @@ def health_check():
 
     # PostgreSQL (via Vanna)
     try:
-        from .utils import get_vanna
+        from src.services.providers import get_vanna
         vn = get_vanna()
         vn.run_sql("SELECT 1")
         checks["postgresql"] = "ok"
@@ -152,7 +152,7 @@ def health_check():
     # Ollama
     try:
         import requests
-        from .config import settings
+        from src.config import settings
         resp = requests.get(f"{settings.ollama_base_url}/api/tags", timeout=3)
         resp.raise_for_status()
         checks["ollama"] = "ok"
@@ -162,7 +162,7 @@ def health_check():
 
     # Redis
     try:
-        from .cache_service import redis_cache
+        from src.services.cache_service import redis_cache
         if redis_cache._client and redis_cache._client.ping():
             checks["redis"] = "ok"
         else:
@@ -172,7 +172,7 @@ def health_check():
 
     # Embedding model
     try:
-        from .embedding_service import embedding_svc
+        from src.services.embedding_service import embedding_svc
         checks["embedding_model"] = "loaded" if embedding_svc.model is not None else "not loaded"
     except Exception as e:
         checks["embedding_model"] = f"error: {e}"
@@ -195,9 +195,9 @@ def chat(request: ChatRequest):
     timings = {}
 
     try:
-        from .embedding_service import embedding_svc
-        from .cache_service import semantic_cache
-        from .prompt import estimate_tokens
+        from src.services.embedding_service import embedding_svc
+        from src.services.cache_service import semantic_cache
+        from src.agent.prompts import estimate_tokens
 
         # --- Step 1: Embedding ---
         t0 = time.time()
@@ -231,7 +231,7 @@ def chat(request: ChatRequest):
         timings["total_ms"] = round((time.time() - t_start) * 1000, 1)
 
         # FASE 4: Structured log with full timing breakdown
-        from .config import settings
+        from src.config import settings
         logger.info("Request completed", extra={"extra_data": {
             "request_id": request_id,
             "query_hash": query_hash,
@@ -276,7 +276,7 @@ def chat_stream(request: ChatRequest):
 
 @app.post("/cache/invalidate")
 def invalidate_cache(request: CacheInvalidateRequest):
-    from .cache_service import semantic_cache, redis_cache
+    from src.services.cache_service import semantic_cache, redis_cache
     if request.level in ("all", "semantic"):
         semantic_cache.invalidate()
     if request.level in ("all", "graph"):
@@ -285,8 +285,8 @@ def invalidate_cache(request: CacheInvalidateRequest):
 
 @app.get("/cache/stats")
 def cache_stats():
-    from .embedding_service import embedding_svc
-    from .cache_service import semantic_cache, redis_cache
+    from src.services.embedding_service import embedding_svc
+    from src.services.cache_service import semantic_cache, redis_cache
     return {
         "embedding_cache": embedding_svc.cache_stats,
         "semantic_cache": semantic_cache.stats,

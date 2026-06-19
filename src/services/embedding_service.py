@@ -17,7 +17,7 @@ from typing import List, Optional
 from langchain_core.embeddings import Embeddings
 from sentence_transformers import SentenceTransformer
 
-from .config import settings
+from src.config import settings
 
 logger = logging.getLogger(__name__)
 

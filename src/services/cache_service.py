@@ -11,7 +11,7 @@ import time
 import uuid
 from typing import Optional
 
-from .config import settings
+from src.config import settings
 
 logger = logging.getLogger(__name__)
 

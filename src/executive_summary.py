@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # Environment
-from .config import settings
+from src.config import settings
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _DATA_DIR = _PROJECT_ROOT / settings.data_dir
@@ -57,30 +57,33 @@ _GRID_COLOR = "#f0f0f0"
 # Data Loading
 # ===================================================================
 def _load_emr_data() -> pd.DataFrame:
-    """Load EMR data. Prefer clustered CSV if available, else raw CSV/XLSX."""
-    clustered_path = _OUTPUT_DIR / "clustered_emr.csv"
-    if clustered_path.exists():
-        logger.info("Loading clustered EMR data from: %s", clustered_path)
-        df = pd.read_csv(clustered_path)
-        # Parse dates
+    """Load EMR data directly from PostgreSQL."""
+    try:
+        from sqlalchemy import create_engine
+        engine = create_engine(settings.postgres_url)
+        df = pd.read_sql("SELECT * FROM emr_records", engine)
+        
+        # Ensure column names map correctly to what the code expects
+        # emr_records columns are lowercase with underscores (e.g., machine_model)
+        # The legacy code expects title case with spaces (e.g., Machine Model)
+        rename_map = {
+            "machine_model": "Machine Model",
+            "branch_site": "Branch / Site",
+            "account_account_name": "Account: Account Name",
+            "created_date": "Created Date",
+            "emr_last_closed_date": "EMR Last Closed Date",
+            "techcare_component": "Techcare Component"
+        }
+        df.rename(columns=rename_map, inplace=True)
+        
         for col in ("Created Date", "EMR Last Closed Date"):
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], errors="coerce")
+                
         return df
-
-    raw_path = _DATA_DIR / EMR_FILE_NAME
-    if not raw_path.exists():
-        raise FileNotFoundError(f"Data not found: {raw_path}")
-
-    logger.info("Loading raw EMR data (no clustering yet): %s", raw_path)
-    if raw_path.suffix.lower() == '.csv':
-        try:
-            return pd.read_csv(raw_path, encoding='utf-8-sig')
-        except UnicodeDecodeError:
-            logger.info("  UTF-8 decoding failed — falling back to 'latin1' encoding")
-            return pd.read_csv(raw_path, encoding='latin1')
-    else:
-        return pd.read_excel(raw_path, sheet_name=EMR_SHEET_NAME)
+    except Exception as e:
+        logger.error("Failed to load from PostgreSQL: %s", e)
+        return pd.DataFrame()
 
 
 def extract_model_family(model_type: str) -> str:
@@ -150,10 +153,10 @@ def extract_summary_data(family: str) -> Dict[str, Any]:
     data["total_models"] = len(rank_list)
 
     # --- Top fault categories (from clustering) ---
-    has_clusters = "cluster_label" in fdf.columns
+    has_clusters = "graph_community_summary" in fdf.columns
     if has_clusters:
         cluster_dist = (
-            fdf["cluster_label"]
+            fdf["graph_community_summary"]
             .value_counts()
             .head(5)
             .reset_index()
@@ -164,7 +167,7 @@ def extract_summary_data(family: str) -> Dict[str, Any]:
             cluster_dist["frequency"] / total * 100, 2
         )
         data["top_faults"] = cluster_dist.to_dict("records")
-        data["unique_fault_count"] = fdf["cluster_label"].nunique()
+        data["unique_fault_count"] = fdf["graph_community_summary"].nunique()
     else:
         # Fallback: use Techcare Component
         tc = fdf["Techcare Component"].str.strip()

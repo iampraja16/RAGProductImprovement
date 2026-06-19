@@ -54,145 +54,77 @@ def render_graph_visualization(graph_traversal: dict):
     nodes = []
     edges = []
     added_nodes = set()
+    
+    # 1. Provide a generic dynamic rendering based on 'raw_rows' if available
+    raw_rows = graph_traversal.get("raw_rows", [])
+    seed_entities = graph_traversal.get("entities_found", graph_traversal.get("seed_entities", []))
 
-    symptom  = graph_traversal.get("symptom_matched", "Unknown Symptom")
-    cluster  = graph_traversal.get("problem_cluster", "Unknown Cluster")
-    sim      = graph_traversal.get("similarity", 0)
-    freq     = graph_traversal.get("indicate_freq", 0)
-    actions  = graph_traversal.get("actions", [])
+    # Color mapping for different node labels
+    color_map = {
+        "SymptomPattern": "#FF6B6B",
+        "ProblemCluster": "#FF9F43",
+        "Community": "#FF9F43",
+        "RootCausePattern": "#FFD200",
+        "ActionPattern": "#1DD1A1",
+        "Part": "#5F27CD",
+        "MachineModel": "#48dbfb"
+    }
 
-    # --- Node: Symptom ---
-    sym_id = f"sym_{symptom[:30]}"
-    if sym_id not in added_nodes:
-        nodes.append(Node(
-            id=sym_id,
-            label=f"{symptom[:25]}",
-            title=f"Symptom\nSimilarity: {sim:.0%}",
-            size=28,
-            color="#FF6B6B",
-            font={"size": 13, "color": "#ffffff"},
-            shape="ellipse",
-        ))
-        added_nodes.add(sym_id)
-
-    # --- Node: Problem Cluster ---
-    cl_id = f"cl_{cluster[:30]}"
-    if cl_id not in added_nodes:
-        nodes.append(Node(
-            id=cl_id,
-            label=f"{cluster[:25]}",
-            title=f"Problem Cluster\nFreq: {freq} cases",
-            size=24,
-            color="#FF9F43",
-            font={"size": 12, "color": "#ffffff"},
-            shape="box",
-        ))
-        added_nodes.add(cl_id)
-
-    edges.append(Edge(
-        source=sym_id,
-        target=cl_id,
-        label="INDICATES",
-        color="#aaaaaa",
-        font={"size": 10},
-    ))
-
-    # --- Nodes: Root Causes, Actions & Parts ---
-    rc_counts = {}
-    for action_data in actions:
-        root_cause = action_data.get("root_cause", "Penyebab Tidak Terdefinisi")
-        if root_cause not in rc_counts:
-            rc_counts[root_cause] = []
-        rc_counts[root_cause].append(action_data)
-
-    for root_cause, rc_actions in list(rc_counts.items())[:5]:
-        cause_freq = rc_actions[0].get("cause_freq", 0)
-        rc_id = f"rc_{root_cause[:30]}"
-        
-        # --- Node: Root Cause ---
-        if rc_id not in added_nodes:
-            nodes.append(Node(
-                id=rc_id,
-                label=f"{root_cause[:25]}",
-                title=f"Root Cause\nFreq: {cause_freq} cases",
-                size=22,
-                color="#FFD200",
-                font={"size": 11, "color": "#000000"},
-                shape="box",
-            ))
-            added_nodes.add(rc_id)
-
-            # Hubungkan Problem Cluster -> Root Cause
-            edges.append(Edge(
-                source=cl_id,
-                target=rc_id,
-                label=f"HAS_ROOT_CAUSE ({cause_freq}x)",
-                color="#888888",
-                font={"size": 8},
-            ))
-
-        # Render up to 2 actions for this root cause
-        for action_data in rc_actions[:2]:
-            action_name = action_data.get("action", "Unknown")
-            action_freq = action_data.get("frequency", 0)
-            act_id = f"act_{action_name[:30]}"
+    if raw_rows:
+        for row in raw_rows:
+            e_name = str(row.get("entity", "Unknown"))
+            n_name = str(row.get("neighbor", ""))
+            rel = str(row.get("relation", ""))
+            n_label = str(row.get("n_label", "Entity"))
             
-            # --- Node: Action ---
-            if act_id not in added_nodes:
+            # Source Node (usually the seed entity)
+            if e_name not in added_nodes:
+                is_seed = e_name in seed_entities
                 nodes.append(Node(
-                    id=act_id,
-                    label=f"{action_name[:22]}",
-                    title=f"Action\nFrequency: {action_freq} cases",
-                    size=20,
-                    color="#1DD1A1",
-                    font={"size": 10, "color": "#ffffff"},
-                    shape="ellipse",
+                    id=e_name,
+                    label=e_name[:25] + ("..." if len(e_name)>25 else ""),
+                    title=f"{e_name}",
+                    size=25 if is_seed else 20,
+                    color="#FF6B6B" if is_seed else "#a4b0be",
+                    shape="ellipse" if is_seed else "dot",
                 ))
-                added_nodes.add(act_id)
-
-            # Hubungkan Root Cause -> Action
-            edges.append(Edge(
-                source=rc_id,
-                target=act_id,
-                label=f"RESOLVED_BY ({action_freq}x)",
-                color="#aaaaaa",
-                font={"size": 8},
-            ))
-
-            # Parts
-            valid_parts = [
-                p for p in action_data.get("parts", [])
-                if p.get("part_no") and p["part_no"] != "None"
-            ]
-            for part in valid_parts[:2]:
-                part_id = f"part_{part.get('part_no', '')}_{act_id[-6:]}"
-                if part_id not in added_nodes:
+                added_nodes.add(e_name)
+            
+            # Target Node
+            if n_name and n_name != "None":
+                if n_name not in added_nodes:
+                    node_color = color_map.get(n_label, "#ced6e0")
                     nodes.append(Node(
-                        id=part_id,
-                        label=f"{part.get('description', part.get('part_no', '?'))[:20]}",
-                        title=f"Part No: {part.get('part_no')}\n{part.get('description', '')}",
-                        size=15,
-                        color="#5F27CD",
-                        font={"size": 9, "color": "#333333"},
-                        shape="dot",
+                        id=n_name,
+                        label=n_name[:25] + ("..." if len(n_name)>25 else ""),
+                        title=f"{n_label}\n{n_name}",
+                        size=20,
+                        color=node_color,
+                        shape="box",
                     ))
-                    added_nodes.add(part_id)
-
+                    added_nodes.add(n_name)
+                
+                # Edge
                 edges.append(Edge(
-                    source=act_id,
-                    target=part_id,
-                    label="USES_PART",
-                    color="#cccccc",
-                    font={"size": 8},
-                    dashes=True,
+                    source=e_name,
+                    target=n_name,
+                    label=rel,
+                    color="#aaaaaa",
+                    font={"size": 10},
                 ))
+    else:
+        # Fallback if no raw_rows (e.g. drift mode doesn't return raw_rows yet)
+        for seed in seed_entities:
+            nodes.append(Node(
+                id=seed, label=seed[:25], title="Seed Entity", size=25, color="#FF6B6B", shape="ellipse"
+            ))
 
     config = Config(
         width="100%",
         height=450,
         directed=True,
-        physics=False,  # Matikan physics agar struktur hirarki tetap kaku dan rapi
-        hierarchical=True,  # Aktifkan layout berundak
+        physics=True,  # Turn physics on for dynamic graphing
+        hierarchical=False,  
         nodeHighlightBehavior=True,
         highlightColor="#F7F7F7",
         collapsible=False,
@@ -207,7 +139,6 @@ def render_graph_visualization(graph_traversal: dict):
 
 TOOL_LABELS = {
     "ask_emr_graph":              "Knowledge Graph Search",
-    "ask_emr_knowledge":          "Vector Knowledge Base",
     "ask_emr_database":           "SQL Database Query",
     "generate_executive_summary": "Executive Summary Generator",
 }
@@ -323,6 +254,15 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
+    st.divider()
+    st.subheader("Settings")
+    st.session_state.retrieval_mode = st.selectbox(
+        "Graph Retrieval Mode",
+        options=["drift", "local", "global"],
+        index=0,
+        help="DRIFT: Detail + Context (Default)\nLocal: Specific entities only\nGlobal: High-level community trends"
+    )
+
     # Cache stats
     st.divider()
     st.subheader("Cache Stats")
@@ -402,7 +342,10 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
 
         try:
             history_for_api = st.session_state.messages[:-1]
-            payload = {"query": prompt, "chat_history": history_for_api}
+            # Since the API uses Agent calling tools, we prepend a system instruction
+            # for the agent if we want to force a mode, but for simplicity, we pass it via query context
+            mode_context = f"[System: Use '{st.session_state.retrieval_mode}' mode if using ask_emr_graph] "
+            payload = {"query": mode_context + prompt, "chat_history": history_for_api}
 
             # Call FastAPI streaming chat endpoint
             response = requests.post(f"{API_URL}/chat/stream", json=payload, stream=True, timeout=300)
