@@ -7,9 +7,14 @@ load_dotenv(_ENV_FILE)
 
 
 class Settings(BaseSettings):
+    # ── Environment & Security ───────────────────────────────────────
+    env: str = "development"
+    api_key: str = ""
+
     # ── LLM (Local Ollama) ───────────────────────────────────────────
     ollama_model: str = "qwen2.5:7b"
     ollama_base_url: str = "http://localhost:11434"
+    llm_num_ctx: int = 2048
 
     # ── Embeddings ───────────────────────────────────────────────────
     embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
@@ -21,6 +26,8 @@ class Settings(BaseSettings):
 
     # ── SQL Database (Postgres) ───────────────────────────────────────
     postgres_url: str = "postgresql://myuser:mypassword@localhost:5432/emr_db"
+    readonly_postgres_url: str = "postgresql://readonly_user:readonly_password@localhost:5432/emr_db"
+    sql_row_limit: int = 500
 
     # ── Graph Database (Neo4j) ────────────────────────────────────────
     neo4j_uri: str = "bolt://localhost:7687"

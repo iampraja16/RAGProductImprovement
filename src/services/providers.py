@@ -26,7 +26,7 @@ def get_llm(temperature: float = 0.0) -> ChatOllama:
         model=settings.ollama_model,
         base_url=settings.ollama_base_url,
         temperature=temperature,
-        num_ctx=4096,
+        num_ctx=settings.llm_num_ctx,
     )
 
 @lru_cache(maxsize=1)
@@ -103,8 +103,11 @@ def _pg_conn_kwargs_from_url(pg_url: str) -> Dict[str, Optional[str]]:
 def get_vanna(qdrant_url: Optional[str] = None, connect_postgres: bool = True, postgres_url: Optional[str] = None) -> MyVanna:
     client = get_qdrant_client(url=qdrant_url)
     vn = MyVanna(config={"client": client})
-    vn.allow_llm_to_see_data = True
+    vn.allow_llm_to_see_data = False
     if connect_postgres:
-        pg_url = postgres_url or settings.postgres_url
-        vn.connect_to_postgres(**_pg_conn_kwargs_from_url(pg_url))
+        pg_url = postgres_url or settings.readonly_postgres_url
+        conn_kwargs = _pg_conn_kwargs_from_url(pg_url)
+        # Enforce statement timeout of 30 seconds
+        conn_kwargs["options"] = "-c statement_timeout=30000"
+        vn.connect_to_postgres(**conn_kwargs)
     return vn

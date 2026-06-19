@@ -4,7 +4,8 @@ import json
 import os
 import pandas as pd
 
-API_URL = "http://localhost:8000"
+API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_KEY = os.getenv("API_KEY", "")
 
 def clean_markdown_content(text: str) -> str:
     if not isinstance(text, str):
@@ -279,7 +280,8 @@ with st.sidebar:
             st.metric("Embedding Cache Hit Rate", f"{emb_rate:.0%}",
                       help=f"Entries cached: {emb.get('cache_entries',0)}")
         if st.button("Invalidate Cache", use_container_width=True):
-            requests.post(f"{API_URL}/cache/invalidate", json={"level": "all"}, timeout=5)
+            headers = {"X-API-Key": API_KEY}
+            requests.post(f"{API_URL}/cache/invalidate", json={"level": "all"}, headers=headers, timeout=5)
             st.success("Cache cleared!")
     except Exception:
         st.caption("Cache stats unavailable.")
@@ -348,7 +350,8 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
             payload = {"query": mode_context + prompt, "chat_history": history_for_api}
 
             # Call FastAPI streaming chat endpoint
-            response = requests.post(f"{API_URL}/chat/stream", json=payload, stream=True, timeout=300)
+            headers = {"X-API-Key": API_KEY}
+            response = requests.post(f"{API_URL}/chat/stream", json=payload, stream=True, headers=headers, timeout=300)
 
             if response.status_code == 200:
                 answer = ""

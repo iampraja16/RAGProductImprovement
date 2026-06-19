@@ -49,6 +49,13 @@ async def lifespan(app: FastAPI):
     """Initialize long-running services at startup."""
     from src.services.embedding_service import embedding_svc
     from src.services.cache_service import semantic_cache, redis_cache
+    from src.config import settings
+
+    logger.info("=== STARTUP: Validating environment and security ===")
+    if settings.env.lower() in ("staging", "production") and not settings.api_key:
+        error_msg = f"CRITICAL: API Key must be set in {settings.env} environment."
+        logger.critical(error_msg)
+        raise RuntimeError(error_msg)
 
     logger.info("=== STARTUP: Loading embedding model ===")
     embedding_svc.load_model()
@@ -183,11 +190,30 @@ def health_check():
     }
 
 
+from fastapi.security import APIKeyHeader
+from fastapi import Security, Depends
+from src.config import settings
+
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+def verify_api_key(api_key: str = Depends(api_key_header)):
+    is_prod_staging = settings.env.lower() in ("staging", "production")
+    
+    if is_prod_staging and not settings.api_key:
+        raise HTTPException(
+            status_code=500,
+            detail="API Key is not configured in staging/production environment"
+        )
+        
+    if is_prod_staging or settings.api_key:
+        if not api_key or api_key != settings.api_key:
+            raise HTTPException(status_code=403, detail="Invalid or missing API Key")
+
 # ===================================================================
 # /chat — with FASE 4 structured timing
 # ===================================================================
 
-@app.post("/chat", response_model=ChatResponse)
+@app.post("/chat", response_model=ChatResponse, dependencies=[Depends(verify_api_key)])
 def chat(request: ChatRequest):
     request_id = str(uuid.uuid4())[:8]
     query_hash = hashlib.sha256(request.query.encode()).hexdigest()[:8]
@@ -263,7 +289,7 @@ def chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/chat/stream")
+@app.post("/chat/stream", dependencies=[Depends(verify_api_key)])
 def chat_stream(request: ChatRequest):
     """Stream final LLM response with live status updates."""
     # Semantic cache disabled to guarantee live and accurate PostgreSQL/Qdrant queries
@@ -274,7 +300,7 @@ def chat_stream(request: ChatRequest):
 
 # ===== Cache management endpoints (FASE 2) =====
 
-@app.post("/cache/invalidate")
+@app.post("/cache/invalidate", dependencies=[Depends(verify_api_key)])
 def invalidate_cache(request: CacheInvalidateRequest):
     from src.services.cache_service import semantic_cache, redis_cache
     if request.level in ("all", "semantic"):

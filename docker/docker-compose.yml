@@ -30,7 +30,7 @@ services:
     image: pgvector/pgvector:pg17-trixie
     environment:
       - POSTGRES_USER=myuser
-      - POSTGRES_PASSWORD=mypassword
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
       - POSTGRES_DB=emr_db
       # Memory tuning
       - POSTGRES_SHARED_BUFFERS=256MB
@@ -39,6 +39,7 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ../scripts/init_postgres.sql:/docker-entrypoint-initdb.d/init_postgres.sql
     deploy:
       resources:
         limits:
@@ -73,7 +74,7 @@ services:
   neo4j:
     image: neo4j:5-community
     environment:
-      - NEO4J_AUTH=neo4j/mypassword
+      - NEO4J_AUTH=neo4j/$NEO4J_PASSWORD
       - NEO4J_PLUGINS=["apoc", "graph-data-science"]
       # Heap & pagecache limits (prevent unbounded RAM usage)
       - NEO4J_server_memory_heap_initial__size=512m
