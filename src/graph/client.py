@@ -19,6 +19,12 @@ class GraphClient:
     def run_query(self, query: str, parameters: dict = None) -> list[dict]:
         """Execute a raw Cypher query and return results as list of dicts."""
         parameters = parameters or {}
-        with self.driver.session() as session:
-            result = session.run(query, parameters)
-            return [dict(record) for record in result]
+        from src.services.resilience import neo4j_breaker, resilient_call_with_fallback
+        
+        def _execute():
+            # Apply a query timeout of 10s on session run
+            with self.driver.session() as session:
+                result = session.run(query, parameters, timeout=10.0)
+                return [dict(record) for record in result]
+                
+        return resilient_call_with_fallback(neo4j_breaker, [], _execute)

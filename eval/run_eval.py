@@ -4,7 +4,6 @@ import json
 import time
 import logging
 import concurrent.futures
-import requests
 
 # Adjust path to import from workspace Cwd
 sys.path.append(os.getcwd())
@@ -15,15 +14,6 @@ logger = logging.getLogger(__name__)
 
 from src.agent.agent import Agent
 from src.config import settings
-
-def check_ollama_heartbeat(base_url: str) -> bool:
-    """Perform pre-flight HTTP check to ensure Ollama service is running."""
-    try:
-        r = requests.get(base_url, timeout=5)
-        return r.status_code == 200
-    except Exception as e:
-        logger.warning(f"Ollama heartbeat check failed: {e}")
-        return False
 
 def save_atomic_json(filepath: str, data: dict):
     """Save data to filepath atomically using a temporary file and rename/replace."""
@@ -57,13 +47,7 @@ def save_atomic_text(filepath: str, text: str):
 
 def run_evaluation():
     print("=== Starting Golden QA Evaluation Suite ===")
-    
-    # 1. Pre-flight Ollama heartbeat check
-    print("Performing pre-flight Ollama heartbeat check...")
-    if not check_ollama_heartbeat(settings.ollama_base_url):
-        print(f"Error: Ollama service is not running or unreachable at {settings.ollama_base_url}")
-        sys.exit(1)
-    print("Ollama service heartbeat OK.")
+    print(f"LLM Provider: {getattr(settings, 'llm_provider', 'azure')} | Model: {getattr(settings, 'azure_openai_deployment_name', 'gpt-4o')}")
     
     # Load golden QA dataset
     jsonl_path = "eval/golden_qa.jsonl"
@@ -273,7 +257,7 @@ def run_evaluation():
     markdown_content = f"""# Sprint 2 Baseline Evaluation Metrics
 
 Recorded on: 2026-06-19
-Model: qwen2.5:7b (via Ollama)
+Model: {getattr(settings, 'azure_openai_deployment_name', 'gpt-4o')} (via {getattr(settings, 'llm_provider', 'azure').upper()} OpenAI)
 
 ## Summary Metrics
 

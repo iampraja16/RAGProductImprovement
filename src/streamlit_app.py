@@ -297,9 +297,28 @@ st.title("Maintenance Copilot")
 st.markdown("Tanya tentang penyebab masalah, gejala, atau statistik jumlah kerusakan unit.")
 
 # --- Chat History ---
+def render_assistant_answer(content: str):
+    divider = "--- EVIDENCE/PROVENANCE ---"
+    if divider in content:
+        parts = content.split(divider)
+        narrative = parts[0].strip()
+        evidence = parts[1].strip()
+        
+        st.markdown("#### Answer")
+        st.markdown(clean_markdown_content(narrative))
+        st.markdown("#### Evidence Section")
+        st.info(clean_markdown_content(evidence))
+    else:
+        st.markdown("#### Answer")
+        st.markdown(clean_markdown_content(content))
+
+# --- Chat History ---
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        st.markdown(clean_markdown_content(message["content"]))
+        if message["role"] == "user":
+            st.markdown(clean_markdown_content(message["content"]))
+        else:
+            render_assistant_answer(message["content"])
 
         if message["role"] == "assistant":
             # Reasoning trace
@@ -312,19 +331,19 @@ for message in st.session_state.messages:
 
             # Graph visualization
             if message.get("graph_traversal"):
-                with st.expander("Knowledge Graph Visualization", expanded=True):
-                    render_graph_visualization(message["graph_traversal"])
+                st.markdown("#### Graph Section")
+                render_graph_visualization(message["graph_traversal"])
 
             if message.get("sql"):
-                with st.expander("View SQL Query"):
-                    st.code(message["sql"], language="sql")
+                st.markdown("#### SQL Section")
+                st.code(message["sql"], language="sql")
 
             if message.get("sql_data"):
-                with st.expander("View Database Table (PostgreSQL)", expanded=True):
-                    st.dataframe(pd.DataFrame(message["sql_data"]), use_container_width=True)
+                st.markdown("#### Database Table (PostgreSQL)")
+                st.dataframe(pd.DataFrame(message["sql_data"]), use_container_width=True)
 
             if message.get("chunks"):
-                with st.expander("View Retrieved Context"):
+                with st.expander("View Raw Retrieved Chunks"):
                     for i, chunk in enumerate(message["chunks"]):
                         st.markdown(f"**Document {i+1}**")
                         st.markdown(chunk)
@@ -388,15 +407,31 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                     elif chunk_type == "token":
                         token = data.get("content", "")
                         answer += token
-                        # Display cumulative streaming text with cursor
-                        message_placeholder.markdown(answer + "▌")
+                        
+                        # Display cumulative streaming text with sections
+                        divider = "--- EVIDENCE/PROVENANCE ---"
+                        if divider in answer:
+                            parts = answer.split(divider)
+                            narrative = parts[0].strip()
+                            evidence = parts[1].strip()
+                            message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(narrative)}\n\n#### Evidence Section\n\n{clean_markdown_content(evidence)}▌")
+                        else:
+                            message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(answer)}▌")
 
                     elif chunk_type == "done":
                         steps = data.get("steps", [])
                         timing_ms = data.get("timing_ms", None)
                         cache_hit = data.get("cache_hit", None)
+                        
                         # Remove cursor at completion
-                        message_placeholder.markdown(clean_markdown_content(answer))
+                        divider = "--- EVIDENCE/PROVENANCE ---"
+                        if divider in answer:
+                            parts = answer.split(divider)
+                            narrative = parts[0].strip()
+                            evidence = parts[1].strip()
+                            message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(narrative)}\n\n#### Evidence Section\n\n{clean_markdown_content(evidence)}")
+                        else:
+                            message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(answer)}")
 
                     elif chunk_type == "error":
                         st.error(data.get("content"))
@@ -434,19 +469,19 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
 
                 # Interactive graph visualization
                 if graph_traversal:
-                    with st.expander("Knowledge Graph Visualization", expanded=True):
-                        render_graph_visualization(graph_traversal)
+                    st.markdown("#### Graph Section")
+                    render_graph_visualization(graph_traversal)
 
                 if sql:
-                    with st.expander("View SQL Query"):
-                        st.code(sql, language="sql")
+                    st.markdown("#### SQL Section")
+                    st.code(sql, language="sql")
 
                 if sql_data:
-                    with st.expander("View Database Table (PostgreSQL)", expanded=True):
-                        st.dataframe(pd.DataFrame(sql_data), use_container_width=True)
+                    st.markdown("#### Database Table (PostgreSQL)")
+                    st.dataframe(pd.DataFrame(sql_data), use_container_width=True)
 
                 if chunks:
-                    with st.expander("View Retrieved Context"):
+                    with st.expander("View Raw Retrieved Chunks"):
                         for i, chunk in enumerate(chunks):
                             st.markdown(f"**Document {i+1}**")
                             st.markdown(chunk)

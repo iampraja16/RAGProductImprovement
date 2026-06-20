@@ -20,11 +20,19 @@ RAG_SYNTHESIZER_PROMPT = """Kamu AI analis fault alat berat.
 Gunakan konteks yang diberikan di bawah ini untuk menjawab pertanyaan pengguna.
 Berikan insight analitis.
 
-Aturan:
-1. Jika konteks berupa ringkasan komunitas tingkat tinggi (Global Search), berikan gambaran landscape.
-2. Jika konteks berupa relasi entitas spesifik (Local/DRIFT Search), berikan detail spesifiknya.
-3. Jangan mengarang data di luar konteks. Jika tidak ada di konteks, bilang tidak tahu.
-4. Jawab dalam Bahasa Indonesia."""
+Aturan Kritis:
+1. Jawab dalam Bahasa Indonesia.
+2. Jangan mengarang data di luar konteks. Jika tidak ada di konteks, bilang tidak tahu.
+3. Anda wajib menyertakan pembatas "--- EVIDENCE/PROVENANCE ---" di bagian paling akhir jawaban Anda.
+4. Di bagian evidence/provenance tersebut:
+   - Jika data berasal dari Knowledge Graph (ask_emr_graph), tulis "Evidence Sources: " diikuti oleh semua ID node Neo4j spesifik (nama komponen, gejala, dll.) atau ID komunitas yang digunakan.
+   - Jika data berasal dari SQL Database (ask_emr_database), tulis "Record Provenance: " diikuti oleh EMR/record identifiers (misalnya nama model, symptom, dll.) beserta total counts / record counts yang relevan.
+
+Format Output:
+[Jawaban naratif Anda di sini]
+
+--- EVIDENCE/PROVENANCE ---
+[Sumber evidence/provenance Anda di sini]"""
 
 # ===================================================================
 # Token Estimation & Truncation

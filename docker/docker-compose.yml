@@ -1,26 +1,5 @@
 name: emr-fault-analyzer
 services:
-  # ================================================================
-  # Ollama — Local LLM Runtime
-  # BEFORE: Ollama was NOT in compose (ran separately without limits)
-  # ================================================================
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    environment:
-      - OLLAMA_NUM_PARALLEL=1         # One request at a time (save RAM)
-      - OLLAMA_MAX_LOADED_MODELS=1    # Only one model in memory
-      - OLLAMA_KEEP_ALIVE=30m         # Don't unload model too quickly
-    deploy:
-      resources:
-        limits:
-          memory: 6g
-          cpus: "6"
-        reservations:
-          memory: 3g
 
   # ================================================================
   # PostgreSQL — Structured EMR Data
@@ -113,7 +92,6 @@ services:
           memory: 128m
 
 volumes:
-  ollama_data:
   pgdata:
   qdrant_data:
   neo4j_data:

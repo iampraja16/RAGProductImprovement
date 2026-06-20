@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
@@ -11,16 +12,35 @@ class Settings(BaseSettings):
     env: str = "development"
     api_key: str = ""
 
-    # ── LLM (Local Ollama) ───────────────────────────────────────────
-    ollama_model: str = "qwen2.5:7b"
-    ollama_base_url: str = "http://localhost:11434"
-    llm_num_ctx: int = 2048
+    # ── LLM Provider Selection ────────────────────────────────────────
+    # "azure"  → AzureChatOpenAI (requires AZURE_OPENAI_* vars)
+    # "openai" → ChatOpenAI     (requires OPENAI_API_KEY)
+    llm_provider: str = "azure"
+
+    # ── Azure OpenAI (Primary — Cloud) ───────────────────────────────
+    azure_openai_api_key: Optional[str] = None
+    azure_openai_endpoint: Optional[str] = None
+    azure_openai_deployment_name: str = "gpt-4o"
+    azure_openai_api_version: str = "2024-02-01"
+    azure_openai_embedding_deployment: str = "text-embedding-3-small"
+
+    # ── Azure OpenAI (Secondary / Failover Region) ───────────────────
+    azure_openai_failover_endpoint: Optional[str] = None
+    azure_openai_failover_api_key: Optional[str] = None
+
+    # ── OpenAI API (Fallback — non-Azure) ────────────────────────────
+    openai_api_key: Optional[str] = None
+    openai_model: str = "gpt-4o"
+    openai_embedding_model: str = "text-embedding-3-small"
 
     # ── Embeddings ───────────────────────────────────────────────────
-    embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
-    embedding_dimension: int = 384   # paraphrase-multilingual-MiniLM-L12-v2 = 384
+    # embedding_dimension is driven by the active provider:
+    #   SentenceTransformer (local, DEPRECATED) = 384
+    #   text-embedding-3-small / text-embedding-ada-002 (cloud) = 1536
+    embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"  # DEPRECATED
+    embedding_dimension: int = 1536  # Updated for cloud embedding model
 
-    # ── Vector Database (Qdrant) — dipertahankan untuk Vanna SQL ─────
+    # ── Vector Database (Qdrant) ──────────────────────────────────────
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection: str = "emr_documents"
 
@@ -35,24 +55,20 @@ class Settings(BaseSettings):
     neo4j_password: str = "mypassword"
 
     # ── Neo4j Indexes ─────────────────────────────────────────────────
-    # Vector indexes (dibuat oleh scripts/setup_indexes.py)
     neo4j_vector_index_symptom: str = "symptom-embeddings"
     neo4j_vector_index_community: str = "community-embeddings"
-    # Fulltext indexes
     neo4j_fulltext_index_entity: str = "entity-names"
 
     # ── Graph Retrieval ───────────────────────────────────────────────
     graph_similarity_threshold: float = 0.65
     retriever_k: int = 8
-    # Mode default untuk agent: "local" | "global" | "drift"
     default_retrieval_mode: str = "drift"
-    # Jumlah kandidat hybrid search (vector + fulltext sebelum di-merge)
     hybrid_candidate_k: int = 20
 
     # ── Community Detection (GDS Leiden) ──────────────────────────────
     community_max_levels: int = 3
-    community_gamma: float = 1.0          # Leiden resolution parameter
-    community_theta: float = 0.01         # Leiden tolerance
+    community_gamma: float = 1.0
+    community_theta: float = 0.01
     community_relationship_types: list = [
         "EXHIBITED", "CAUSED_BY", "RESOLVED_BY", "INVOLVES_PART", "BELONGS_TO", "MENTIONS"
     ]

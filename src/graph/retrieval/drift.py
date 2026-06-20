@@ -59,6 +59,9 @@ class DriftSearchRetriever(BaseRetriever):
         {context_str}
         
         Synthesize the specific details with the high-level patterns to provide a comprehensive answer.
+        
+        CRITICAL: At the end of your response, you must explicitly list the Neo4j Node names and Community IDs used as Evidence Sources, formatted as:
+        Evidence Sources: Neo4j Node(s) [{', '.join(entity_names)}], Community ID(s) [{', '.join(str(c['id']) for c in communities)}].
         """
         
         from langchain_core.messages import HumanMessage

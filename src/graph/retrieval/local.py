@@ -47,6 +47,9 @@ class LocalSearchRetriever(BaseRetriever):
         {context_str}
         
         Answer concisely and highlight specific parts or actions if they exist in the context.
+        
+        CRITICAL: At the end of your response, you must explicitly list the Neo4j Node names used as Evidence Sources, formatted as:
+        Evidence Sources: Neo4j Node(s) [{', '.join(entity_names)}].
         """
         
         from langchain_core.messages import HumanMessage

@@ -55,7 +55,14 @@ class Agent:
         
         # Tools are passed using bind_tools
         llm_with_tools = self.llm.bind_tools(self.tool_schemas)
-        response = llm_with_tools.invoke([sys_msg, HumanMessage(content=query)])
+        
+        from src.services.resilience import cloud_llm_breaker, resilient_call_with_fallback
+        fallback_msg = AIMessage(content="Layanan LLM router tidak stabil. Menjawab langsung.")
+        response = resilient_call_with_fallback(
+            cloud_llm_breaker,
+            fallback_msg,
+            lambda: llm_with_tools.invoke([sys_msg, HumanMessage(content=query)])
+        )
         
         tool_call = None
         # LangChain populates tool_calls list if tools were triggered
@@ -126,7 +133,13 @@ class Agent:
         
         # If synthesizer messages were prepared, generate the final answer now (sync)
         if "synthesizer_messages" in final_state and not final_state.get("final_answer"):
-            response = self.llm.invoke(final_state["synthesizer_messages"])
+            from src.services.resilience import cloud_llm_breaker, resilient_call_with_fallback
+            fallback_content = "Mohon maaf, layanan LLM (sintesis jawaban) saat ini tidak tersedia atau sedang mengalami gangguan. Silakan coba beberapa saat lagi."
+            response = resilient_call_with_fallback(
+                cloud_llm_breaker,
+                AIMessage(content=fallback_content),
+                lambda: self.llm.invoke(final_state["synthesizer_messages"])
+            )
             final_state["final_answer"] = response.content
             
         return {
@@ -180,10 +193,35 @@ class Agent:
         final_answer = final_state.get("final_answer") or ""
         if "synthesizer_messages" in final_state and not final_answer:
             messages = final_state["synthesizer_messages"]
-            for chunk in self.llm.stream(messages):
-                token = chunk.content
-                final_answer += token
-                yield json.dumps({"type": "token", "content": token}) + "\n"
+            from src.services.resilience import cloud_llm_breaker, CircuitBreakerOpenException
+
+            try:
+                # Check circuit breaker before starting the stream
+                cloud_llm_breaker.check_state()
+
+                # Stream generator
+                iterator = self.llm.stream(messages)
+                stream_failed = False
+                while True:
+                    try:
+                        chunk = next(iterator)
+                        token = chunk.content
+                        final_answer += token
+                        yield json.dumps({"type": "token", "content": token}) + "\n"
+                    except StopIteration:
+                        # Record success once per completed stream, not per token
+                        if not stream_failed:
+                            cloud_llm_breaker.record_success()
+                        break
+                    except Exception as e:
+                        stream_failed = True
+                        cloud_llm_breaker.record_failure()
+                        raise e
+
+            except (CircuitBreakerOpenException, Exception) as e:
+                logger.error(f"Streaming failed: {e}")
+                fallback_err = "Mohon maaf, layanan streaming LLM saat ini tidak tersedia (API unavailable or rate limit exceeded)."
+                yield json.dumps({"type": "token", "content": fallback_err}) + "\n"
         else:
             # Fallback if already answered
             yield json.dumps({"type": "token", "content": final_answer}) + "\n"

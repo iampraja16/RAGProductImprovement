@@ -237,7 +237,7 @@ def extract_summary_data(family: str) -> Dict[str, Any]:
 def _generate_recommendation(data: Dict[str, Any]) -> str:
     """Generate AI recommendation using Ollama."""
     try:
-        from .utils import get_llm
+        from src.services.providers import get_llm
         from langchain_core.messages import HumanMessage
 
         llm = get_llm(temperature=0.0)

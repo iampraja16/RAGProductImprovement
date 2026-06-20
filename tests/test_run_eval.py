@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 # Adjust path to import from workspace Cwd
 sys.path.append(os.getcwd())
 
-from eval.run_eval import check_ollama_heartbeat, save_atomic_json, save_atomic_text
+from eval.run_eval import save_atomic_json, save_atomic_text
 
 class TestRunEvalHardening(unittest.TestCase):
     
@@ -43,19 +43,6 @@ class TestRunEvalHardening(unittest.TestCase):
         with open(self.test_text_path, "r", encoding="utf-8") as f:
             loaded = f.read()
         self.assertEqual(loaded, text)
-
-    @patch("requests.get")
-    def test_heartbeat_ok(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_get.return_value = mock_response
-        
-        self.assertTrue(check_ollama_heartbeat("http://localhost:11434"))
-
-    @patch("requests.get")
-    def test_heartbeat_fail(self, mock_get):
-        mock_get.side_effect = Exception("Connection refused")
-        self.assertFalse(check_ollama_heartbeat("http://localhost:11434"))
 
 if __name__ == "__main__":
     unittest.main()

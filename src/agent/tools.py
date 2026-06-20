@@ -177,9 +177,31 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
             result_str = "No data returned from database."
             sql_data = []
         else:
-            result_str = df.to_markdown(index=False)
+            markdown_table = df.to_markdown(index=False)
             df_cleaned = df.replace({float('nan'): None, float('inf'): None, float('-inf'): None})
             sql_data = df_cleaned.to_dict(orient="records")
+            
+            # Extract record identifiers (e.g., values of emr_name, model_name, etc.)
+            record_identifiers = []
+            for col in ["emr_name", "model_name", "symptom", "name", "component", "model"]:
+                if col in df.columns:
+                    record_identifiers.extend(df[col].dropna().unique().astype(str).tolist())
+            
+            # Extract count/sum/aggr values if applicable
+            counts = []
+            for col in df.columns:
+                if any(x in col.lower() for x in ["count", "total", "sum", "repairs", "fault_count"]):
+                    counts.extend(df[col].dropna().tolist())
+                    
+            provenance_info = ""
+            if record_identifiers:
+                provenance_info += f"Record Identifiers: {', '.join(record_identifiers[:15])}\n"
+            if counts:
+                provenance_info += f"Aggregation Counts/Sums: {', '.join(str(c) for c in counts[:15])}\n"
+            else:
+                provenance_info += f"Aggregation Counts/Sums: {len(df)} records\n"
+                
+            result_str = f"{markdown_table}\n\nMetadata Provenance:\n{provenance_info.strip()}"
             
         return {"answer": result_str, "chunks": None, "sql": sql, "sql_data": sql_data}
     except Exception as e:

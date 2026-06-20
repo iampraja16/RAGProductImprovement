@@ -24,7 +24,8 @@ class SemanticCache:
     """Cache using Qdrant vector similarity (cosine >= threshold)."""
 
     COLLECTION = "query_cache"
-    VECTOR_DIM = 384  # paraphrase-multilingual-MiniLM-L12-v2 output dim
+    # Updated from 384 (SentenceTransformer) → 1536 (text-embedding-3-small / ada-002)
+    VECTOR_DIM = 1536
 
     def __init__(self, similarity_threshold: float = 0.95, ttl_hours: int = 24):
         self.threshold = similarity_threshold
@@ -48,9 +49,30 @@ class SemanticCache:
                     size=self.VECTOR_DIM, distance=Distance.COSINE
                 ),
             )
-            logger.info("Created Qdrant collection: %s", self.COLLECTION)
+            logger.info("Created Qdrant collection: %s (dim=%d)", self.COLLECTION, self.VECTOR_DIM)
         else:
-            logger.info("Qdrant collection '%s' already exists.", self.COLLECTION)
+            # Guard: if existing collection has a different dimension, invalidate and recreate
+            info = self._client.get_collection(self.COLLECTION)
+            existing_dim = info.config.params.vectors.size
+            if existing_dim != self.VECTOR_DIM:
+                logger.warning(
+                    "Qdrant collection '%s' has dimension %d but expected %d. "
+                    "Invalidating and recreating.",
+                    self.COLLECTION, existing_dim, self.VECTOR_DIM,
+                )
+                self._client.delete_collection(self.COLLECTION)
+                self._client.create_collection(
+                    collection_name=self.COLLECTION,
+                    vectors_config=VectorParams(
+                        size=self.VECTOR_DIM, distance=Distance.COSINE
+                    ),
+                )
+                logger.info(
+                    "Recreated Qdrant collection '%s' with dim=%d.",
+                    self.COLLECTION, self.VECTOR_DIM,
+                )
+            else:
+                logger.info("Qdrant collection '%s' OK (dim=%d).", self.COLLECTION, self.VECTOR_DIM)
 
     def get(self, query_embedding: list) -> Optional[str]:
         """Return cached response if a similar query exists."""

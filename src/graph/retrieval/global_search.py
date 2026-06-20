@@ -50,6 +50,9 @@ class GlobalSearchRetriever(BaseRetriever):
         
         Findings:
         {combined_partials}
+        
+        CRITICAL: At the end of your response, you must explicitly list the Community IDs used as Evidence Sources, formatted as:
+        Evidence Sources: Community ID(s) [{', '.join(str(c['id']) for c in communities)}].
         """
         final_response = self.llm.invoke([HumanMessage(content=reduce_prompt)])
 
