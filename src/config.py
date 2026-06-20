@@ -80,6 +80,14 @@ class Settings(BaseSettings):
     # ── Redis Cache ───────────────────────────────────────────────────
     redis_url: str = "redis://localhost:6379/0"
 
+    # ── Evaluation ────────────────────────────────────────────────────
+    eval_model_family: str = "gpt-4o"
+    
+    # ── Telemetry / Observability ─────────────────────────────────────
+    otel_enabled: bool = False
+    otel_service_name: str = "emr-fault-analyzer"
+    otel_exporter_endpoint: Optional[str] = None
+
     # ── Data ──────────────────────────────────────────────────────────
     data_dir: str = "data"
     emr_file_name: str = "Dashboard EMR(report1776669858353).csv"

@@ -88,55 +88,85 @@ def get_failover_llm(temperature: float = 0.0, task_type: str = "reasoning") -> 
 def invoke_with_failover(messages: list, task_type: str = "reasoning", temperature: float = 0.0, tools: list = None, **kwargs):
     """Invoke LLM with automatic failover to secondary endpoint, honoring circuit breakers."""
     from src.services.resilience import cloud_llm_breaker, failover_llm_breaker, resilient_call, _is_rate_limit_error
+    from src.services.telemetry import tracer
     import logging
+    import time
     logger = logging.getLogger(__name__)
 
-    primary = get_llm(temperature=temperature, task_type=task_type)
-    if tools:
-        primary = primary.bind_tools(tools)
+    with tracer.start_as_current_span("invoke_with_failover") as span:
+        start_time = time.time()
+        span.set_attribute("task_type", task_type)
+        span.set_attribute("model_name", "gpt-4o" if task_type == "reasoning" else "gpt-4o-mini")
         
-    secondary = get_failover_llm(temperature=temperature, task_type=task_type)
-    if tools and secondary:
-        secondary = secondary.bind_tools(tools)
-        
-    if cloud_llm_breaker.state == "OPEN" and secondary:
-        logger.info(f"Failover active: Routing invoke ({task_type}) to secondary LLM.")
-        return resilient_call(failover_llm_breaker, secondary.invoke, messages, **kwargs)
-        
-    try:
-        return resilient_call(cloud_llm_breaker, primary.invoke, messages, **kwargs)
-    except Exception as e:
-        if _is_rate_limit_error(e):
-            raise e # Do not failover on HTTP 429 Rate Limit
+        primary = get_llm(temperature=temperature, task_type=task_type)
+        if tools:
+            primary = primary.bind_tools(tools)
             
-        if secondary:
-            logger.warning(f"Primary LLM failed: {e}. Activating failover to secondary LLM.")
-            return resilient_call(failover_llm_breaker, secondary.invoke, messages, **kwargs)
-        raise e
+        secondary = get_failover_llm(temperature=temperature, task_type=task_type)
+        if tools and secondary:
+            secondary = secondary.bind_tools(tools)
+            
+        if cloud_llm_breaker.state == "OPEN" and secondary:
+            logger.info(f"Failover active: Routing invoke ({task_type}) to secondary LLM.")
+            span.set_attribute("failover_active", True)
+            res = resilient_call(failover_llm_breaker, secondary.invoke, messages, **kwargs)
+            span.set_attribute("response_time_ms", (time.time() - start_time) * 1000)
+            return res
+            
+        span.set_attribute("failover_active", False)
+        try:
+            res = resilient_call(cloud_llm_breaker, primary.invoke, messages, **kwargs)
+            span.set_attribute("response_time_ms", (time.time() - start_time) * 1000)
+            return res
+        except Exception as e:
+            if _is_rate_limit_error(e):
+                span.record_exception(e)
+                raise e # Do not failover on HTTP 429 Rate Limit
+                
+            if secondary:
+                logger.warning(f"Primary LLM failed: {e}. Activating failover to secondary LLM.")
+                span.set_attribute("failover_active", True)
+                res = resilient_call(failover_llm_breaker, secondary.invoke, messages, **kwargs)
+                span.set_attribute("response_time_ms", (time.time() - start_time) * 1000)
+                return res
+            span.record_exception(e)
+            raise e
+
+
 
 def stream_with_failover(messages: list, task_type: str = "reasoning", temperature: float = 0.0, **kwargs):
     """Return LLM stream generator and active breaker, honoring failover states."""
     from src.services.resilience import cloud_llm_breaker, failover_llm_breaker, CircuitBreakerOpenException
+    from src.services.telemetry import tracer
     import logging
     logger = logging.getLogger(__name__)
 
-    primary = get_llm(temperature=temperature, task_type=task_type)
-    secondary = get_failover_llm(temperature=temperature, task_type=task_type)
-    
-    if cloud_llm_breaker.state == "OPEN" and secondary:
-        logger.info(f"Failover active: Routing stream ({task_type}) to secondary LLM.")
-        failover_llm_breaker.check_state()
-        return secondary.stream(messages, **kwargs), failover_llm_breaker
+    with tracer.start_as_current_span("stream_with_failover") as span:
+        span.set_attribute("task_type", task_type)
+        span.set_attribute("model_name", "gpt-4o" if task_type == "reasoning" else "gpt-4o-mini")
+
+        primary = get_llm(temperature=temperature, task_type=task_type)
+        secondary = get_failover_llm(temperature=temperature, task_type=task_type)
         
-    try:
-        cloud_llm_breaker.check_state()
-        return primary.stream(messages, **kwargs), cloud_llm_breaker
-    except CircuitBreakerOpenException:
-        if secondary:
-            logger.warning("Primary LLM circuit breaker OPEN. Activating failover to secondary LLM.")
+        if cloud_llm_breaker.state == "OPEN" and secondary:
+            logger.info(f"Failover active: Routing stream ({task_type}) to secondary LLM.")
+            span.set_attribute("failover_active", True)
             failover_llm_breaker.check_state()
             return secondary.stream(messages, **kwargs), failover_llm_breaker
-        raise
+            
+        span.set_attribute("failover_active", False)
+        try:
+            cloud_llm_breaker.check_state()
+            return primary.stream(messages, **kwargs), cloud_llm_breaker
+        except CircuitBreakerOpenException:
+            if secondary:
+                logger.warning("Primary LLM circuit breaker OPEN. Activating failover to secondary LLM.")
+                span.set_attribute("failover_active", True)
+                failover_llm_breaker.check_state()
+                return secondary.stream(messages, **kwargs), failover_llm_breaker
+            raise
+
+
 
 
 # ── Graph Client ──────────────────────────────────────────────────────────────
