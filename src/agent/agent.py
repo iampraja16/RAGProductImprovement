@@ -53,8 +53,12 @@ class Agent:
         query = state["query"]
         sys_msg = SystemMessage(content=RAG_ROUTER_PROMPT)
         
+        # Use cheaper model for routing
+        from src.services.providers import get_llm
+        router_llm = get_llm(temperature=0.0, task_type="routing")
+        
         # Tools are passed using bind_tools
-        llm_with_tools = self.llm.bind_tools(self.tool_schemas)
+        llm_with_tools = router_llm.bind_tools(self.tool_schemas)
         
         from src.services.resilience import cloud_llm_breaker, resilient_call_with_fallback
         fallback_msg = AIMessage(content="Layanan LLM router tidak stabil. Menjawab langsung.")
@@ -120,6 +124,9 @@ class Agent:
             }
 
     def get_response(self, query: str, chat_history: List[Dict] = None) -> Dict[str, Any]:
+        from langchain_community.callbacks import get_openai_callback
+        from src.services.token_monitor import global_token_monitor
+        
         initial_state = {
             "query": query,
             "chat_history": chat_history or [],
@@ -129,18 +136,35 @@ class Agent:
             "final_answer": None
         }
         
-        final_state = self.graph.invoke(initial_state)
-        
-        # If synthesizer messages were prepared, generate the final answer now (sync)
-        if "synthesizer_messages" in final_state and not final_state.get("final_answer"):
-            from src.services.resilience import cloud_llm_breaker, resilient_call_with_fallback
-            fallback_content = "Mohon maaf, layanan LLM (sintesis jawaban) saat ini tidak tersedia atau sedang mengalami gangguan. Silakan coba beberapa saat lagi."
-            response = resilient_call_with_fallback(
-                cloud_llm_breaker,
-                AIMessage(content=fallback_content),
-                lambda: self.llm.invoke(final_state["synthesizer_messages"])
-            )
-            final_state["final_answer"] = response.content
+        with get_openai_callback() as cb:
+            final_state = self.graph.invoke(initial_state)
+            
+            # If synthesizer messages were prepared, generate the final answer now (sync)
+            if "synthesizer_messages" in final_state and not final_state.get("final_answer"):
+                from src.services.resilience import cloud_llm_breaker, resilient_call_with_fallback
+                fallback_content = "Mohon maaf, layanan LLM (sintesis jawaban) saat ini tidak tersedia atau sedang mengalami gangguan. Silakan coba beberapa saat lagi."
+                response = resilient_call_with_fallback(
+                    cloud_llm_breaker,
+                    AIMessage(content=fallback_content),
+                    lambda: self.llm.invoke(final_state["synthesizer_messages"])
+                )
+                final_state["final_answer"] = response.content
+                
+            # Capture Token Usage
+            if cb.total_tokens > 0:
+                usage_meta = {
+                    "prompt_tokens": cb.prompt_tokens,
+                    "completion_tokens": cb.completion_tokens,
+                    "total_tokens": cb.total_tokens,
+                    "estimated_cost_usd": cb.total_cost,
+                    "estimation_method": "langchain_callback"
+                }
+            else:
+                prompt_text = query + str(final_state.get("synthesizer_messages", ""))
+                usage_meta = global_token_monitor.estimate_fallback(prompt_text, final_state.get("final_answer", ""))
+                usage_meta["estimation_method"] = "fallback_heuristics"
+                
+            global_token_monitor.add_usage(usage_meta["prompt_tokens"], usage_meta["completion_tokens"], usage_meta["estimated_cost_usd"])
             
         return {
             "answer": final_state.get("final_answer", ""),
@@ -148,7 +172,8 @@ class Agent:
             "sql": final_state.get("sql"),
             "sql_data": final_state.get("sql_data"),
             "graph_traversal": final_state.get("graph_traversal"),
-            "steps": final_state.get("steps", [])
+            "steps": final_state.get("steps", []),
+            "token_usage": usage_meta
         }
 
     def stream_response(self, query: str, chat_history: List[Dict] = None):
@@ -160,58 +185,79 @@ class Agent:
             "tool_result": None,
             "final_answer": None
         }
+        from langchain_community.callbacks import get_openai_callback
+        from src.services.token_monitor import global_token_monitor
         
         yield json.dumps({"type": "status", "content": "Agent is thinking..."}) + "\n"
         
         final_state = initial_state.copy()
         
-        # Stream intermediate graph steps
-        for output in self.graph.stream(initial_state):
-            for node_name, node_state in output.items():
-                if node_name == "router":
-                    tool_call = node_state.get("tool_call")
-                    if tool_call:
-                        yield json.dumps({"type": "status", "content": f"Querying {tool_call['name']}..."}) + "\n"
-                    else:
-                        yield json.dumps({"type": "status", "content": "Answering directly..."}) + "\n"
-                
-                elif node_name == "tool_executor":
-                    yield json.dumps({"type": "status", "content": "Analyzing results..."}) + "\n"
-                    tr = node_state.get("tool_result", {})
-                    # Yield tool data to update the UI expanders immediately
-                    yield json.dumps({
-                        "type": "tool_data", 
-                        "sql": tr.get("sql"),
-                        "sql_data": tr.get("sql_data"),
-                        "chunks": tr.get("chunks"),
-                        "graph_traversal": tr.get("graph_traversal")
-                    }, default=str) + "\n"
+        with get_openai_callback() as cb:
+            # Stream intermediate graph steps
+            for output in self.graph.stream(initial_state):
+                for node_name, node_state in output.items():
+                    if node_name == "router":
+                        tool_call = node_state.get("tool_call")
+                        if tool_call:
+                            yield json.dumps({"type": "status", "content": f"Querying {tool_call['name']}..."}) + "\n"
+                        else:
+                            yield json.dumps({"type": "status", "content": "Answering directly..."}) + "\n"
                     
-                final_state.update(node_state)
-        
-        # Now stream the final LLM synthesis token by token
-        final_answer = final_state.get("final_answer") or ""
-        if "synthesizer_messages" in final_state and not final_answer:
-            messages = final_state["synthesizer_messages"]
-            from src.services.resilience import cloud_llm_breaker, CircuitBreakerOpenException
-
-            try:
-                # Check circuit breaker before starting the stream
-                cloud_llm_breaker.check_state()
-
-                # Stream generator
-                iterator = self.llm.stream(messages)
-                stream_failed = False
-                while True:
-                    try:
-                        chunk = next(iterator)
-                        token = chunk.content
-                        final_answer += token
-                        yield json.dumps({"type": "token", "content": token}) + "\n"
-                    except StopIteration:
-                        # Record success once per completed stream, not per token
-                        if not stream_failed:
-                            cloud_llm_breaker.record_success()
+                    elif node_name == "tool_executor":
+                        yield json.dumps({"type": "status", "content": "Analyzing results..."}) + "\n"
+                        tr = node_state.get("tool_result", {})
+                        # Yield tool data to update the UI expanders immediately
+                        yield json.dumps({
+                            "type": "tool_data", 
+                            "sql": tr.get("sql"),
+                            "sql_data": tr.get("sql_data"),
+                            "chunks": tr.get("chunks"),
+                            "graph_traversal": tr.get("graph_traversal")
+                        }, default=str) + "\n"
+                        
+                    final_state.update(node_state)
+            
+            # Now stream the final LLM synthesis token by token
+            final_answer = final_state.get("final_answer") or ""
+            if "synthesizer_messages" in final_state and not final_answer:
+                messages = final_state["synthesizer_messages"]
+                from src.services.resilience import cloud_llm_breaker, CircuitBreakerOpenException
+    
+                try:
+                    # Check circuit breaker before starting the stream
+                    cloud_llm_breaker.check_state()
+    
+                    # Stream generator
+                    iterator = self.llm.stream(messages)
+                    stream_failed = False
+                    while True:
+                        try:
+                            chunk = next(iterator)
+                            token = chunk.content
+                            final_answer += token
+                            yield json.dumps({"type": "token", "content": token}) + "\n"
+                        except StopIteration:
+                            # Record success once per completed stream, not per token
+                            if not stream_failed:
+                                cloud_llm_breaker.record_success()
+                                
+                            # Emit Token Usage Metadata Chunk
+                            if cb.total_tokens > 0:
+                                usage_meta = {
+                                    "prompt_tokens": cb.prompt_tokens,
+                                    "completion_tokens": cb.completion_tokens,
+                                    "total_tokens": cb.total_tokens,
+                                    "estimated_cost_usd": cb.total_cost,
+                                    "estimation_method": "langchain_callback"
+                                }
+                            else:
+                            prompt_text = str(messages)
+                            usage_meta = global_token_monitor.estimate_fallback(prompt_text, final_answer)
+                            usage_meta["estimation_method"] = "fallback_heuristics"
+                            
+                        global_token_monitor.add_usage(usage_meta["prompt_tokens"], usage_meta["completion_tokens"], usage_meta["estimated_cost_usd"])
+                        yield json.dumps({"type": "metadata", "content": {"token_usage": usage_meta}}) + "\n"
+                        
                         break
                     except Exception as e:
                         stream_failed = True

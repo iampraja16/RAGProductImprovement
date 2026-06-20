@@ -11,6 +11,8 @@ from src.graph.retrieval.global_search import GlobalSearchRetriever
 from src.graph.retrieval.drift import DriftSearchRetriever
 from src.agent.prompts import estimate_tokens, truncate_to_tokens
 
+import pandas as pd
+
 logger = logging.getLogger(__name__)
 
 # ===== Tool Registry Pattern =====
@@ -149,6 +151,66 @@ def _inject_limit_if_missing(sql: str, default_limit: int) -> str:
         
     return sql_strip
 
+def _summarize_dataframe(df: pd.DataFrame) -> str:
+    """Summarize large dataframes to prevent token explosion."""
+    if df.empty:
+        return "No data returned."
+        
+    if len(df) <= settings.dataframe_markdown_limit:
+        # Limit columns if it's too wide
+        if len(df.columns) > 15:
+            df = df.iloc[:, :15]
+        return df.to_markdown(index=False)
+        
+    # Summarization Path
+    total_rows = len(df)
+    total_cols = len(df.columns)
+    
+    # Limit wide tables
+    sample_df = df
+    if total_cols > 15:
+        sample_df = df.iloc[:, :15]
+        
+    summary_parts = []
+    summary_parts.append(f"**Data Summary**: {total_rows} rows x {total_cols} columns")
+    summary_parts.append("\n**Top 10 Sample Rows:**")
+    summary_parts.append(sample_df.head(10).to_markdown(index=False))
+    
+    # Numeric Stats
+    numeric_cols = df.select_dtypes(include=['number']).columns
+    if not numeric_cols.empty:
+        stats = []
+        for col in numeric_cols[:10]: # Limit to 10 numeric columns
+            try:
+                col_min = df[col].min()
+                col_max = df[col].max()
+                col_mean = df[col].mean()
+                stats.append(f"- {col}: Min={col_min}, Max={col_max}, Mean={col_mean:.2f}")
+            except Exception:
+                pass
+        if stats:
+            summary_parts.append("\n**Numeric Statistics:**")
+            summary_parts.extend(stats)
+            
+    # Categorical Stats
+    cat_cols = df.select_dtypes(exclude=['number']).columns
+    if not cat_cols.empty:
+        cat_stats = []
+        for col in cat_cols[:10]: # Limit to 10 categorical columns
+            try:
+                top_vals = df[col].value_counts().head(3).to_dict()
+                cat_stats.append(f"- {col}: Top Values={top_vals}")
+            except Exception:
+                pass
+        if cat_stats:
+            summary_parts.append("\n**Categorical Statistics:**")
+            summary_parts.extend(cat_stats)
+            
+    full_summary = "\n".join(summary_parts)
+    
+    # Apply token truncation
+    return truncate_to_tokens(full_summary, settings.dataframe_summary_token_limit)
+
 @register_tool(args_schema=QueryArgs)
 def ask_emr_database(query: str) -> Dict[str, Any]:
     """
@@ -177,7 +239,9 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
             result_str = "No data returned from database."
             sql_data = []
         else:
-            markdown_table = df.to_markdown(index=False)
+            # Generate smart summary instead of raw markdown table
+            markdown_table = _summarize_dataframe(df)
+            
             df_cleaned = df.replace({float('nan'): None, float('inf'): None, float('-inf'): None})
             sql_data = df_cleaned.to_dict(orient="records")
             

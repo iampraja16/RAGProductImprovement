@@ -26,8 +26,8 @@ def get_embeddings() -> EmbeddingService:
 # ── LLM Provider Factory ──────────────────────────────────────────────────────
 
 @lru_cache(maxsize=4)
-def get_llm(temperature: float = 0.0) -> BaseChatModel:
-    """Return a cloud LLM client based on settings.llm_provider.
+def get_llm(temperature: float = 0.0, task_type: str = "reasoning") -> BaseChatModel:
+    """Return a cloud LLM client based on settings.llm_provider and task_type.
 
     Supports:
       "azure"  → AzureChatOpenAI  (requires AZURE_OPENAI_* env vars)
@@ -37,8 +37,9 @@ def get_llm(temperature: float = 0.0) -> BaseChatModel:
 
     if provider == "azure":
         from langchain_openai import AzureChatOpenAI
+        deployment = settings.azure_openai_deployment_name if task_type == "reasoning" else settings.azure_openai_mini_deployment_name
         return AzureChatOpenAI(
-            azure_deployment=settings.azure_openai_deployment_name,
+            azure_deployment=deployment,
             azure_endpoint=settings.azure_openai_endpoint,
             api_key=settings.azure_openai_api_key,
             api_version=settings.azure_openai_api_version,
@@ -49,8 +50,9 @@ def get_llm(temperature: float = 0.0) -> BaseChatModel:
 
     if provider == "openai":
         from langchain_openai import ChatOpenAI
+        model_name = settings.openai_model if task_type == "reasoning" else settings.openai_mini_model
         return ChatOpenAI(
-            model=settings.openai_model,
+            model=model_name,
             api_key=settings.openai_api_key,
             temperature=temperature,
             timeout=30.0,

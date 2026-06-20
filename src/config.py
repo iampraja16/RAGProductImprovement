@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     azure_openai_api_key: Optional[str] = None
     azure_openai_endpoint: Optional[str] = None
     azure_openai_deployment_name: str = "gpt-4o"
+    azure_openai_mini_deployment_name: str = "gpt-4o-mini"
     azure_openai_api_version: str = "2024-02-01"
     azure_openai_embedding_deployment: str = "text-embedding-3-small"
 
@@ -31,6 +32,7 @@ class Settings(BaseSettings):
     # ── OpenAI API (Fallback — non-Azure) ────────────────────────────
     openai_api_key: Optional[str] = None
     openai_model: str = "gpt-4o"
+    openai_mini_model: str = "gpt-4o-mini"
     openai_embedding_model: str = "text-embedding-3-small"
 
     # ── Embeddings ───────────────────────────────────────────────────
@@ -47,7 +49,9 @@ class Settings(BaseSettings):
     # ── SQL Database (Postgres) ───────────────────────────────────────
     postgres_url: str = "postgresql://myuser:mypassword@localhost:5432/emr_db"
     readonly_postgres_url: str = "postgresql://readonly_user:readonly_password@localhost:5432/emr_db"
-    sql_row_limit: int = 500
+    sql_row_limit: int = 100
+    dataframe_markdown_limit: int = 20
+    dataframe_summary_token_limit: int = 1000
 
     # ── Graph Database (Neo4j) ────────────────────────────────────────
     neo4j_uri: str = "bolt://localhost:7687"
