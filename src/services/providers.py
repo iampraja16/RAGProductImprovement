@@ -64,6 +64,80 @@ def get_llm(temperature: float = 0.0, task_type: str = "reasoning") -> BaseChatM
         "Set LLM_PROVIDER=azure or LLM_PROVIDER=openai in your .env file."
     )
 
+@lru_cache(maxsize=4)
+def get_failover_llm(temperature: float = 0.0, task_type: str = "reasoning") -> Optional[BaseChatModel]:
+    """Return the secondary cloud LLM client if configured, else None."""
+    if not settings.azure_openai_failover_endpoint:
+        return None
+        
+    provider = (settings.llm_provider or "azure").lower()
+    if provider == "azure":
+        from langchain_openai import AzureChatOpenAI
+        deployment = settings.azure_openai_deployment_name if task_type == "reasoning" else settings.azure_openai_mini_deployment_name
+        return AzureChatOpenAI(
+            azure_deployment=deployment,
+            azure_endpoint=settings.azure_openai_failover_endpoint,
+            api_key=settings.azure_openai_failover_api_key or settings.azure_openai_api_key,
+            api_version=settings.azure_openai_api_version,
+            temperature=temperature,
+            timeout=30.0,
+            max_retries=0,
+        )
+    return None
+
+def invoke_with_failover(messages: list, task_type: str = "reasoning", temperature: float = 0.0, tools: list = None, **kwargs):
+    """Invoke LLM with automatic failover to secondary endpoint, honoring circuit breakers."""
+    from src.services.resilience import cloud_llm_breaker, failover_llm_breaker, resilient_call, _is_rate_limit_error
+    import logging
+    logger = logging.getLogger(__name__)
+
+    primary = get_llm(temperature=temperature, task_type=task_type)
+    if tools:
+        primary = primary.bind_tools(tools)
+        
+    secondary = get_failover_llm(temperature=temperature, task_type=task_type)
+    if tools and secondary:
+        secondary = secondary.bind_tools(tools)
+        
+    if cloud_llm_breaker.state == "OPEN" and secondary:
+        logger.info(f"Failover active: Routing invoke ({task_type}) to secondary LLM.")
+        return resilient_call(failover_llm_breaker, secondary.invoke, messages, **kwargs)
+        
+    try:
+        return resilient_call(cloud_llm_breaker, primary.invoke, messages, **kwargs)
+    except Exception as e:
+        if _is_rate_limit_error(e):
+            raise e # Do not failover on HTTP 429 Rate Limit
+            
+        if secondary:
+            logger.warning(f"Primary LLM failed: {e}. Activating failover to secondary LLM.")
+            return resilient_call(failover_llm_breaker, secondary.invoke, messages, **kwargs)
+        raise e
+
+def stream_with_failover(messages: list, task_type: str = "reasoning", temperature: float = 0.0, **kwargs):
+    """Return LLM stream generator and active breaker, honoring failover states."""
+    from src.services.resilience import cloud_llm_breaker, failover_llm_breaker, CircuitBreakerOpenException
+    import logging
+    logger = logging.getLogger(__name__)
+
+    primary = get_llm(temperature=temperature, task_type=task_type)
+    secondary = get_failover_llm(temperature=temperature, task_type=task_type)
+    
+    if cloud_llm_breaker.state == "OPEN" and secondary:
+        logger.info(f"Failover active: Routing stream ({task_type}) to secondary LLM.")
+        failover_llm_breaker.check_state()
+        return secondary.stream(messages, **kwargs), failover_llm_breaker
+        
+    try:
+        cloud_llm_breaker.check_state()
+        return primary.stream(messages, **kwargs), cloud_llm_breaker
+    except CircuitBreakerOpenException:
+        if secondary:
+            logger.warning("Primary LLM circuit breaker OPEN. Activating failover to secondary LLM.")
+            failover_llm_breaker.check_state()
+            return secondary.stream(messages, **kwargs), failover_llm_breaker
+        raise
+
 
 # ── Graph Client ──────────────────────────────────────────────────────────────
 
@@ -109,7 +183,6 @@ class _CloudVannaLLM:
 
     def submit_prompt(self, prompt: list[dict], **kwargs) -> str:
         from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
-        from src.services.resilience import cloud_llm_breaker, resilient_call_with_fallback
 
         # Convert Vanna message dicts → LangChain message objects
         lc_messages = []
@@ -123,13 +196,14 @@ class _CloudVannaLLM:
             else:
                 lc_messages.append(HumanMessage(content=content))
 
-        llm = get_llm(temperature=kwargs.get("temperature", 0.0))
-        response = resilient_call_with_fallback(
-            cloud_llm_breaker,
-            "Error: LLM service unavailable (circuit breaker active or API timeout).",
-            lambda: llm.invoke(lc_messages),
-        )
-        return response.content if hasattr(response, "content") else str(response)
+        try:
+            response = invoke_with_failover(lc_messages, temperature=kwargs.get("temperature", 0.0))
+            return response.content if hasattr(response, "content") else str(response)
+        except Exception as e:
+            from src.services.resilience import _is_rate_limit_error
+            if _is_rate_limit_error(e):
+                return "Error: Layanan LLM sedang sibuk (Rate Limit). Silakan coba lagi."
+            return "Error: LLM service unavailable (circuit breakers active or API timeout)."
 
 
 class MyVanna(_CloudVannaLLM, VannaQdrant_VectorStore):

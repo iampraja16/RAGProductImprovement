@@ -53,20 +53,19 @@ class Agent:
         query = state["query"]
         sys_msg = SystemMessage(content=RAG_ROUTER_PROMPT)
         
-        # Use cheaper model for routing
-        from src.services.providers import get_llm
-        router_llm = get_llm(temperature=0.0, task_type="routing")
+        from src.services.providers import invoke_with_failover
         
-        # Tools are passed using bind_tools
-        llm_with_tools = router_llm.bind_tools(self.tool_schemas)
-        
-        from src.services.resilience import cloud_llm_breaker, resilient_call_with_fallback
-        fallback_msg = AIMessage(content="Layanan LLM router tidak stabil. Menjawab langsung.")
-        response = resilient_call_with_fallback(
-            cloud_llm_breaker,
-            fallback_msg,
-            lambda: llm_with_tools.invoke([sys_msg, HumanMessage(content=query)])
-        )
+        try:
+            response = invoke_with_failover(
+                messages=[sys_msg, HumanMessage(content=query)],
+                task_type="routing",
+                tools=self.tool_schemas
+            )
+        except Exception as e:
+            return {
+                "tool_call": None,
+                "final_answer": "Layanan LLM router tidak stabil. Menjawab langsung."
+            }
         
         tool_call = None
         # LangChain populates tool_calls list if tools were triggered
@@ -141,14 +140,17 @@ class Agent:
             
             # If synthesizer messages were prepared, generate the final answer now (sync)
             if "synthesizer_messages" in final_state and not final_state.get("final_answer"):
-                from src.services.resilience import cloud_llm_breaker, resilient_call_with_fallback
-                fallback_content = "Mohon maaf, layanan LLM (sintesis jawaban) saat ini tidak tersedia atau sedang mengalami gangguan. Silakan coba beberapa saat lagi."
-                response = resilient_call_with_fallback(
-                    cloud_llm_breaker,
-                    AIMessage(content=fallback_content),
-                    lambda: self.llm.invoke(final_state["synthesizer_messages"])
-                )
-                final_state["final_answer"] = response.content
+                from src.services.providers import invoke_with_failover
+                from src.services.resilience import _is_rate_limit_error
+                
+                try:
+                    response = invoke_with_failover(final_state["synthesizer_messages"], task_type="reasoning")
+                    final_state["final_answer"] = response.content
+                except Exception as e:
+                    if _is_rate_limit_error(e):
+                        final_state["final_answer"] = "Layanan sedang sibuk (Rate Limit). Silakan coba lagi nanti."
+                    else:
+                        final_state["final_answer"] = "Mohon maaf, layanan LLM (sintesis jawaban) saat ini tidak tersedia atau sedang mengalami gangguan."
                 
             # Capture Token Usage
             if cb.total_tokens > 0:
@@ -221,14 +223,13 @@ class Agent:
             final_answer = final_state.get("final_answer") or ""
             if "synthesizer_messages" in final_state and not final_answer:
                 messages = final_state["synthesizer_messages"]
-                from src.services.resilience import cloud_llm_breaker, CircuitBreakerOpenException
+                from src.services.providers import stream_with_failover
+                from src.services.resilience import _is_rate_limit_error
+                from src.services.resilience import CircuitBreakerOpenException
     
                 try:
-                    # Check circuit breaker before starting the stream
-                    cloud_llm_breaker.check_state()
-    
                     # Stream generator
-                    iterator = self.llm.stream(messages)
+                    iterator, active_breaker = stream_with_failover(messages, task_type="reasoning")
                     stream_failed = False
                     while True:
                         try:
@@ -236,10 +237,16 @@ class Agent:
                             token = chunk.content
                             final_answer += token
                             yield json.dumps({"type": "token", "content": token}) + "\n"
+                        except Exception as e:
+                            stream_failed = True
+                            if not _is_rate_limit_error(e):
+                                active_breaker.record_failure()
+                            yield json.dumps({"type": "error", "content": f"Streaming terputus: {str(e)}"}) + "\n"
+                            break
                         except StopIteration:
                             # Record success once per completed stream, not per token
                             if not stream_failed:
-                                cloud_llm_breaker.record_success()
+                                active_breaker.record_success()
                                 
                             # Emit Token Usage Metadata Chunk
                             if cb.total_tokens > 0:
