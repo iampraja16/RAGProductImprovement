@@ -60,16 +60,17 @@ class Agent:
             try:
                 response = invoke_with_failover(
                     messages=[sys_msg, HumanMessage(content=query)],
-                task_type="routing",
-                tools=self.tool_schemas
-            )
-        except Exception as e:
-            return {
-                "tool_call": None,
-                "final_answer": "Layanan LLM router tidak stabil. Menjawab langsung."
-            }
+                    task_type="routing",
+                    tools=self.tool_schemas
+                )
+            except Exception as e:
+                return {
+                    "tool_call": None,
+                    "final_answer": "Layanan LLM router tidak stabil. Menjawab langsung."
+                }
         
         tool_call = None
+        final_answer = None
         # LangChain populates tool_calls list if tools were triggered
         if hasattr(response, "tool_calls") and response.tool_calls:
             call = response.tool_calls[0]
@@ -83,10 +84,12 @@ class Agent:
                 "name": func_call["name"],
                 "arguments": json.loads(func_call["arguments"]) if isinstance(func_call["arguments"], str) else func_call["arguments"]
             }
+        else:
+            final_answer = response.content if hasattr(response, "content") else str(response)
         
-            # Log reasoning step
-            # Return only the updates to the state
-            return {"steps": [{"node": "router", "tool_call": tool_call}], "tool_call": tool_call}
+        # Log reasoning step
+        # Return only the updates to the state
+        return {"steps": [{"node": "router", "tool_call": tool_call}], "tool_call": tool_call, "final_answer": final_answer}
 
     def _tool_executor_node(self, state: AgentState):
         tool_call = state["tool_call"]

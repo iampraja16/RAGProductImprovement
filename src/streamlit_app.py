@@ -125,7 +125,7 @@ def render_graph_visualization(graph_traversal: dict):
         height=450,
         directed=True,
         physics=True,  # Turn physics on for dynamic graphing
-        hierarchical=False,  
+        hierarchical=True,  
         nodeHighlightBehavior=True,
         highlightColor="#F7F7F7",
         collapsible=False,
@@ -349,6 +349,16 @@ for message in st.session_state.messages:
                         st.markdown(chunk)
                         st.divider()
 
+            if message.get("token_usage"):
+                tu = message["token_usage"]
+                with st.expander("📊 Token Usage & Cost", expanded=False):
+                    cols = st.columns(4)
+                    cols[0].metric("Prompt Tokens", f"{tu.get('prompt_tokens', 0):,}")
+                    cols[1].metric("Completion Tokens", f"{tu.get('completion_tokens', 0):,}")
+                    cols[2].metric("Total Tokens", f"{tu.get('total_tokens', 0):,}")
+                    cols[3].metric("Estimated Cost", f"${tu.get('estimated_cost_usd', 0.0):.5f}")
+                    st.caption(f"Estimation method: `{tu.get('estimation_method', 'unknown')}`")
+
 # --- Chat Input ---
 if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -381,6 +391,7 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                 steps = []
                 timing_ms = None
                 cache_hit = None
+                token_usage = None
 
                 # Create placeholder for streaming text
                 message_placeholder = st.empty()
@@ -432,6 +443,9 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                             message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(narrative)}\n\n#### Evidence Section\n\n{clean_markdown_content(evidence)}")
                         else:
                             message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(answer)}")
+
+                    elif chunk_type == "metadata":
+                        token_usage = data.get("content", {}).get("token_usage")
 
                     elif chunk_type == "error":
                         st.error(data.get("content"))
@@ -487,6 +501,16 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                             st.markdown(chunk)
                             st.divider()
 
+                # Token Usage Panel
+                if token_usage:
+                    with st.expander("📊 Token Usage & Cost", expanded=False):
+                        cols = st.columns(4)
+                        cols[0].metric("Prompt Tokens", f"{token_usage.get('prompt_tokens', 0):,}")
+                        cols[1].metric("Completion Tokens", f"{token_usage.get('completion_tokens', 0):,}")
+                        cols[2].metric("Total Tokens", f"{token_usage.get('total_tokens', 0):,}")
+                        cols[3].metric("Estimated Cost", f"${token_usage.get('estimated_cost_usd', 0.0):.5f}")
+                        st.caption(f"Estimation method: `{token_usage.get('estimation_method', 'unknown')}`")
+
                 # Save to session state
                 st.session_state.messages.append({
                     "role": "assistant",
@@ -498,6 +522,7 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                     "steps": steps,
                     "timing_ms": timing_ms,
                     "cache_hit": cache_hit,
+                    "token_usage": token_usage,
                 })
             else:
                 status_box.update(label="Error", state="error")

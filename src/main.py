@@ -57,8 +57,7 @@ async def lifespan(app: FastAPI):
         logger.critical(error_msg)
         raise RuntimeError(error_msg)
 
-    logger.info("=== STARTUP: Loading embedding model ===")
-    embedding_svc.load_model()
+    logger.info("=== STARTUP: Embedding model uses lazy init — skipping preload ===")
 
     logger.info("=== STARTUP: Initializing caches ===")
     try:
@@ -180,7 +179,7 @@ def health_check():
     # Embedding model
     try:
         from src.services.embedding_service import embedding_svc
-        checks["embedding_model"] = "loaded" if embedding_svc.model is not None else "not loaded"
+        checks["embedding_model"] = "loaded" if embedding_svc._client is not None else "lazy (not yet used)"
     except Exception as e:
         checks["embedding_model"] = f"error: {e}"
 

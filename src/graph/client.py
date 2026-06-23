@@ -22,9 +22,9 @@ class GraphClient:
         from src.services.resilience import neo4j_breaker, resilient_call_with_fallback
         
         def _execute():
-            # Apply a query timeout of 10s on session run
+            # Apply a query timeout of 60s on session run for heavy GraphRAG operations
             with self.driver.session() as session:
-                result = session.run(query, parameters, timeout=10.0)
+                result = session.run(query, parameters, timeout=60.0)
                 return [dict(record) for record in result]
                 
         return resilient_call_with_fallback(neo4j_breaker, [], _execute)

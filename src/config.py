@@ -15,15 +15,15 @@ class Settings(BaseSettings):
     # ── LLM Provider Selection ────────────────────────────────────────
     # "azure"  → AzureChatOpenAI (requires AZURE_OPENAI_* vars)
     # "openai" → ChatOpenAI     (requires OPENAI_API_KEY)
-    llm_provider: str = "azure"
+    model_provider: str = "azure"
 
     # ── Azure OpenAI (Primary — Cloud) ───────────────────────────────
     azure_openai_api_key: Optional[str] = None
     azure_openai_endpoint: Optional[str] = None
-    azure_openai_deployment_name: str = "gpt-4o"
-    azure_openai_mini_deployment_name: str = "gpt-4o-mini"
-    azure_openai_api_version: str = "2024-02-01"
-    azure_openai_embedding_deployment: str = "text-embedding-3-small"
+    azure_openai_llm_deployment_name: str = "SS-gpt-5.4-mini"
+    azure_openai_mini_deployment_name: str = "SS-gpt-5.4-mini"
+    azure_openai_api_version: str = "2024-12-01-preview"
+    azure_openai_embed_model_deployment_name: str = "SS-text-embedding-3-small-2"
 
     # ── Azure OpenAI (Secondary / Failover Region) ───────────────────
     azure_openai_failover_endpoint: Optional[str] = None

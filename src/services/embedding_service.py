@@ -43,19 +43,19 @@ class EmbeddingService(Embeddings):
         if self._client is not None:
             return self._client
 
-        provider = (settings.llm_provider or "azure").lower()
+        provider = (settings.model_provider or "azure").lower()
 
         if provider == "azure":
             from langchain_openai import AzureOpenAIEmbeddings
             self._client = AzureOpenAIEmbeddings(
-                azure_deployment=settings.azure_openai_embedding_deployment,
+                azure_deployment=settings.azure_openai_embed_model_deployment_name,
                 azure_endpoint=settings.azure_openai_endpoint,
                 api_key=settings.azure_openai_api_key,
                 api_version=settings.azure_openai_api_version,
             )
             logger.info(
                 "EmbeddingService initialized: AzureOpenAIEmbeddings "
-                "(deployment=%s)", settings.azure_openai_embedding_deployment
+                "(deployment=%s)", settings.azure_openai_embed_model_deployment_name
             )
         elif provider == "openai":
             from langchain_openai import OpenAIEmbeddings
@@ -69,8 +69,8 @@ class EmbeddingService(Embeddings):
             )
         else:
             raise ValueError(
-                f"Unknown llm_provider='{provider}'. "
-                "Set LLM_PROVIDER=azure or LLM_PROVIDER=openai in your .env file."
+                f"Unknown model_provider='{provider}'. "
+                "Set MODEL_PROVIDER=azure or MODEL_PROVIDER=openai in your .env file."
             )
 
         return self._client

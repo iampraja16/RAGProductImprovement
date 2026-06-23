@@ -33,11 +33,11 @@ def get_llm(temperature: float = 0.0, task_type: str = "reasoning") -> BaseChatM
       "azure"  → AzureChatOpenAI  (requires AZURE_OPENAI_* env vars)
       "openai" → ChatOpenAI       (requires OPENAI_API_KEY env var)
     """
-    provider = (settings.llm_provider or "azure").lower()
+    provider = (settings.model_provider or "azure").lower()
 
     if provider == "azure":
         from langchain_openai import AzureChatOpenAI
-        deployment = settings.azure_openai_deployment_name if task_type == "reasoning" else settings.azure_openai_mini_deployment_name
+        deployment = settings.azure_openai_llm_deployment_name if task_type == "reasoning" else settings.azure_openai_mini_deployment_name
         return AzureChatOpenAI(
             azure_deployment=deployment,
             azure_endpoint=settings.azure_openai_endpoint,
@@ -70,10 +70,10 @@ def get_failover_llm(temperature: float = 0.0, task_type: str = "reasoning") -> 
     if not settings.azure_openai_failover_endpoint:
         return None
         
-    provider = (settings.llm_provider or "azure").lower()
+    provider = (settings.model_provider or "azure").lower()
     if provider == "azure":
         from langchain_openai import AzureChatOpenAI
-        deployment = settings.azure_openai_deployment_name if task_type == "reasoning" else settings.azure_openai_mini_deployment_name
+        deployment = settings.azure_openai_llm_deployment_name if task_type == "reasoning" else settings.azure_openai_mini_deployment_name
         return AzureChatOpenAI(
             azure_deployment=deployment,
             azure_endpoint=settings.azure_openai_failover_endpoint,
@@ -96,7 +96,7 @@ def invoke_with_failover(messages: list, task_type: str = "reasoning", temperatu
     with tracer.start_as_current_span("invoke_with_failover") as span:
         start_time = time.time()
         span.set_attribute("task_type", task_type)
-        span.set_attribute("model_name", "gpt-4o" if task_type == "reasoning" else "gpt-4o-mini")
+        span.set_attribute("model_name", settings.azure_openai_llm_deployment_name if task_type == "reasoning" else settings.azure_openai_mini_deployment_name)
         
         primary = get_llm(temperature=temperature, task_type=task_type)
         if tools:
@@ -143,7 +143,7 @@ def stream_with_failover(messages: list, task_type: str = "reasoning", temperatu
 
     with tracer.start_as_current_span("stream_with_failover") as span:
         span.set_attribute("task_type", task_type)
-        span.set_attribute("model_name", "gpt-4o" if task_type == "reasoning" else "gpt-4o-mini")
+        span.set_attribute("model_name", settings.azure_openai_llm_deployment_name if task_type == "reasoning" else settings.azure_openai_mini_deployment_name)
 
         primary = get_llm(temperature=temperature, task_type=task_type)
         secondary = get_failover_llm(temperature=temperature, task_type=task_type)

@@ -34,10 +34,14 @@ class CommunitySummarizer:
 
             for comm in communities:
                 c_id = comm["id"]
-                if current_level == 0:
-                    self._summarize_level_0(c_id)
-                else:
-                    self._summarize_higher_level(c_id, current_level)
+                try:
+                    if current_level == 0:
+                        self._summarize_level_0(c_id)
+                    else:
+                        self._summarize_higher_level(c_id, current_level)
+                except Exception as e:
+                    logger.error(f"Transient error summarizing community {c_id}: {e}. Waiting 5 seconds before continuing...")
+                    import time; time.sleep(5)
             
         logger.info("Hierarchical Community Summarization completed.")
 
