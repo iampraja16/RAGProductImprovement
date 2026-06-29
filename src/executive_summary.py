@@ -235,7 +235,7 @@ def extract_summary_data(family: str) -> Dict[str, Any]:
 
 
 def _generate_recommendation(data: Dict[str, Any]) -> str:
-    """Generate AI recommendation using Ollama."""
+    """Generate AI recommendation using cloud LLM."""
     try:
         from src.services.providers import get_llm
         from langchain_core.messages import HumanMessage

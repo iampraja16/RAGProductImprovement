@@ -142,15 +142,14 @@ def health_check():
         checks["postgresql"] = f"error: {e}"
         overall = False
 
-    # Ollama
+    # Cloud LLM
     try:
-        import requests
-        from src.config import settings
-        resp = requests.get(f"{settings.ollama_base_url}/api/tags", timeout=3)
-        resp.raise_for_status()
-        checks["ollama"] = "ok"
+        from src.services.providers import get_llm
+        # Instantiate the LLM to verify configuration
+        llm = get_llm(task_type="mini")
+        checks["cloud_llm"] = "ok"
     except Exception as e:
-        checks["ollama"] = f"error: {e}"
+        checks["cloud_llm"] = f"error: {e}"
         overall = False
 
     # Redis
@@ -250,7 +249,7 @@ def chat(request: ChatRequest):
             "cache_hit": "none",
             "step_timings": timings,
             "token_count": {"prompt": prompt_tokens, "completion": completion_tokens},
-            "model_used": settings.ollama_model,
+            "model_used": settings.model_provider,
         }})
 
         return ChatResponse(
