@@ -17,11 +17,10 @@ CREATE TABLE emr_records (
     part_description VARCHAR,
     part_description_1 VARCHAR,
     techcare_component VARCHAR,
-    techcare_component_1 VARCHAR,
     techcare_sub_component VARCHAR,
-    techcare_sub_component_1 VARCHAR,
     created_date TIMESTAMP,
     emr_last_closed_date TIMESTAMP,
     model_family VARCHAR,
-    graph_community_summary TEXT
+    graph_community_summary TEXT,
+    community_id TEXT[]
 );

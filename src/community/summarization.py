@@ -1,6 +1,9 @@
 """Community Summarization via LLM."""
 
 import logging
+import random
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from src.config import settings
 from src.graph.client import GraphClient
 from langchain_core.messages import HumanMessage
@@ -8,15 +11,40 @@ from langchain_core.messages import HumanMessage
 logger = logging.getLogger(__name__)
 
 class CommunitySummarizer:
-    def __init__(self, client: GraphClient, llm, embedder):
+    def __init__(self, client: GraphClient, llm, embedder, max_workers: int = 4, timeout_per_community: int = 120):
         self.client = client
         self.llm = llm
         self.embedder = embedder
+        self.max_workers = max_workers
+        self.timeout_per_community = timeout_per_community
+
+    def _summarize_one(self, community_id: str, level: int) -> None:
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                if level == 0:
+                    self._summarize_level_0(community_id)
+                else:
+                    self._summarize_higher_level(community_id, level)
+                return
+            except Exception as e:
+                is_last = attempt == max_retries - 1
+                if is_last:
+                    logger.error(
+                        "Failed to summarize community %s after %d attempts: %s",
+                        community_id, max_retries, e
+                    )
+                    return
+                wait = (2 ** attempt) + random.uniform(0, 1)
+                logger.warning(
+                    "Attempt %d failed for community %s: %s. Retrying in %.1fs...",
+                    attempt + 1, community_id, e, wait
+                )
+                time.sleep(wait)
 
     def summarize_all(self):
         logger.info("Starting Hierarchical Community Summarization...")
         
-        # Determine max level
         query_levels = "MATCH (c:Community) RETURN max(c.level) AS max_level"
         res = self.client.run_query(query_levels)
         max_level = res[0]['max_level'] if res and res[0]['max_level'] is not None else 0
@@ -32,17 +60,30 @@ class CommunitySummarizer:
 
             logger.info(f"Found {len(communities)} Level {current_level} communities to summarize.")
 
-            for comm in communities:
-                c_id = comm["id"]
-                try:
-                    if current_level == 0:
-                        self._summarize_level_0(c_id)
-                    else:
-                        self._summarize_higher_level(c_id, current_level)
-                except Exception as e:
-                    logger.error(f"Transient error summarizing community {c_id}: {e}. Waiting 5 seconds before continuing...")
-                    import time; time.sleep(5)
-            
+            if self.max_workers <= 1:
+                for comm in communities:
+                    self._summarize_one(comm["id"], current_level)
+            else:
+                with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
+                    futures = {
+                        pool.submit(self._summarize_one, comm["id"], current_level): comm["id"]
+                        for comm in communities
+                    }
+                    for future in as_completed(futures):
+                        c_id = futures[future]
+                        try:
+                            future.result(timeout=self.timeout_per_community)
+                        except TimeoutError:
+                            logger.error(
+                                "Community %s summarization timed out after %ds",
+                                c_id, self.timeout_per_community
+                            )
+                        except Exception as e:
+                            logger.error(
+                                "Unexpected error in community %s summarization: %s",
+                                c_id, e
+                            )
+
         logger.info("Hierarchical Community Summarization completed.")
 
     def _summarize_level_0(self, community_id: str):

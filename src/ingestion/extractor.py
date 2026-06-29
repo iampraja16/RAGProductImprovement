@@ -47,6 +47,6 @@ Output FORMAT INSTRUCTIONS:
                 "format_instructions": self.parser.get_format_instructions()
             })
             return GraphExtraction(**result_dict)
-        except Exception as e:
-            logger.error(f"Failed to extract graph from text: {e}")
+        except (KeyError, TypeError, ValueError) as e:
+            logger.warning(f"Failed to parse extraction result: {e}")
             return None

@@ -13,12 +13,6 @@ from typing import List, Dict, Any, Optional
 
 from src.agent.agent import Agent
 
-# ===================================================================
-# FASE 4: Structured JSON Logging
-# BEFORE: logging.basicConfig(format="%(asctime)s - %(name)s - ...")
-# AFTER:  JSON formatter for machine-parseable logs with timing data
-# ===================================================================
-
 class JSONFormatter(logging.Formatter):
     """Structured JSON log formatter."""
     def format(self, record):
@@ -28,7 +22,6 @@ class JSONFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
-        # Attach extra fields if present (e.g., timing data)
         if hasattr(record, "extra_data"):
             log_entry.update(record.extra_data)
         return json.dumps(log_entry, ensure_ascii=False)
@@ -111,12 +104,6 @@ class ChatResponse(BaseModel):
 
 class CacheInvalidateRequest(BaseModel):
     level: str = "all"
-
-
-# ===================================================================
-# FASE 4: Enhanced /health — checks all downstream services
-# BEFORE: return {"status": "healthy"}  (no actual checks)
-# ===================================================================
 
 @app.get("/health")
 def health_check():

@@ -10,7 +10,7 @@ sys.path.append(os.getcwd())
 
 from eval.run_eval import save_atomic_json, save_atomic_text
 
-class TestRunEvalHardening(unittest.TestCase):
+class TestEvalUtils(unittest.TestCase):
     
     def setUp(self):
         self.test_json_path = "eval/test_checkpoint.json"

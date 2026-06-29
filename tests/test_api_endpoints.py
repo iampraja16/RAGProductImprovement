@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from src.main import app
 from src.config import settings
 
-class TestSprint1Smoke(unittest.TestCase):
+class TestApiEndpoints(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):

@@ -10,11 +10,19 @@ class CommunityDetector:
     def __init__(self, client: GraphClient):
         self.client = client
 
-    def detect(self, node_labels: list[str] = None, relationship_types: list[str] = None, max_levels: int = 3):
+    def detect(self, node_labels: list[str] = None, relationship_types: list[str] = None, max_levels: int = 3, force: bool = False):
+        
+        # Check if communities already exist
+        if not force:
+            res = self.client.run_query("MATCH (c:Community {level: 0}) RETURN count(c) AS cnt")
+            if res and res[0]['cnt'] > 0:
+                logger.info(f"Communities already exist ({res[0]['cnt']} Level-0 communities). Skipping detection. Use force=True to re-run.")
+                return True
+        
         logger.info("Starting Community Detection using GDS Leiden...")
         
         # Default to settings if not provided
-        n_labels = node_labels if node_labels else ["SymptomPattern", "ProblemCluster", "RootCausePattern", "ActionPattern", "Part"]
+        n_labels = node_labels if node_labels else ["SymptomPattern", "ProblemCluster", "RootCausePattern", "ActionPattern", "Part", "MachineModel", "EMRRecord"]
         r_types = relationship_types if relationship_types else settings.community_relationship_types
         
         # Format for Cypher
@@ -43,6 +51,17 @@ class CommunityDetector:
             logger.error(f"Failed to project graph to GDS. Is GDS plugin installed? Error: {e}")
             return False
 
+        # Clean up old Community nodes and communityId properties before re-running
+        logger.info("Cleaning up existing Community nodes and communityId properties...")
+        self.client.run_query("""
+            MATCH (n) WHERE n.communityId IS NOT NULL
+            REMOVE n.communityId
+        """)
+        self.client.run_query("""
+            MATCH (c:Community)
+            DETACH DELETE c
+        """)
+        
         # 2. Run Leiden and write results back to Neo4j database
         # This will add a 'communityId' property to the nodes
         leiden_query = """

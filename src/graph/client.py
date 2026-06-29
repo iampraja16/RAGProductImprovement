@@ -5,6 +5,14 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Default per-query timeout (seconds).
+# Override per-call for heavy operations:
+#   GDS Leiden / APOC refactor → 300s
+#   Batch UNWIND writes        → 120s
+#   Normal CRUD queries        → 60s  (default)
+_DEFAULT_QUERY_TIMEOUT = 60.0
+
+
 class GraphClient:
     def __init__(self, uri: str, user: str, password: str):
         self.uri = uri
@@ -16,15 +24,31 @@ class GraphClient:
     def close(self):
         self.driver.close()
 
-    def run_query(self, query: str, parameters: dict = None) -> list[dict]:
-        """Execute a raw Cypher query and return results as list of dicts."""
+    def run_query(
+        self,
+        query: str,
+        parameters: dict = None,
+        timeout: float = _DEFAULT_QUERY_TIMEOUT,
+    ) -> list[dict]:
+        """
+        Execute a raw Cypher query and return results as a list of dicts.
+
+        Parameters
+        ----------
+        query : str
+            Cypher query string.
+        parameters : dict, optional
+            Query parameters.
+        timeout : float
+            Per-query timeout in seconds (default 60 s).
+            Use 120 s for batch UNWIND writes, 300 s for GDS / APOC operations.
+        """
         parameters = parameters or {}
         from src.services.resilience import neo4j_breaker, resilient_call_with_fallback
-        
+
         def _execute():
-            # Apply a query timeout of 60s on session run for heavy GraphRAG operations
             with self.driver.session() as session:
-                result = session.run(query, parameters, timeout=60.0)
+                result = session.run(query, parameters, timeout=timeout)
                 return [dict(record) for record in result]
-                
+
         return resilient_call_with_fallback(neo4j_breaker, [], _execute)

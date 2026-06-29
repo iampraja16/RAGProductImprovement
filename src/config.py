@@ -20,10 +20,10 @@ class Settings(BaseSettings):
     # ── Azure OpenAI (Primary — Cloud) ───────────────────────────────
     azure_openai_api_key: Optional[str] = None
     azure_openai_endpoint: Optional[str] = None
-    azure_openai_llm_deployment_name: str = "SS-gpt-5.4-mini"
-    azure_openai_mini_deployment_name: str = "SS-gpt-5.4-mini"
+    azure_openai_llm_deployment_name: str = "TC-gpt-5.4-mini"
+    azure_openai_mini_deployment_name: str = "TC-gpt-5.4-mini"
     azure_openai_api_version: str = "2024-12-01-preview"
-    azure_openai_embed_model_deployment_name: str = "SS-text-embedding-3-small-2"
+    azure_openai_embed_model_deployment_name: str = "TC-text-embedding-3-small-2"
 
     # ── Azure OpenAI (Secondary / Failover Region) ───────────────────
     azure_openai_failover_endpoint: Optional[str] = None
@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     community_gamma: float = 1.0
     community_theta: float = 0.01
     community_relationship_types: list = [
-        "EXHIBITED", "CAUSED_BY", "RESOLVED_BY", "INVOLVES_PART", "BELONGS_TO", "MENTIONS"
+        "EXHIBITED", "CAUSED_BY", "RESOLVED_BY", "INVOLVES_PART", "BELONGS_TO", "MENTIONS", "ON_MACHINE"
     ]
 
     # ── Redis Cache ───────────────────────────────────────────────────
