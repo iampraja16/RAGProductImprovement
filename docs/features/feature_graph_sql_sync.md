@@ -3,27 +3,23 @@
 ## Overview
 Fitur Sinkronisasi (Sync) memastikan bahwa data terstruktur di PostgreSQL (*Quantitative Data*) dan data semantik kualitatif di Neo4j (*Knowledge Graph*) tetap konsisten satu sama lain. Proses sinkronisasi ini berjalan secara *batch* dalam dua arah: menyalin tag komunitas (Semantic ID) dari graf ke SQL, dan menyalin metadata tampilan kolom EMR dari SQL kembali ke node-node graf di Neo4j.
 
-## Flowchart ASCII
-```text
-[Start Synchronization]
-     |
-     +--- Arah 1 (Graph -> SQL) ---+
-     |                             |
-     v                             v
-[MATCH e:EMRRecord-->Community]   [ALTER TABLE emr_records ADD community_id]
-     |                             |
-     v                             v
-[Pandas DataFrame (DISTINCT)] --> [PostgreSQL: UPDATE emr_records SET community_id = ...]
-     |
-     +--- Arah 2 (SQL -> Graph) ---+
-     |                             |
-     v                             v
-[SELECT 20 Display Columns]       [Format Properties via COLUMN_MAP]
-     |                             |
-     v                             v
-[Batched Neo4j UNWIND]      <---- [SET e += row.props to EMRRecord Nodes]
-     |
-[End Synchronization]
+## Flowchart
+
+```mermaid
+graph TD
+    Start[Start Synchronization] --> PathA[Arah 1: Graph ke SQL]
+    Start --> PathB[Arah 2: SQL ke Graph]
+    
+    PathA --> A1[MATCH e:EMRRecord-->Community]
+    A1 --> A2[Pandas DataFrame DISTINCT]
+    A2 --> A3[PostgreSQL: UPDATE emr_records SET community_id]
+    
+    PathB --> B1[SELECT 20 Display Columns]
+    B1 --> B2[Format Properties via COLUMN_MAP]
+    B2 --> B3[Batched Neo4j UNWIND SET e += row.props]
+    
+    A3 --> End[End Synchronization]
+    B3 --> End
 ```
 
 ## Input → Process → Output

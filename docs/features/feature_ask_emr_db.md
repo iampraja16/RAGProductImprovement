@@ -3,28 +3,18 @@
 ## Overview
 Fitur `ask_emr_database` adalah jembatan kuantitatif utama dalam sistem Hybrid RAG. Fitur ini menerima pertanyaan analitik dari pengguna (seperti tren, total, atau agregasi), menggunakan agen Vanna AI untuk menerjemahkan pertanyaan tersebut menjadi kueri SQL, dan mengeksekusinya di PostgreSQL. Untuk menjaga konsistensi dengan wawasan semantik graf, fitur ini menyuntikkan ID Komunitas (*community ID*) ke dalam SQL sebagai filter dasar sebelum eksekusi.
 
-## Flowchart ASCII
-```text
-[User Query]
-     |
-     v
-[EntityResolver]
-     |---> Resolve entitas -> Dapatkan Community ID
-     v
-[Build Prompt Hint]
-     |---> Sisipkan Community ID ke instruksi SQL Vanna
-     v
-[Vanna generate_sql]
-     |---> Vanna menghasilkan syntax SQL PostgreSQL
-     v
-[Inject/Strip Community Filter & Safety Check]
-     |---> _is_safe_select_query (Keamanan)
-     |---> _inject_limit_if_missing (Batasan limit)
-     v
-[PostgreSQL Execution]
-     |---> Jika count = 0: Jalankan ILIKE fallback (pencarian teks mentah)
-     v
-[Output: Dataframe SQL & Metadata]
+## Flowchart
+
+```mermaid
+graph TD
+    A[User Query] --> B[EntityResolver]
+    B -->|Resolve entitas -> Dapatkan Community ID| C[Build Prompt Hint]
+    C -->|Sisipkan Community ID ke instruksi SQL Vanna| D[Vanna generate_sql]
+    D -->|Menghasilkan syntax SQL| E[Inject/Strip Community Filter & Safety Check]
+    E -->|_is_safe_select_query / _inject_limit_if_missing| F[PostgreSQL Execution]
+    F -->|Jika count = 0| G[ILIKE fallback pencarian teks mentah]
+    F -->|Jika count > 0| H[Output: Dataframe SQL & Metadata]
+    G --> H
 ```
 
 ## Input → Process → Output

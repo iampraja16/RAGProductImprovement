@@ -3,26 +3,15 @@
 ## Overview
 Fitur `Community Pipeline` dirancang untuk mengelompokkan jutaan entitas di database graf Neo4j ke dalam klaster semantik hierarkis, lalu membuat rangkuman otomatis untuk masing-masing klaster tersebut. Fitur ini menggunakan algoritma deteksi komunitas Leiden dari library Graph Data Science (GDS) Neo4j untuk menetapkan ID komunitas, lalu menggunakan LLM secara paralel untuk membuat deskripsi rangkuman dari masing-masing komunitas guna mendukung pencarian global (*Global Search*).
 
-## Flowchart ASCII
-```text
-[Neo4j Graph Database]
-         |
-         v
-[GDS Graph Projection]
-         |---> CALL gds.graph.project('entity-graph')
-         v
-[Leiden Community Detection]
-         |---> CALL gds.leiden.write (Level 0, 1, 2)
-         |---> Memberikan properti communityId pada masing-masing node
-         v
-[LLM Community Summarizer]
-         |---> ThreadPoolExecutor (max_workers=4)
-         |---> Rangkum isi node dan relasi dalam satu kelompok
-         v
-[Save Community Summaries]
-         |---> MERGE node Community ke database graf
-         v
-[Graph RAG Global Search Ready]
+## Flowchart
+
+```mermaid
+graph TD
+    A[Neo4j Graph Database] --> B[GDS Graph Projection]
+    B -->|CALL gds.graph.project| C[Leiden Community Detection]
+    C -->|CALL gds.leiden.write Level 0, 1, 2| D[LLM Community Summarizer]
+    D -->|ThreadPoolExecutor max_workers 4| E[Save Community Summaries]
+    E -->|MERGE node Community| F[Graph RAG Global Search Ready]
 ```
 
 ## Input → Process → Output

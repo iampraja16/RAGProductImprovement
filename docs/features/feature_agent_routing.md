@@ -3,25 +3,18 @@
 ## Overview
 Fitur `Agent Routing` bertindak sebagai sistem navigasi utama yang menentukan alur pemrosesan pertanyaan pengguna ke jalur yang paling tepat. Menggunakan instruksi dari LLM, *router* menganalisis kueri pengguna untuk menentukan apakah pertanyaan tersebut kualitatif (memerlukan detail rekam EMR spesifik via `search_emr_records`), kuantitatif (memerlukan agregasi data numerik/tren via `ask_emr_database`), atau memerlukan laporan ringkasan eksekutif (via `generate_executive_summary`).
 
-## Flowchart ASCII
-```text
-           [User Query]
-                |
-                v
-       [Agent Router Node] (LLM via prompts.py)
-                |
-    +-----------+-----------+----------------------+
-    |                       |                      |
-[Intensi: Detail]      [Intensi: Agregasi]    [Intensi: Ringkasan]
-(cari, detail, EMR)    (berapa, total, tren)  (report, summary, pdf)
-    |                       |                      |
-    v                       v                      v
-[search_emr_records]   [ask_emr_database]     [generate_exec_summary]
-    |                       |                      |
-    +-----------------------+----------------------+
-                            |
-                            v
-                [Output Respon ke User]
+## Flowchart
+
+```mermaid
+graph TD
+    A[User Query] --> B[Agent Router Node LLM via prompts.py]
+    B -->|Intensi: Detail e.g., cari, detail, EMR| C[search_emr_records]
+    B -->|Intensi: Agregasi e.g., berapa, total, tren| D[ask_emr_database]
+    B -->|Intensi: Ringkasan e.g., report, summary, pdf| E[generate_executive_summary]
+    
+    C --> F[Output Respon ke User]
+    D --> F
+    E --> F
 ```
 
 ## Input → Process → Output

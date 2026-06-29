@@ -3,27 +3,20 @@
 ## Overview
 Layanan `Entity Resolution` adalah mesin penerjemah inti yang berjalan secara *runtime* untuk menjembatani bahasa alami dari pengguna ke dalam format entitas graf di Neo4j. Layanan ini mengekstrak kata kunci dari pertanyaan pengguna, menormalisasinya, lalu menggunakan pendekatan hibrida (Fulltext Search dan Vector Search) untuk menemukan Node persis (Canonical Name) dan ID Komunitas di dalam database graf.
 
-## Flowchart ASCII
-```text
-[User Query]
-     |
-     v
-[_extract_mentions] 
-     |---> LLM (via prompts.py) mendeteksi kata kunci (e.g., "Overheat")
-     v
-[Loop tiap Mention]
-     |
-     v
-[_resolve_single]
-     |---> Cari di Neo4j: Fulltext Match
-     |---> Jika gagal: Vector Similarity Search
-     v
-[Kompilasi Hasil Resolver]
-     |---> Canonical Name & Tipe Node
-     |
-     +---> [Jalur A]: _find_connected_emrs() (Untuk Pencarian Record)
-     |
-     +---> [Jalur B]: Dapatkan community_id (Untuk SQL Agregasi)
+## Flowchart
+
+```mermaid
+graph TD
+    A[User Query] --> B[_extract_mentions LLM]
+    B -->|Mendeteksi kata kunci e.g., Overheat| C[Loop tiap Mention]
+    C --> D[_resolve_single]
+    D -->|Cari di Neo4j: Fulltext Match| E{Ditemukan?}
+    E -->|Tidak| F[Vector Similarity Search]
+    E -->|Ya| G[Kompilasi Hasil Resolver: Canonical Name & Tipe Node]
+    F --> G
+    G --> H{Kebutuhan Pipeline}
+    H -->|Jalur A: Pencarian Record| I[_find_connected_emrs]
+    H -->|Jalur B: SQL Agregasi| J[Dapatkan community_id]
 ```
 
 ## Input → Process → Output

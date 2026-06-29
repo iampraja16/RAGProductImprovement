@@ -3,26 +3,18 @@
 ## Overview
 Fitur `search_emr_records` dirancang untuk mencari dan menampilkan detail spesifik dari rekam jejak perawatan alat berat (EMR) langsung dari database graf (Neo4j) berdasarkan kueri bahasa alami. Sistem ini akan membongkar pertanyaan pengguna menjadi entitas-entitas teknis, memetakan entitas tersebut ke node di dalam Neo4j, dan melakukan penelusuran relasi (graph traversal) untuk mengambil maksimal 5 record EMR yang paling relevan.
 
-## Flowchart ASCII
-```text
-[User Query] 
-     |
-     v
-[_extract_mentions] (LLM Prompting)
-     |---> Menghasilkan daftar entitas (misal: "PC200", "overheat")
-     v
-[EntityResolver._resolve_single] 
-     |---> Pencarian Hybrid (Fulltext + Vector) di Neo4j
-     v
-[_find_connected_emrs]
-     |---> Traversal relasi graf menuju node EMRRecord
-     v
-[Fallback Mechanism] (Jika hasil nol)
-     |---> Filter Stop Words 
-     |---> AND-between-keywords 
-     |---> _search_emrs_by_model()
-     v
-[Output: Format 5 Record EMR]
+## Flowchart
+
+```mermaid
+graph TD
+    A[User Query] --> B[_extract_mentions LLM Prompting]
+    B -->|Daftar entitas e.g., PC200, overheat| C[EntityResolver._resolve_single]
+    C -->|Pencarian Hybrid Fulltext + Vector| D[_find_connected_emrs]
+    D -->|Traversal relasi graf ke EMRRecord| E{Hasil ditemukan?}
+    E -->|Ya| F[Output: Format 5 Record EMR]
+    E -->|Tidak| G[Fallback Mechanism]
+    G -->|Filter Stop Words / AND-between-keywords| H[_search_emrs_by_model]
+    H --> F
 ```
 
 ## Input → Process → Output

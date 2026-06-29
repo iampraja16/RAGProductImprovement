@@ -3,27 +3,15 @@
 ## Overview
 Fitur `Graph Extraction Pipeline` bertanggung jawab untuk mengubah data rekam medis/perawatan alat berat (EMR) yang masih berformat CSV mentah menjadi struktur graf semantik yang saling terhubung di Neo4j. Proses ini membaca ribuan baris rekaman secara bertahap, mengekstrak entitas (SymptomPattern, Component, RootCausePattern, ActionPattern, Model) dan hubungan relasinya menggunakan LLM Azure OpenAI, lalu menyisipkannya menggunakan skema optimasi batch ke database Neo4j.
 
-## Flowchart ASCII
-```text
-[Dashboard EMR.csv]
-       |
-       v
-[Loop 20.630 EMR Records]
-       |
-       v
-[Azure OpenAI LLM Extraction] (extractor.py)
-       |
-       +---> Ekstrak Nodes: Komponen, Gejala, Tindakan, Penyebab
-       |---> Ekstrak Edges: MENTIONS, HAS_COMPONENT, ON_MACHINE
-       v
-[Graph Schema Validator]
-       |---> Verifikasi kesesuaian format output LLM
-       v
-[Neo4j Batch MERGE] (Batch size 500 via UNWIND)
-       |---> BatchEmbeddingWriter untuk optimasi penulisan embedding
-       |---> GraphEnricher untuk enrichment batch tanpa lock contention
-       v
-[Neo4j Graph Database Complete] (~2-3 Jam total eksekusi)
+## Flowchart
+
+```mermaid
+graph TD
+    A[Dashboard EMR.csv] --> B[Loop 20.630 EMR Records]
+    B --> C[Azure OpenAI LLM Extraction extractor.py]
+    C -->|Ekstrak Nodes & Edges| D[Graph Schema Validator]
+    D -->|Verifikasi Format Output LLM| E[Neo4j Batch MERGE Batch size 500 via UNWIND]
+    E -->|BatchEmbeddingWriter & GraphEnricher| F[Neo4j Graph Database Complete]
 ```
 
 ## Input → Process → Output

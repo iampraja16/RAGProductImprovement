@@ -3,22 +3,20 @@
 ## Overview
 Modul `GraphRAG Retrieval` menyediakan sistem pencarian multi-metode untuk mengekstrak konteks semantik dari Neo4j guna melengkapi kueri pengguna sebelum dikirim ke LLM. Modul ini mendukung tiga skenario pencarian: **Local Search** (berfokus pada detail spesifik entitas dan tetangga langsung 1-hop), **Global Search** (berfokus pada tren makro menggunakan rangkuman komunitas graf), dan **DRIFT Search** (pencarian relasi iteratif multi-hop untuk menemukan fakta tersembunyi yang saling terkait).
 
-## Flowchart ASCII
-```text
-                         [User Query]
-                              |
-       +----------------------+----------------------+
-       |                      |                      |
-[Local Search]         [Global Search]        [DRIFT Search]
-       |                      |                      |
-[Cari entitas terdekat [Cari rangkuman        [Ekstrak entitas awal ->
-  + tetangga 1-hop]     komunitas terkait]     Lakukan iterasi lompatan
-       |                      |                relasi secara dinamis]
-       v                      v                      v
-[Kompilasi Fakta Semantik] <--+----------------------+
-       |
-       v
-[String Konteks untuk LLM]
+## Flowchart
+
+```mermaid
+graph TD
+    A[User Query] --> B{Pilih Mode}
+    B -->|Local| C[Local Search: Cari entitas terdekat + tetangga 1-hop]
+    B -->|Global| D[Global Search: Cari rangkuman komunitas terkait]
+    B -->|DRIFT| E[DRIFT Search: Ekstrak entitas awal & iterasi lompatan relasi dinamis]
+    
+    C --> F[Kompilasi Fakta Semantik]
+    D --> F
+    E --> F
+    
+    F --> G[String Konteks untuk LLM]
 ```
 
 ## Input → Process → Output
