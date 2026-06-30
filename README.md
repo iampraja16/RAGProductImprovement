@@ -168,11 +168,11 @@ graph TD
     
     C --> D{Ini pertanyaan\njenis apa?}
     
-    D -->|\"Angka, total,\ntop 5, tren\"| E[ask_emr_database]
-    D -->|\"Penyebab, solusi,\nrekomendasi\"| F[ask_emr_graph]
-    D -->|\"Cari EMR detail\"| G[search_emr_records]
-    D -->|\"SMR, scatter plot,\njam operasi\"| H[analyze_smr]
-    D -->|\"Buat laporan,\nPDF\"| I[generate_executive_summary]
+    D -->|Angka / Total| E[ask_emr_database]
+    D -->|Penyebab / Solusi| F[ask_emr_graph]
+    D -->|Cari EMR detail| G[search_emr_records]
+    D -->|SMR / Scatter plot| H[analyze_smr]
+    D -->|Buat laporan PDF| I[generate_executive_summary]
     
     E --> J[EntityResolver\ncari community_id\n+ nama canon]
     J --> K[SEMUA tool:\nResolve Site?]
@@ -184,7 +184,7 @@ graph TD
     N --> O[Jalanin SQL + LIMIT]
     O --> P{Kalau 0?\nFallback ILIKE}
     
-    F --> Q[GraphRAG: Local/\nGlobal/Hybrid/DRIFT]
+    F --> Q[GraphRAG: Local /\nGlobal / Hybrid / DRIFT]
     Q --> R[Konteks dari Neo4j]
     
     G --> S[Traversal graf\nAmbil 5 record]
