@@ -190,8 +190,8 @@ graph TD
     G --> S[Traversal graf\nAmbil 5 record]
     S --> T[Enrichment\ndari PostgreSQL]
     
-    H --> U[SQL LANGSUNG\n(SQLAlchemy)\nTANPA LIMIT]
-    U --> V[smr_data[]\nbuat scatter plot]
+    H --> U[SQL langsung\nvia SQLAlchemy\ntanpa LIMIT]
+    U --> V[data smr\nbuat scatter plot]
     
     I --> W[Kumpulin data\ndari semua sumber]
     W --> X[Generate PDF]
