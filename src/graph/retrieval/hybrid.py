@@ -13,7 +13,6 @@ class HybridEntityRetriever:
         """Combine vector and keyword search results using naive ranker (max score)."""
         logger.info("Executing hybrid search (vector + fulltext)...")
         
-        # 1. Vector Search
         vector_query = """
         CALL db.index.vector.queryNodes('symptom-embeddings', $k, $vector)
         YIELD node, score
@@ -21,7 +20,6 @@ class HybridEntityRetriever:
         """
         vector_rows = self.graph_client.run_query(vector_query, {"k": candidate_k, "vector": query_vector})
         
-        # 2. Keyword Search (Fulltext)
         keyword_query = """
         CALL db.index.fulltext.queryNodes('entity-names', $query)
         YIELD node, score
@@ -29,7 +27,6 @@ class HybridEntityRetriever:
         """
         keyword_rows = self.graph_client.run_query(keyword_query, {"query": query_text})
         
-        # 3. Merge and Score
         return self._merge_hybrid_scores(vector_rows, keyword_rows, top_k)
 
     def _merge_hybrid_scores(self, vector_rows: List[Dict], keyword_rows: List[Dict], top_k: int) -> List[Dict]:
@@ -39,7 +36,6 @@ class HybridEntityRetriever:
         all_ids = set(v_norm.keys()) | set(k_norm.keys())
         scores = {}
         
-        # We need to map back to names and labels
         id_to_meta = {}
         for row in vector_rows + keyword_rows:
             if row["id"] not in id_to_meta:
@@ -48,7 +44,6 @@ class HybridEntityRetriever:
         for entity_id in all_ids:
             v_score = v_norm.get(entity_id, 0.0)
             k_score = k_norm.get(entity_id, 0.0)
-            # Naive ranker: take the max of normalized scores
             scores[entity_id] = max(v_score, k_score)
             
         ranked = sorted(scores.items(), key=lambda item: -item[1])

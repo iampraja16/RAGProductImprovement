@@ -32,13 +32,11 @@ from src.graph.client import GraphClient
 logger = logging.getLogger(__name__)
 
 _DEFAULT_BATCH_SIZE = 500
-_ENRICH_TIMEOUT = 120.0  # seconds — batch UNWIND writes
-
+_ENRICH_TIMEOUT = 120.0
 
 def _normalize_name(text: str) -> str:
     """Lowercase and collapse whitespace."""
     return re.sub(r"\s+", " ", str(text).strip()).lower()
-
 
 def _safe(val: Any) -> str:
     """Return stripped string or empty string for NaN/None."""
@@ -47,11 +45,9 @@ def _safe(val: Any) -> str:
     s = str(val).strip()
     return "" if s.lower() == "nan" else s
 
-
 def _chunked(lst: list, n: int):
     for i in range(0, len(lst), n):
         yield lst[i : i + n]
-
 
 class GraphEnricher:
     """
@@ -62,10 +58,6 @@ class GraphEnricher:
     def __init__(self, client: GraphClient, batch_size: int = _DEFAULT_BATCH_SIZE):
         self.client = client
         self.batch_size = batch_size
-
-    # ──────────────────────────────────────────────────────────────────────
-    # Public API
-    # ──────────────────────────────────────────────────────────────────────
 
     def enrich(self, df: pd.DataFrame) -> None:
         """
@@ -81,7 +73,6 @@ class GraphEnricher:
         total = len(df)
         logger.info("GraphEnricher: starting enrichment for %d rows …", total)
 
-        # ── Collect data from all rows ────────────────────────────────────
         comp_rows: List[Dict] = []
         sub_comp_rows: List[Dict] = []
         action_rows: List[Dict] = []
@@ -189,10 +180,6 @@ class GraphEnricher:
             time.time() - start,
             total,
         )
-
-    # ──────────────────────────────────────────────────────────────────────
-    # Internal helpers
-    # ──────────────────────────────────────────────────────────────────────
 
     def _batch_run(self, rows: List[Dict], query: str, step_name: str) -> None:
         """Send *rows* to Neo4j in batches using the given UNWIND query."""

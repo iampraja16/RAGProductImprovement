@@ -13,24 +13,17 @@ class IndexManager:
     def setup_all_indexes(self):
         logger.info("Setting up Neo4j Vector and Fulltext Indexes...")
         
-        # 1. Fulltext index for entities (for Keyword Search)
-        # We include all possible text properties from different node types
         self._create_fulltext_index(
             index_name=settings.neo4j_fulltext_index_entity,
             labels=["SymptomPattern", "ProblemCluster", "RootCausePattern", "ActionPattern", "Part"],
             properties=["name", "description", "label", "part_no", "raw_symptom", "raw_cause", "raw_action"]
         )
 
-        # 2. Vector indexes for different nodes
         self._create_vector_index("symptom-embeddings", "SymptomPattern", "embedding")
         self._create_vector_index("cluster-embeddings", "ProblemCluster", "embedding")
         self._create_vector_index("rootcause-embeddings", "RootCausePattern", "embedding")
-        self._create_vector_index("action-embeddings", "ActionPattern", "embedding")
-        
-        # 3. Vector index for communities
+        self._create_vector_index("action-embeddings", "ActionPattern", "embedding")    
         self._create_vector_index(settings.neo4j_vector_index_community, "Community", "embedding")
-        
-        # 4. Constraints (like recon-graphrag)
         self._create_constraints()
         
         logger.info("All Neo4j indexes setup successfully.")

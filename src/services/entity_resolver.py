@@ -109,7 +109,6 @@ class EntityResolver:
             return []
 
     def _resolve_single(self, mention: str, entity_type: str) -> Optional[ResolvedEntity]:
-        # For model types, prefer MachineModel match over symptom match
         if entity_type == "model":
             model_candidates = self._search_machine_models(mention)
             if model_candidates:
@@ -350,10 +349,8 @@ class EntityResolver:
                         ],
                     }
 
-        # Fallback: search by raw keywords from query
         if not mention_keywords:
             words = {w for w in query.lower().split() if len(w) > 2 and w not in _STOP_WORDS}
-            # If any keyword looks like an EMR ID (e.g. U-00006083), keep only that
             emr_id_keywords = {w for w in words if re.search(r'^[a-z0-9]+[-_][a-z0-9]+$', w)}
             mention_keywords = emr_id_keywords if emr_id_keywords else words
         if not mention_keywords:
@@ -374,7 +371,6 @@ class EntityResolver:
         model_names = model_names or []
         has_models = bool(model_names)
 
-        # Build model property filters
         model_clauses = []
         model_params = {}
         for i, mn in enumerate(model_names):
@@ -445,8 +441,7 @@ class EntityResolver:
             "e.techcare_component", "e.techcare_sub_component",
             "e.machine_product",
         )
-        # Use AND between keywords, OR between fields per keyword
-        # (record must match ALL keywords, each in at least one field)
+
         and_clauses = []
         params = {}
         for i, kw in enumerate(keyword_list):

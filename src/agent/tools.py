@@ -199,7 +199,6 @@ def _build_iliake_count_query(query: str, canonical_names: List[str]) -> Optiona
             words.add(wl)
     if not words:
         return None
-    # Separate model-looking keywords from text keywords
     text_cols = ["symptom", "caused_of_problem", "action_how_was_problem_corrected", "subjects"]
     model_kws = []
     text_kws = []
@@ -259,14 +258,12 @@ def _inject_community_filter(sql: str, community_ids: List[str]) -> str:
 
 def _strip_community_filter(sql: str) -> str:
     """Remove any community_id filter from SQL (for model/brand-only queries)."""
-    # Remove full parenthesized community_id condition: ('x' = ANY(...) OR 'y' = ANY(...))
     sql = re.sub(
         r"\(\s*'[\w-]+'\s*=\s*ANY\(\s*community_id\s*\)(?:\s+OR\s+'[\w-]+'\s*=\s*ANY\(\s*community_id\s*\))*\s*\)",
         "",
         sql,
         flags=re.IGNORECASE,
     ).strip()
-    # Remove single community_id filter: AND 'x' = ANY(...) or WHERE 'x' = ANY(...)
     sql = re.sub(
         r"(AND\s+)?'[\w-]+'\s*=\s*ANY\(\s*community_id\s*\)",
         "",
@@ -306,9 +303,6 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
             if community_info["community_ids"]:
                 logger.info(f"Community IDs: {community_info['community_ids']}")
 
-            # Only inject community_ids from symptom-type entities, not from model-type
-            # (brands like "Komatsu" get falsely resolved to symptom nodes via fulltext)
-            # Also skip if model entities are present — model filter + ILIKE is precise enough
             symptom_cids = community_info.get("symptom_community_ids", [])
             has_model_entities = (
                 resolved.entities
@@ -319,7 +313,6 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
             if resolved.entities and has_model_entities:
                 logger.info("Model entities present — skipping community_id injection")
 
-            # Build query hint for Vanna
             modified = resolved.modified_query
             if should_inject_community:
                 cid_hint = " OR ".join(f"'{c}' = ANY(community_id)" for c in symptom_cids)
@@ -348,7 +341,6 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
             span.set_attribute("sql_generated", True)
             span.set_attribute("sql_query", sql)
 
-            # Post-inject symptom community_id filter for reliability
             if should_inject_community:
                 sql = _inject_community_filter(sql, symptom_cids)
             else:
@@ -363,7 +355,6 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
 
             df = vn.run_sql(sql)
 
-            # Also trigger fallback if COUNT query returned 0
             is_count_query_zero = (
                 df is not None
                 and not df.empty
@@ -468,7 +459,6 @@ def search_emr_records(query: str) -> Dict[str, Any]:
 
             emr_names = [r["emr_name"] for r in neo4j_records if r.get("emr_name")]
 
-            # Enrich with full details from PostgreSQL
             full_records = []
             if emr_names:
                 try:

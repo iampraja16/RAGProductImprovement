@@ -12,15 +12,12 @@ class DriftSearchRetriever(BaseRetriever):
     def search(self, query: str, top_k: int = 5) -> SearchResult:
         query_vector = self.embedder.embed_query(query)
         
-        # 1. Hybrid search for seed entities
         entities = self.hybrid_search.retrieve(query, query_vector, top_k=top_k)
         if not entities:
             return SearchResult(answer="No relevant entities found to start DRIFT search.")
 
         entity_names = [e["name"] for e in entities]
 
-        # 2. Expand to Communities
-        # Get communities that these entities belong to, and their summaries
         drift_query = """
         MATCH (e) WHERE e.name IN $names
         MATCH (e)-[:IN_COMMUNITY]->(c:Community)
@@ -30,7 +27,6 @@ class DriftSearchRetriever(BaseRetriever):
         """
         communities = self.graph_client.run_query(drift_query, {"names": entity_names})
 
-        # 3. Get immediate graph context for seed entities
         context_query = """
         MATCH (e) WHERE e.name IN $names
         OPTIONAL MATCH (e)-[r]-(neighbor)
@@ -39,7 +35,6 @@ class DriftSearchRetriever(BaseRetriever):
         """
         local_context = self.graph_client.run_query(context_query, {"names": entity_names})
 
-        # 4. Format context for LLM
         context_str = "=== LOCAL ENTITY CONTEXT ===\n"
         for row in local_context:
             if row["neighbor"]:
@@ -49,7 +44,6 @@ class DriftSearchRetriever(BaseRetriever):
         for comm in communities:
             context_str += f"Community Level {comm['level']}:\n{comm['summary']}\n\n"
 
-        # 5. LLM Synthesis
         prompt = f"""
         You are an expert EMR maintenance analyzer. 
         Answer the user's question using both the specific local entity relationships and the broader community summaries provided below.

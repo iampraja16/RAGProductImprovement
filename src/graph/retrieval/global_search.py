@@ -7,7 +7,6 @@ class GlobalSearchRetriever(BaseRetriever):
     def search(self, query: str, level: int = 2, top_k: int = 5) -> SearchResult:
         query_vector = self.embedder.embed_query(query)
         
-        # 1. Search community summaries via vector search
         community_query = """
         CALL db.index.vector.queryNodes('community-embeddings', $k, $vector)
         YIELD node, score
@@ -21,7 +20,6 @@ class GlobalSearchRetriever(BaseRetriever):
         if not communities:
             return SearchResult(answer="No community summaries found at this level.")
 
-        # 2. Map Phase: Ask LLM to answer based on EACH community summary
         from langchain_core.messages import HumanMessage
         
         partial_answers = []
@@ -40,7 +38,6 @@ class GlobalSearchRetriever(BaseRetriever):
         if not partial_answers:
             return SearchResult(answer="I couldn't find a high-level answer to this question in the community data.")
 
-        # 3. Reduce Phase: Synthesize partial answers
         combined_partials = "\n---\n".join(partial_answers)
         reduce_prompt = f"""
         You are an expert EMR analyst looking at high-level trends.

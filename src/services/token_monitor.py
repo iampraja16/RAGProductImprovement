@@ -37,8 +37,7 @@ class TokenMonitor:
         from src.agent.prompts import estimate_tokens
         p_tokens = estimate_tokens(prompt_text)
         c_tokens = estimate_tokens(completion_text)
-        
-        # Approximate Azure OpenAI pricing (e.g., $5.00/1M input, $15.00/1M output for gpt-4o)
+    
         cost = (p_tokens * 0.000005) + (c_tokens * 0.000015)
         
         return {
@@ -48,5 +47,4 @@ class TokenMonitor:
             "estimated_cost_usd": cost
         }
 
-# Global singleton for cross-request tracking
 global_token_monitor = TokenMonitor()

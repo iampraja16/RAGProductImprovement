@@ -87,7 +87,6 @@ class CommunitySummarizer:
         logger.info("Hierarchical Community Summarization completed.")
 
     def _summarize_level_0(self, community_id: str):
-        # Fetch entities in this community
         query = """
         MATCH (n)-[:IN_COMMUNITY]->(c:Community {communityId: $id})
         RETURN n.name AS name, labels(n)[0] AS label
@@ -113,10 +112,8 @@ class CommunitySummarizer:
         response = self.llm.invoke([HumanMessage(content=prompt)])
         summary_text = response.content
         
-        # Embed the summary
         embedding = self.embedder.embed_query(summary_text)
         
-        # Save back to Neo4j
         save_query = """
         MATCH (c:Community {communityId: $id, level: 0})
         SET c.summary = $summary, c.embedding = $embedding
@@ -124,7 +121,6 @@ class CommunitySummarizer:
         self.client.run_query(save_query, {"id": community_id, "summary": summary_text, "embedding": embedding})
 
     def _summarize_higher_level(self, community_id: str, level: int):
-        # Fetch summaries of child communities
         query = """
         MATCH (c:Community {communityId: $id, level: $level})-[:PARENT_OF]->(child:Community)
         RETURN child.communityId AS child_id, child.summary AS summary
@@ -137,7 +133,6 @@ class CommunitySummarizer:
         child_summaries = "\\n\\n".join([f"--- Sub-Community {child['child_id']} ---\\n{child['summary']}" for child in children if child['summary']])
         
         if not child_summaries.strip():
-             # If children have no summaries, fallback
              child_summaries = "No detailed summaries available for sub-communities."
              
         prompt = f"""
@@ -155,10 +150,8 @@ class CommunitySummarizer:
         response = self.llm.invoke([HumanMessage(content=prompt)])
         summary_text = response.content
         
-        # Embed the summary
         embedding = self.embedder.embed_query(summary_text)
         
-        # Save back to Neo4j
         save_query = """
         MATCH (c:Community {communityId: $id, level: $level})
         SET c.summary = $summary, c.embedding = $embedding

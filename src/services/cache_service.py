@@ -15,16 +15,10 @@ from src.config import settings
 
 logger = logging.getLogger(__name__)
 
-
-# ===================================================================
-# Level 1 — Semantic Cache (Qdrant)
-# ===================================================================
-
 class SemanticCache:
     """Cache using Qdrant vector similarity (cosine >= threshold)."""
 
     COLLECTION = "query_cache"
-    # Updated from 384 (SentenceTransformer) → 1536 (text-embedding-3-small / ada-002)
     VECTOR_DIM = 1536
 
     def __init__(self, similarity_threshold: float = 0.95, ttl_hours: int = 24):
@@ -153,11 +147,6 @@ class SemanticCache:
             "hit_rate": round(self._hits / total, 3) if total > 0 else 0,
         }
 
-
-# ===================================================================
-# Level 2 — Redis Cache (graph + prompt)
-# ===================================================================
-
 class RedisCache:
     """Key-value cache backed by Redis with TTL support."""
 
@@ -223,9 +212,5 @@ class RedisCache:
             "hit_rate": round(self._hits / total, 3) if total > 0 else 0,
         }
 
-
-# ===================================================================
-# Global singletons — initialized at FastAPI startup
-# ===================================================================
 semantic_cache = SemanticCache()
 redis_cache = RedisCache()

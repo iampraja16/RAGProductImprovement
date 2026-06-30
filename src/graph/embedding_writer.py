@@ -19,7 +19,6 @@ from src.graph.client import GraphClient
 
 logger = logging.getLogger(__name__)
 
-# Default batch size — keeps query payload under ~8MB limit for Neo4j Bolt
 _DEFAULT_BATCH_SIZE = 500
 
 
@@ -27,7 +26,6 @@ def _chunked(lst: list, n: int):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
         yield lst[i : i + n]
-
 
 class BatchEmbeddingWriter:
     """
@@ -77,7 +75,6 @@ class BatchEmbeddingWriter:
             logger.info("write_embeddings: no data for label=%s, skipping.", label)
             return 0
 
-        # Build UNWIND query — single query template regardless of label
         query = f"""
         UNWIND $batch AS row
         MATCH (n:{label} {{{match_property}: row.key}})

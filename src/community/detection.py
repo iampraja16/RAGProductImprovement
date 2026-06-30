@@ -11,8 +11,6 @@ class CommunityDetector:
         self.client = client
 
     def detect(self, node_labels: list[str] = None, relationship_types: list[str] = None, max_levels: int = 3, force: bool = False):
-        
-        # Check if communities already exist
         if not force:
             res = self.client.run_query("MATCH (c:Community {level: 0}) RETURN count(c) AS cnt")
             if res and res[0]['cnt'] > 0:
@@ -21,17 +19,11 @@ class CommunityDetector:
         
         logger.info("Starting Community Detection using GDS Leiden...")
         
-        # Default to settings if not provided
         n_labels = node_labels if node_labels else ["SymptomPattern", "ProblemCluster", "RootCausePattern", "ActionPattern", "Part", "MachineModel", "EMRRecord"]
         r_types = relationship_types if relationship_types else settings.community_relationship_types
-        
-        # Format for Cypher
         n_labels_str = str(n_labels) if n_labels != ["*"] else "'*'"
-        
-        # Convert relationship types list to a map with UNDIRECTED orientation
         rel_projection = {rel: {"orientation": "UNDIRECTED"} for rel in r_types}
-        
-        # 1. Project the graph into GDS in-memory catalog
+    
         project_query = f"""
         CALL gds.graph.project(
             'entity-graph',
@@ -42,16 +34,13 @@ class CommunityDetector:
         """
         
         try:
-            # Drop if exists
             self.client.run_query("CALL gds.graph.drop('entity-graph', false)")
-            
             result = self.client.run_query(project_query, {"rel_projection": rel_projection})
             logger.info(f"Projected graph: {result[0]['nodeCount']} nodes, {result[0]['relationshipCount']} relationships.")
         except Exception as e:
             logger.error(f"Failed to project graph to GDS. Is GDS plugin installed? Error: {e}")
             return False
 
-        # Clean up old Community nodes and communityId properties before re-running
         logger.info("Cleaning up existing Community nodes and communityId properties...")
         self.client.run_query("""
             MATCH (n) WHERE n.communityId IS NOT NULL
@@ -61,9 +50,7 @@ class CommunityDetector:
             MATCH (c:Community)
             DETACH DELETE c
         """)
-        
-        # 2. Run Leiden and write results back to Neo4j database
-        # This will add a 'communityId' property to the nodes
+
         leiden_query = """
         CALL gds.leiden.write('entity-graph', {
             writeProperty: 'communityId',
@@ -84,7 +71,6 @@ class CommunityDetector:
             logger.info(f"Leiden completed. Found {result[0]['communityCount']} communities.")
             logger.info(f"Modularities across levels: {result[0]['modularities']}")
             
-            # 3. Create Community nodes and IN_COMMUNITY relationships
             self._build_community_hierarchy(max_levels)
             
             return True
@@ -93,7 +79,6 @@ class CommunityDetector:
             logger.error(f"Failed to run Leiden algorithm: {e}")
             return False
         finally:
-            # Cleanup in-memory graph
             self.client.run_query("CALL gds.graph.drop('entity-graph', false)")
 
     def _build_community_hierarchy(self, max_levels: int):

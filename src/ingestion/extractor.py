@@ -14,10 +14,7 @@ logger = logging.getLogger(__name__)
 class LLMGraphExtractor:
     def __init__(self, temperature: float = 0.0):
         self.llm = get_llm(temperature)
-        
-        # We use JsonOutputParser paired with Pydantic for robust local LLM extraction
         self.parser = JsonOutputParser(pydantic_object=GraphExtraction)
-        
         self.prompt = ChatPromptTemplate.from_messages([
             ("system", """You are an expert heavy machinery maintenance analyst.
 Your task is to extract structured entities (nodes) and relationships (edges) from unstructured maintenance logs (EMR).
@@ -41,7 +38,6 @@ Output FORMAT INSTRUCTIONS:
     def extract(self, text: str) -> Optional[GraphExtraction]:
         """Extracts GraphExtraction objects from raw text."""
         try:
-            # The chain returns a dict parsed by JsonOutputParser, we convert it to Pydantic
             result_dict = self.chain.invoke({
                 "text": text,
                 "format_instructions": self.parser.get_format_instructions()

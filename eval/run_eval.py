@@ -5,10 +5,8 @@ import time
 import logging
 import concurrent.futures
 
-# Adjust path to import from workspace Cwd
 sys.path.append(os.getcwd())
 
-# Suppress verbose warnings
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
@@ -49,7 +47,6 @@ def run_evaluation():
     print("=== Starting Golden QA Evaluation Suite ===")
     print(f"LLM Provider: {getattr(settings, 'llm_provider', 'azure')} | Model: {getattr(settings, 'azure_openai_deployment_name', 'gpt-4o')}")
     
-    # Load golden QA dataset
     jsonl_path = "eval/golden_qa.jsonl"
     if not os.path.exists(jsonl_path):
         print(f"Error: dataset file not found at {jsonl_path}")
@@ -63,7 +60,6 @@ def run_evaluation():
                 
     print(f"Loaded {len(test_cases)} test cases from {jsonl_path}")
     
-    # 2. Resume support from partial_results.json
     partial_path = "eval/partial_results.json"
     results = []
     completed_indices = set()
@@ -80,18 +76,16 @@ def run_evaluation():
             results = []
             completed_indices = set()
             
-    # Initialize Agent
     print("Initializing Agent...")
     agent = Agent()
     
     consecutive_failures = 0
     max_consecutive_failures = 3
-    max_retries = 3  # up to 3 retries (4 attempts total)
+    max_retries = 3 
     timeout_seconds = 60
     
     total_start_time = time.time()
     
-    # 3. Evaluation Loop with Timeout, Retries, and Fail-fast
     for idx, tc in enumerate(test_cases, 1):
         if idx in completed_indices:
             continue
@@ -116,7 +110,7 @@ def run_evaluation():
                     resp = future.result(timeout=timeout_seconds)
                 success = True
                 latency = time.time() - start_time
-                break  # Exit retry loop on success
+                break
             except concurrent.futures.TimeoutError:
                 latency = time.time() - start_time
                 print(f"  Attempt {attempt} timed out after {timeout_seconds} seconds.")
@@ -125,14 +119,13 @@ def run_evaluation():
                 print(f"  Attempt {attempt} failed with exception: {e}")
                 
             if attempt < max_retries + 1:
-                time.sleep(2)  # Brief backoff before retry
+                time.sleep(2)
                 
         if not success:
             consecutive_failures += 1
             print(f"  Query failed after {max_retries + 1} attempts.")
             resp = {"answer": "Error: Timeout or execution failure after retries", "sql": None, "steps": []}
             
-            # Fail-fast check
             if consecutive_failures >= max_consecutive_failures:
                 print(f"\nAborting evaluation: {max_consecutive_failures} consecutive queries failed.")
                 save_atomic_json(partial_path, {"results": results})
@@ -140,7 +133,6 @@ def run_evaluation():
         else:
             consecutive_failures = 0
             
-        # Determine selected tool
         selected_tool = None
         for step in resp.get("steps", []):
             if step.get("node") == "router" and step.get("tool_call"):
@@ -149,7 +141,6 @@ def run_evaluation():
                 
         routing_correct = (selected_tool == target_tool)
         
-        # Evaluate tool-specific outputs
         sql_match = False
         entity_ratio = 0.0
         sql_success_increment = False
@@ -210,12 +201,10 @@ def run_evaluation():
             "entity_success_increment": entity_success_increment
         })
         
-        # Save atomic checkpoint after each completed question
         save_atomic_json(partial_path, {"results": results})
         
     total_time = time.time() - total_start_time
     
-    # Calculate final scores
     routing_success = sum(1 for r in results if r["routing_correct"])
     sql_total = sum(1 for r in results if r["target_tool"] == "ask_emr_database")
     sql_success = sum(1 for r in results if r["target_tool"] == "ask_emr_database" and r["sql_success_increment"])
@@ -247,12 +236,10 @@ def run_evaluation():
     print(f"Average Latency:         {summary['average_latency_seconds']:.2f}s")
     print("="*50)
     
-    # Save baseline_results.json
     results_path = "eval/baseline_results.json"
     save_atomic_json(results_path, {"summary": summary, "detail": results})
     print(f"Saved detail results to {results_path}")
     
-    # Save baseline_metrics.md
     metrics_path = "eval/baseline_metrics.md"
     markdown_content = f"""# Sprint 2 Baseline Evaluation Metrics
 
@@ -287,7 +274,6 @@ Model: {getattr(settings, 'azure_openai_deployment_name', 'gpt-4o')} (via {getat
     save_atomic_text(metrics_path, markdown_content)
     print(f"Saved human-readable baseline metrics to {metrics_path}")
     
-    # Clean up partial results checkpoint file on successful completion
     if os.path.exists(partial_path):
         try:
             os.remove(partial_path)

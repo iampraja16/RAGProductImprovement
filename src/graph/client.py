@@ -4,14 +4,7 @@ from neo4j import GraphDatabase
 import logging
 
 logger = logging.getLogger(__name__)
-
-# Default per-query timeout (seconds).
-# Override per-call for heavy operations:
-#   GDS Leiden / APOC refactor → 300s
-#   Batch UNWIND writes        → 120s
-#   Normal CRUD queries        → 60s  (default)
 _DEFAULT_QUERY_TIMEOUT = 60.0
-
 
 class GraphClient:
     def __init__(self, uri: str, user: str, password: str):

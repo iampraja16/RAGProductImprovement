@@ -8,18 +8,16 @@ from tenacity import Retrying, stop_after_attempt, wait_exponential, wait_random
 
 logger = logging.getLogger(__name__)
 
-
 class CircuitBreakerOpenException(Exception):
     """Exception raised when a circuit breaker is in OPEN state and fails fast."""
     pass
-
 
 class CircuitBreaker:
     def __init__(self, name: str, failure_threshold: int = 5, recovery_timeout: float = 60.0):
         self.name = name
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
-        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+        self.state = "CLOSED"
         self.failure_count = 0
         self.last_state_change = time.time()
         self._lock = threading.RLock()
@@ -60,19 +58,13 @@ class CircuitBreaker:
 neo4j_breaker    = CircuitBreaker("Neo4j",      failure_threshold=3, recovery_timeout=15.0)
 postgres_breaker = CircuitBreaker("PostgreSQL",  failure_threshold=3, recovery_timeout=15.0)
 qdrant_breaker   = CircuitBreaker("Qdrant",      failure_threshold=3, recovery_timeout=15.0)
-
-# Cloud LLM breakers — tuned for cloud API failure patterns
-# Higher threshold (5) and longer recovery (60s) vs. local Ollama (3/15s).
-# HTTP 429 (rate limit) does NOT increment failure count — handled separately.
 cloud_llm_breaker     = CircuitBreaker("CloudLLM",         failure_threshold=5, recovery_timeout=60.0)
 failover_llm_breaker  = CircuitBreaker("CloudLLM-Failover", failure_threshold=5, recovery_timeout=60.0)
-
 
 def _is_rate_limit_error(exc: Exception) -> bool:
     """Detect HTTP 429 from httpx, requests, or openai SDK exceptions."""
     status = getattr(exc, "status_code", None) or getattr(getattr(exc, "response", None), "status_code", None)
     return status == 429
-
 
 def _get_retry_after(exc: Exception) -> float:
     """Extract Retry-After header value in seconds, default 5.0."""
@@ -87,7 +79,6 @@ def _get_retry_after(exc: Exception) -> float:
                 pass
     return 5.0
 
-
 def resilient_call(breaker: CircuitBreaker, func: Callable, *args, **kwargs) -> Any:
     """Execute a function with circuit breaker protection and cloud-aware retry logic.
 
@@ -96,7 +87,6 @@ def resilient_call(breaker: CircuitBreaker, func: Callable, *args, **kwargs) -> 
     """
     breaker.check_state()
 
-    # In eval context, delegate retry ownership to the outer harness
     in_eval = os.environ.get("LOCAL_RAG_EVAL_MODE") == "1"
     max_attempts = 1 if in_eval else 3
 
@@ -112,25 +102,22 @@ def resilient_call(breaker: CircuitBreaker, func: Callable, *args, **kwargs) -> 
                 return func(*args, **kwargs)
             except Exception as exc:
                 if _is_rate_limit_error(exc):
-                    # HTTP 429 — rate limit: sleep and retry WITHOUT tripping breaker
                     retry_after = _get_retry_after(exc)
                     logger.warning(
                         f"CircuitBreaker '{breaker.name}': HTTP 429 received. "
                         f"Sleeping {retry_after:.1f}s (Retry-After) before retry."
                     )
                     time.sleep(retry_after)
-                    raise  # Let tenacity retry
-                raise  # Non-429: propagate to tenacity, will hit except below
+                    raise
+                raise 
 
         result = retrier(_call)
         breaker.record_success()
         return result
     except Exception as e:
         if not _is_rate_limit_error(e):
-            # Only increment breaker on hard failures (5xx, connection errors)
             breaker.record_failure()
         raise e
-
 
 def resilient_call_with_fallback(breaker: CircuitBreaker, fallback_value: Any, func: Callable, *args, **kwargs) -> Any:
     """Execute a resilient call, returning fallback_value if the circuit is open or execution fails."""

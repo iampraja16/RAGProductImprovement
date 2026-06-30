@@ -25,13 +25,9 @@ import numpy as np
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader
 
-# ---------------------------------------------------------------------------
-# Logger & Paths
-# ---------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-# Environment
 from src.config import settings
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -44,7 +40,6 @@ _OUTPUT_DIR = _PROJECT_ROOT / "output"
 EMR_FILE_NAME: str = settings.emr_file_name
 EMR_SHEET_NAME: str = settings.emr_sheet_name
 
-# Design Tokens
 _COLORS = ["#4361ee", "#3a86ff", "#4895ef", "#4cc9f0", "#72efdd",
            "#8338ec", "#ff006e", "#fb5607", "#ffbe0b", "#06d6a0"]
 _ACCENT = "#e63946"
@@ -52,10 +47,6 @@ _BG_COLOR = "#ffffff"
 _TEXT_COLOR = "#1a1a2e"
 _GRID_COLOR = "#f0f0f0"
 
-
-# ===================================================================
-# Data Loading
-# ===================================================================
 def _load_emr_data() -> pd.DataFrame:
     """Load EMR data directly from PostgreSQL."""
     try:
@@ -63,9 +54,6 @@ def _load_emr_data() -> pd.DataFrame:
         engine = create_engine(settings.postgres_url)
         df = pd.read_sql("SELECT * FROM emr_records", engine)
         
-        # Ensure column names map correctly to what the code expects
-        # emr_records columns are lowercase with underscores (e.g., machine_model)
-        # The legacy code expects title case with spaces (e.g., Machine Model)
         rename_map = {
             "machine_model": "Machine Model",
             "branch_site": "Branch / Site",
@@ -116,10 +104,6 @@ def _get_subtypes_for_family(df: pd.DataFrame, family: str) -> List[str]:
     )
     return sorted(df.loc[mask, "Machine Model"].unique().tolist())
 
-
-# ===================================================================
-# Summary Data Extraction
-# ===================================================================
 def extract_summary_data(family: str) -> Dict[str, Any]:
     """
     Extract all summary data for a model family directly from EMR data.

@@ -11,17 +11,13 @@ class LocalSearchRetriever(BaseRetriever):
 
     def search(self, query: str, top_k: int = 5) -> SearchResult:
         query_vector = self.embedder.embed_query(query)
-        
-        # 1. Hybrid search for seed entities
         entities = self.hybrid_search.retrieve(query, query_vector, top_k=top_k)
-        
+
         if not entities:
             return SearchResult(answer="No relevant entities found in graph.")
 
-        # 2. Extract subgraph context for top entities
         entity_names = [e["name"] for e in entities]
         
-        # Cypher to fetch immediate neighborhood
         context_query = """
         MATCH (e) WHERE e.name IN $names
         OPTIONAL MATCH (e)-[r]-(neighbor)
@@ -30,7 +26,6 @@ class LocalSearchRetriever(BaseRetriever):
         """
         rows = self.graph_client.run_query(context_query, {"names": entity_names})
         
-        # Format context for LLM
         context_str = "Graph Context:\n"
         for row in rows:
             if row["neighbor"]:
@@ -38,7 +33,6 @@ class LocalSearchRetriever(BaseRetriever):
             else:
                 context_str += f"- {row['entity']} (No relations found)\n"
 
-        # 3. LLM Synthesis
         prompt = f"""
         You are an expert EMR maintenance analyzer. Answer the user's question using ONLY the provided graph context.
         

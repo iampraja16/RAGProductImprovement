@@ -21,21 +21,14 @@ from src.graph.client import GraphClient
 
 logger = logging.getLogger(__name__)
 
-# Timeout for vector-index similarity queries (normal, fast)
 _VECTOR_QUERY_TIMEOUT = 60.0
-# Timeout for APOC mergeNodes — can be slow on high-degree nodes
 _APOC_MERGE_TIMEOUT = 300.0
-# Parallel workers for Phase-1 similarity discovery per label
 _DEFAULT_QUERY_WORKERS = 8
 
 
 class EntityResolver:
     def __init__(self, client: GraphClient):
         self.client = client
-
-    # ──────────────────────────────────────────────────────────────────────
-    # Public API
-    # ──────────────────────────────────────────────────────────────────────
 
     def resolve_label(
         self,
@@ -69,8 +62,7 @@ class EntityResolver:
 
         logger.info("Entity Resolution [%s]: found %d nodes → running parallel similarity queries …", label, len(nodes))
 
-        # ── Phase 1: Discover merge groups ────────────────────────────────
-        merge_groups: Dict[str, List[str]] = {}  # primary_id -> [secondary_ids]
+        merge_groups: Dict[str, List[str]] = {} 
         processed_ids: Set[str] = set()
         lock = threading.Lock()
 
@@ -105,7 +97,6 @@ class EntityResolver:
                 return
 
             with lock:
-                # Filter out already-consumed nodes
                 sim_ids = [
                     sn["sim_id"]
                     for sn in similar
@@ -130,7 +121,6 @@ class EntityResolver:
             len(merge_groups),
         )
 
-        # ── Phase 2: Merge in Neo4j ───────────────────────────────────────
         _merge_query = """
         MATCH (primary) WHERE elementId(primary) = $primary_id
         MATCH (secondary) WHERE elementId(secondary) IN $secondary_ids

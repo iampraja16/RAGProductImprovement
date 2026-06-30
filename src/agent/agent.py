@@ -165,7 +165,6 @@ class Agent:
                     else:
                         final_state["final_answer"] = "Mohon maaf, layanan LLM (sintesis jawaban) saat ini tidak tersedia atau sedang mengalami gangguan."
                 
-            # Capture Token Usage
             if cb.total_tokens > 0:
                 usage_meta = {
                     "prompt_tokens": cb.prompt_tokens,

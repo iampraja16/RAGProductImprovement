@@ -45,7 +45,7 @@ def get_llm(temperature: float = 0.0, task_type: str = "reasoning") -> BaseChatM
             api_version=settings.azure_openai_api_version,
             temperature=temperature,
             timeout=30.0,
-            max_retries=0,  # Retries managed by resilience.py
+            max_retries=0,
         )
 
     if provider == "openai":
@@ -56,7 +56,7 @@ def get_llm(temperature: float = 0.0, task_type: str = "reasoning") -> BaseChatM
             api_key=settings.openai_api_key,
             temperature=temperature,
             timeout=30.0,
-            max_retries=0,  # Retries managed by resilience.py
+            max_retries=0,
         )
 
     raise ValueError(
@@ -166,9 +166,6 @@ def stream_with_failover(messages: list, task_type: str = "reasoning", temperatu
                 return secondary.stream(messages, **kwargs), failover_llm_breaker
             raise
 
-
-
-
 # ── Graph Client ──────────────────────────────────────────────────────────────
 
 @lru_cache(maxsize=1)
@@ -179,7 +176,6 @@ def get_graph_client() -> GraphClient:
         password=settings.neo4j_password,
     )
 
-
 # ── Qdrant Client ─────────────────────────────────────────────────────────────
 
 @lru_cache(maxsize=1)
@@ -188,7 +184,6 @@ def get_qdrant_client(url: Optional[str] = None) -> QdrantClient:
     parsed = urlparse(target)
     host = parsed.hostname or "localhost"
     return QdrantClient(host=host, port=6333, grpc_port=6334, prefer_grpc=True)
-
 
 # ── Vanna SQL Analytics ───────────────────────────────────────────────────────
 
@@ -200,7 +195,7 @@ class _CloudVannaLLM:
     """
 
     def __init__(self, config=None):
-        pass  # config unused; client is obtained from get_llm()
+        pass  
 
     def system_message(self, message: str) -> dict:
         return {"role": "system", "content": message}
@@ -214,7 +209,6 @@ class _CloudVannaLLM:
     def submit_prompt(self, prompt: list[dict], **kwargs) -> str:
         from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
-        # Convert Vanna message dicts → LangChain message objects
         lc_messages = []
         for msg in prompt:
             role = msg.get("role", "user")
@@ -249,10 +243,8 @@ class MyVanna(_CloudVannaLLM, VannaQdrant_VectorStore):
         return get_embeddings().embed_query(data)
 
     def extract_sql(self, llm_response: str) -> str:
-        # 1. Use Vanna's default extraction first (looks for ```sql)
         sql = super().extract_sql(llm_response)
 
-        # 2. If it failed to clean (returned the raw string), do aggressive regex extraction
         if sql == llm_response:
             import re
             match = re.search(r"(?i)(SELECT\s+.+?;)", sql, re.DOTALL)
@@ -261,7 +253,6 @@ class MyVanna(_CloudVannaLLM, VannaQdrant_VectorStore):
             if match:
                 sql = match.group(1)
 
-        # 3. Final cleanup of any stray markdown, quotes, or trailing junk
         sql = sql.replace("```sql", "").replace("```", "").strip().strip('"').strip("'").strip()
         return sql
 
@@ -278,11 +269,9 @@ def _pg_conn_kwargs_from_url(pg_url: str) -> Dict[str, Optional[str]]:
         "port": parsed.port,
     }
 
-
 import threading
 _cached_vanna: Optional[MyVanna] = None
 _vanna_lock = threading.Lock()
-
 
 def get_vanna(
     qdrant_url: Optional[str] = None,
@@ -312,7 +301,7 @@ def get_vanna(
                 _cached_vanna = vn
             except Exception as e:
                 logger.error(f"PostgreSQL connection failed during initialization: {e}")
-                return vn  # Return uncached instance on failure
+                return vn 
         else:
             _cached_vanna = vn
 

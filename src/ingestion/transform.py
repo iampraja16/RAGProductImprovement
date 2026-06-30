@@ -20,9 +20,6 @@ from langchain_core.documents import Document
 
 from src.config import settings
 
-# ---------------------------------------------------------------------------
-# Logger
-# ---------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -32,10 +29,6 @@ _handler.setFormatter(
 )
 logger.addHandler(_handler)
 
-
-# ===================================================================
-# Helpers
-# ===================================================================
 def _safe(val: Any, default: str = "N/A") -> str:
     """Return stringified val, or default if NaN/empty."""
     if val is None or (isinstance(val, float) and pd.isna(val)):
@@ -43,17 +36,12 @@ def _safe(val: Any, default: str = "N/A") -> str:
     s = str(val).strip()
     return s if s else default
 
-
 def extract_model_family(model: str) -> str:
     """Extract base model family: 'PC200-10M0' -> 'PC200'."""
     if not model or model == "N/A":
         return model
     return str(model).split("-")[0]
 
-
-# ===================================================================
-# Loading Data
-# ===================================================================
 def load_emr_data(file_path: Optional[str] = None) -> pd.DataFrame:
     """
     Load EMR data from Excel or CSV and return as a DataFrame.
@@ -81,7 +69,6 @@ def load_emr_data(file_path: Optional[str] = None) -> pd.DataFrame:
         
     logger.info("  Loaded %d rows, %d columns.", len(df), len(df.columns))
 
-    # Basic cleaning - strip spaces but keep duplicate names unique
     new_cols = []
     seen = {}
     for col in df.columns:
@@ -94,7 +81,6 @@ def load_emr_data(file_path: Optional[str] = None) -> pd.DataFrame:
             new_cols.append(clean_col)
     df.columns = new_cols
 
-    # Ensure key text columns exist
     for col in ("Subjects", "Symptom", "Caused of Problem"):
         if col not in df.columns:
             logger.warning("  Column '%s' not found — filling with empty.", col)
@@ -102,9 +88,6 @@ def load_emr_data(file_path: Optional[str] = None) -> pd.DataFrame:
 
     return df
 
-# ===================================================================
-# Row -> Prompt-Ready Text
-# ===================================================================
 def transform_emr_row_to_text(row: pd.Series) -> str:
     """
     Convert a single EMR row into structured natural language.
@@ -134,7 +117,6 @@ def transform_emr_row_to_text(row: pd.Series) -> str:
     symptom = _safe(row.get("Symptom"))
     caused = _safe(row.get("Caused of Problem"))
 
-    # Dynamic check for canonical fields from LLM-normalization pipeline
     symptom_clean = _safe(row.get("symptom_canonical"), "")
     cause_clean = _safe(row.get("cause_canonical"), "")
     action_clean = _safe(row.get("action_canonical"), "")
@@ -149,7 +131,6 @@ def transform_emr_row_to_text(row: pd.Series) -> str:
     created = _safe(row.get("Created Date"))
     closed = _safe(row.get("EMR Last Closed Date"))
 
-    # Truncate long caused text for embedding quality
     caused_display = caused[:500] if len(caused) > 500 else caused
 
     lines = [
@@ -182,10 +163,6 @@ def transform_emr_row_to_text(row: pd.Series) -> str:
 
     return "\n".join(lines)
 
-
-# ===================================================================
-# Row -> Metadata
-# ===================================================================
 def build_emr_metadata(row: pd.Series) -> Dict[str, Any]:
     """Build metadata dict for ChromaDB from an EMR row."""
     meta: Dict[str, Any] = {
@@ -214,23 +191,17 @@ def build_emr_metadata(row: pd.Series) -> Dict[str, Any]:
             if s:
                 meta[key] = s
 
-    # Dates as strings
     for date_col in ("Created Date", "EMR Last Closed Date"):
         val = row.get(date_col)
         if val is not None and not (isinstance(val, float) and pd.isna(val)):
             meta[date_col.lower().replace(" ", "_")] = str(val)[:10]
 
-    # Model family for easy filtering
     model = _safe(row.get("Machine Model"), "")
     if model:
         meta["model_family"] = extract_model_family(model)
 
     return meta
 
-
-# ===================================================================
-# Aggregation — Generate Summary Documents
-# ===================================================================
 def aggregate_model_summaries(df: pd.DataFrame) -> List[Document]:
     """
     Generate one summary Document per Machine Model.
@@ -284,7 +255,6 @@ def aggregate_model_summaries(df: pd.DataFrame) -> List[Document]:
     logger.info("Generated %d model summary documents.", len(docs))
     return docs
 
-
 def aggregate_cluster_summaries(df: pd.DataFrame) -> List[Document]:
     """
     Generate one summary Document per cluster label.
@@ -326,7 +296,6 @@ def aggregate_cluster_summaries(df: pd.DataFrame) -> List[Document]:
 
     logger.info("Generated %d cluster summary documents.", len(docs))
     return docs
-
 
 def aggregate_site_summaries(df: pd.DataFrame) -> List[Document]:
     """
@@ -370,12 +339,10 @@ def aggregate_site_summaries(df: pd.DataFrame) -> List[Document]:
     logger.info("Generated %d site summary documents.", len(docs))
     return docs
 
-
 def get_model_summaries(df: pd.DataFrame) -> Dict[str, str]:
     """Helper to return dict of model name to its summary text."""
     docs = aggregate_model_summaries(df)
     return {doc.metadata["machine_model"]: doc.page_content for doc in docs}
-
 
 def get_site_summaries(df: pd.DataFrame) -> Dict[str, str]:
     """Helper to return dict of site name to its summary text."""

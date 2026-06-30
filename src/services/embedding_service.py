@@ -142,6 +142,4 @@ class EmbeddingService(Embeddings):
             "max_cache_size": self._cache_size,
         }
 
-
-# Global singleton — client is lazily initialized on first embed_query call
 embedding_svc = EmbeddingService()
