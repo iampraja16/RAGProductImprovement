@@ -1,49 +1,113 @@
 # Dokumentasi Fitur: search_emr_records
 
-## Overview
-Fitur `search_emr_records` dirancang untuk mencari dan menampilkan detail spesifik dari rekam jejak perawatan alat berat (EMR) langsung dari database graf (Neo4j) berdasarkan kueri bahasa alami. Sistem ini akan membongkar pertanyaan pengguna menjadi entitas-entitas teknis, memetakan entitas tersebut ke node di dalam Neo4j, dan melakukan penelusuran relasi (graph traversal) untuk mengambil maksimal 5 record EMR yang paling relevan.
+## Apa yang Dilakukan Fitur Ini?
 
-## Flowchart
+Fitur `search_emr_records` tugasnya **nyari record EMR spesifik** dan nampilin detailnya.
+
+Ini bedanya sama tool lain:
+- `ask_emr_database`: ngitung jumlah/statistik (SQL)
+- `ask_emr_graph`: ngejelasin penyebab/solusi (graf)
+- **`search_emr_records`: nampilin detail EMR satu-satu**
+
+Contoh penggunaan yang pas:
+- *"Cari EMR tentang oli bocor di PC200"*
+- *"Tampilkan detail hydraulic leak"*
+- *"EMR tentang engine overheat"*
+- *"5 EMR yang ada masalah final drive"*
+
+## Alur Kerja (Flowchart)
 
 ```mermaid
 graph TD
-    A[User Query] --> B[_extract_mentions LLM Prompting]
-    B -->|Daftar entitas e.g., PC200, overheat| C[EntityResolver._resolve_single]
-    C -->|Pencarian Hybrid Fulltext + Vector| D[_find_connected_emrs]
-    D -->|Traversal relasi graf ke EMRRecord| E{Hasil ditemukan?}
-    E -->|Ya| F[Output: Format 5 Record EMR]
-    E -->|Tidak| G[Fallback Mechanism]
-    G -->|Filter Stop Words / AND-between-keywords| H[_search_emrs_by_model]
-    H --> F
+    A[Kamu tanya:\n\"Cari EMR tentang\nhydraulic leak\"] --> B[EntityResolver\n_extract_mentions]
+    
+    B --> C[AI ekstrak kata kunci:\nsymptom: \"hydraulic leak\"\nmodel: (kalo ada)]
+    
+    C --> D[EntityResolver\n_resolve_single:\ncari di Neo4j pake\nfulltext + vector search]
+    
+    D --> E[Cari EMRRecord\nyang terhubung\n(dari graf)]
+    
+    E --> F{Dapet hasil?}
+    
+    F -->|Ya| G[Ambil 5 record\npaling relevan]
+    F -->|Enggak| H[Fallback:\ncari pake model\npake CONTAINS]
+    
+    G --> I[Enrichment:\ntambahin data\ndari PostgreSQL\n(SMR, site, dll)]
+    H --> I
+    
+    I --> J[Tampilkan Markdown\n5 record EMR\ndetail lengkap]
 ```
 
-## Input → Process → Output
-- **Input**: `query` berupa string bahasa alami dari pengguna (contoh: "Tampilkan detail EMR tentang kebocoran oli di final drive").
-- **Process**: Kueri diteruskan ke LLM untuk ekstraksi entitas. Entitas yang didapat di-resolve ke database Neo4j. Sistem mencari node EMR yang terhubung dengan entitas tersebut. Pencarian model spesifik menggunakan operator `CONTAINS` pada properti, bukan relasi `MENTIONS`. Parameter khusus seperti `part_suply` dikecualikan dari konversi huruf kecil (`toLower()`).
-- **Output**: String berformat Markdown yang berisi maksimal 5 detail record EMR lengkap dengan metadata dan riwayat kerusakan.
+## Input → Proses → Output
 
-## Kode Contoh
+### Input
+Pertanyaan kamu dalam bahasa Indonesia/Inggris.
+
+### Proses
+
+**Langkah 1 — Ekstraksi Kata Kunci**
+AI baca pertanyaan, ekstrak entity (symptom, model, component).
+
+**Langkah 2 — Pencarian di Graf**
+Setiap entity dicari di Neo4j pake fulltext + vector search. Dari entity yang cocok, sistem cari `EMRRecord` yang terhubung.
+
+**Langkah 3 — Fallback Model**
+Kalau gak dapet dari graf, sistem coba fallback:
+- Cari `MachineModel` yang mirip
+- Query EMR berdasarkan model pake `CONTAINS`
+
+**Langkah 4 — Enrichment dari PostgreSQL**
+Setiap EMR record yang dapet, dilengkapi dengan data tambahan dari PostgreSQL. Data ini termasuk:
+- `smr_trouble` (nilai SMR, penting buat konteks)
+- `branch_site` (nama site)
+- `smr_direction`
+- Lain-lain yang ada di PG tapi mungkin gak lengkap di Neo4j
+
+**Langkah 5 — Format Output**
+5 record teratas diformat jadi Markdown yang rapi.
+
+### Output
+String Markdown berisi detail 5 record EMR. Contoh:
+
+```
+### Record #1: U-00000158
+- **Model**: PC200-10M0 | **Serial**: 12345
+- **Site**: JBY | **SMR**: 1,250 jam
+- **Symptom**: ENGINE OVERHEAT
+- **Component**: ENGINE
+- **Action**: OVERHAUL
+- **Root Cause**: KONTAMINASI
+- **Part**: SEAL (12345-67890)
+---
+```
+
+## Kode Contoh (Simplified)
+
 ```python
 # File: src/agent/tools.py
 
 def search_emr_records(query: str) -> str:
-    """
-    Parameter:
-      query (str): Pertanyaan analitik atau pencarian EMR dari user.
-    
-    Return:
-      str: Teks hasil kompilasi maksimal 5 record EMR yang cocok.
-    """
+    # 1. EntityResolver nyari entity + EMR record
     resolver = EntityResolver(graph_client)
     emrs = resolver.search_emr_records(query, limit=5)
     
     if not emrs:
-        return "Tidak ada record EMR yang cocok dengan kueri tersebut."
-        
-    return format_emr_list_to_string(emrs)
+        return "Maaf, gak nemu EMR yang cocok."
+    
+    # 2. Enrichment dari PostgreSQL
+    emrs = enrich_from_postgres(emrs)
+    
+    return format_emr_list(emrs)
 ```
 
-## Catatan Penting
-- Fitur ini murni melakukan penelusuran kualitatif graf (Node ke Node), tidak menggunakan SQL agregasi.
-- Mekanisme pencocokan model alat berat dilakukan menggunakan properti `machine_model CONTAINS` karena keterbatasan relasi langsung.
-- Variabel atau kata kunci `part_suply` harus dieksklusikan dari konversi *lowercase* (`toLower()`) agar pencarian *part number* tetap akurat.
+## Catatan Penting Buat Junior
+
+1. **Ini murni pencarian graf, bukan SQL.** Bedanya dengan `ask_emr_database` yang pake Vanna AI buat generate SQL, `search_emr_records` cuma njelajah node dan relasi di Neo4j.
+
+2. **Cuma ngasih 5 record.** Ini sengaja biar jawabannya gak kepanjangan. Kalau butuh statistik yang melibatkan banyak record, pake `ask_emr_database`.
+
+3. **Enrichment dari PostgreSQL itu baru.** Data di Neo4j mungkin gak lengkap (misal `smr_trouble` gak ada di graf). Makanya abis dapet record dari Neo4j, kita lengkapin dari PostgreSQL.
+
+4. **Search beda sama GraphRAG.** Search ini nampilin record mentah. GraphRAG (`ask_emr_graph`) ngasih penjelasan dan analisis. Kalo kamu butuh "ngapain?" → pake search. Kalo butuh "kenapa?" → pake graph.
+
+5. **Kalau hasilnya kosong, jangan panik.** Sistem ada fallback: nyari berdasarkan model alat. Misal user cuma bilang "PC200", sistem tetep bakal nyari EMR yang modelnya PC200.

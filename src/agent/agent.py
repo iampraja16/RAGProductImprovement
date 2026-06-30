@@ -121,6 +121,7 @@ class Agent:
                     "sql": tool_result.get("sql"),
                     "sql_data": tool_result.get("sql_data"),
                     "graph_traversal": tool_result.get("graph_traversal"),
+                    "smr_data": tool_result.get("smr_data"),
                     "steps": [{"node": "synthesizer", "status": "prepared"}]
                 }
             else:
@@ -193,7 +194,8 @@ class Agent:
                 "sql_data": final_state.get("sql_data"),
                 "graph_traversal": final_state.get("graph_traversal"),
                 "steps": final_state.get("steps", []),
-                "token_usage": usage_meta
+                "token_usage": usage_meta,
+                "smr_data": final_state.get("smr_data"),
             }
 
     def stream_response(self, query: str, chat_history: List[Dict] = None):
@@ -237,7 +239,8 @@ class Agent:
                                 "sql": tr.get("sql"),
                                 "sql_data": tr.get("sql_data"),
                                 "chunks": tr.get("chunks"),
-                                "graph_traversal": tr.get("graph_traversal")
+                                "graph_traversal": tr.get("graph_traversal"),
+                                "smr_data": tr.get("smr_data"),
                             }, default=str) + "\n"
                             
                         final_state.update(node_state)
@@ -306,5 +309,6 @@ class Agent:
                 
                 yield json.dumps({
                     "type": "done",
-                    "steps": final_state.get("steps", [])
+                    "steps": final_state.get("steps", []),
+                    "smr_data": final_state.get("smr_data"),
                 }, default=str) + "\n"

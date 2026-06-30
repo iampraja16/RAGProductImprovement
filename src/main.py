@@ -101,6 +101,7 @@ class ChatResponse(BaseModel):
     cache_hit: Optional[str] = None
     timing_ms: Optional[Dict[str, float]] = None
     steps: Optional[List[Dict[str, Any]]] = []  # Reasoning trace
+    smr_data: Optional[List[Dict[str, Any]]] = None  # SMR analysis data for scatter plot
 
 class CacheInvalidateRequest(BaseModel):
     level: str = "all"
@@ -262,6 +263,7 @@ def chat(request: ChatRequest):
             cache_hit=None,
             timing_ms=timings,
             steps=response.get("steps", []),
+            smr_data=response.get("smr_data"),
         )
     except Exception as e:
         timings["total_ms"] = round((time.time() - t_start) * 1000, 1)

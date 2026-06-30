@@ -1,57 +1,105 @@
 # Dokumentasi Fitur: GraphRAG Retrieval
 
-## Overview
-Modul `GraphRAG Retrieval` menyediakan sistem pencarian multi-metode untuk mengekstrak konteks semantik dari Neo4j guna melengkapi kueri pengguna sebelum dikirim ke LLM. Modul ini mendukung tiga skenario pencarian: **Local Search** (berfokus pada detail spesifik entitas dan tetangga langsung 1-hop), **Global Search** (berfokus pada tren makro menggunakan rangkuman komunitas graf), dan **DRIFT Search** (pencarian relasi iteratif multi-hop untuk menemukan fakta tersembunyi yang saling terkait).
+## Apa yang Dilakukan Fitur Ini?
 
-## Flowchart
+Fitur ini tugasnya **nyari informasi di database graf (Neo4j)** buat ngasih jawaban yang lebih dalem ke LLM.
+
+Bedanya sama search biasa: kalau search SQL cari angka-angka, fitur ini cari **hubungan antar data**. Contohnya:
+- *"Apa aja sih penyebab engine overheat?"* → bakal nyari node "ENGINE OVERHEAT" dan liat semua yang terhubung
+- *"Apa hubungan hydraulic leak sama final drive?"* → bakal liat jalur relasi antar dua entitas
+
+Ada **4 mode** pencarian yang bisa dipake. Masing-masing punya kegunaan beda.
+
+## Alur Kerja (Flowchart)
 
 ```mermaid
 graph TD
-    A[User Query] --> B{Pilih Mode}
-    B -->|Local| C[Local Search: Cari entitas terdekat + tetangga 1-hop]
-    B -->|Global| D[Global Search: Cari rangkuman komunitas terkait]
-    B -->|DRIFT| E[DRIFT Search: Ekstrak entitas awal & iterasi lompatan relasi dinamis]
+    A[Pertanyaan Kamu] --> B{Pilih Mode}
     
-    C --> F[Kompilasi Fakta Semantik]
-    D --> F
-    E --> F
+    B -->|Local| C[Local Search:\nCari entitas cocok\ndi graf, ambil tetangga\n1-hop (langsung)]
     
-    F --> G[String Konteks untuk LLM]
+    B -->|Global| D[Global Search:\nCari node Community\nyang relevan,\nbaca summary-nya]
+    
+    B -->|DRIFT| E[DRIFT Search:\nCari entitas,\niterasi lompat relasi\nmulti-hop pake LLM]
+    
+    B -->|Hybrid| F[Hybrid Search:\nLocal + Global\ndigabung jadi\nsatu konteks]
+    
+    C --> G[Kumpulin semua\nfakta semantik]
+    D --> G
+    E --> G
+    F --> G
+    
+    G --> H[Jadi teks konteks\nbuat LLM ngejawab]
 ```
 
-## Input → Process → Output
-- **Input**: `query` (kueri bahasa alami user) dan `mode` (salah satu dari "local", "global", atau "drift").
-- **Process**: 
-  - **Local**: Mencari entitas yang cocok di graf, lalu mengambil properti node tersebut beserta seluruh node tetangga yang terhubung langsung (1-hop).
-  - **Global**: Mencari node `Community` yang relevan, lalu memuat teks properti `summary` dari komunitas tersebut.
-  - **DRIFT**: Melakukan langkah awal seperti Local Search, kemudian menggunakan model perantara untuk secara iteratif memilih relasi terkuat dari tetangga-tetangga tersebut, lalu melompat ke relasi berikutnya (multi-hop traversal) untuk mengekstrak detail tambahan.
-- **Output**: String gabungan berisi fakta-fakta semantik terstruktur yang akan dijadikan sebagai konteks dasar bagi generator LLM.
+## Perbandingan Mode
 
-## Kode Contoh
+| Mode | Cocok buat | Cara Kerja | Kecepatan |
+|------|-----------|------------|-----------|
+| **Local** | Pertanyaan detail spesifik | Cari entitas → ambil tetangga 1-hop (yang nyambung langsung) | ⚡ Cepat |
+| **Global** | Tren/pola umum di banyak data | Cari Community → baca rangkumannya | ⚡ Cepat |
+| **Hybrid** | Kombinasi detail + konteks luas | Local + Global digabung | 🐢 Sedang |
+| **DRIFT** | Fakta tersembunyi, jalur relasi kompleks | Cari entitas → LLM mutusin lompat ke mana selanjutnya | 🐌 Lambat (pake LLM berulang) |
+
+## Input → Proses → Output
+
+### Input
+- `query`: pertanyaan kamu (string)
+- `mode`: "local", "global", "hybrid", atau "drift"
+
+### Proses
+
+**Local Search (step-by-step):**
+1. Cari entitas yang cocok di Neo4j pake vector search
+2. Ambil semua node tetangga yang terhubung langsung (1-hop)
+3. Kumpulin properti dari semua node itu jadi teks
+
+**Global Search (step-by-step):**
+1. Cari node `Community` yang relevan
+2. Baca properti `summary` dari komunitas itu
+3. Gabungin semua summary jadi teks
+
+**Hybrid Search (step-by-step):**
+1. Jalanin Local Search
+2. Jalanin Global Search
+3. Gabungin hasil keduanya
+
+**DRIFT Search (step-by-step):**
+1. Mulai kayak Local Search (cari entitas awal)
+2. Tapi LLM bakal milih: "lompat ke node mana lagi yang relevan?"
+3. Lompat terus samah dirasa cukup
+4. Paling lambat tapi bisa dapet fakta yang gak kelihatan di permukaan
+
+### Output
+String teks yang berisi fakta-fakta dari graf. Teks ini bakal dipake LLM buat ngejawab pertanyaan kamu.
+
+## Kode Contoh (Simplified)
+
 ```python
-# File: src/graph/retrieval/local.py, global_search.py, drift.py
+# File: src/graph/retrieval/local.py / hybrid.py / drift.py
 
 class GraphRAGRetriever:
     def retrieve_context(self, query: str, mode: str = "local") -> str:
-        """
-        Parameter:
-          query (str): Kueri pertanyaan dari pengguna.
-          mode (str): Mode pencarian ("local" | "global" | "drift").
-        
-        Return:
-          str: Gabungan teks konteks semantik dari database graf.
-        """
         if mode == "local":
             return self.local_retriever.search(query)
         elif mode == "global":
             return self.global_retriever.search(query)
+        elif mode == "hybrid":
+            local = self.local_retriever.search(query)
+            global_ = self.global_retriever.search(query)
+            return local + "\n---\n" + global_  # digabung
         elif mode == "drift":
             return self.drift_retriever.search(query)
-        else:
-            raise ValueError(f"Mode {mode} tidak didukung.")
 ```
 
-## Catatan Penting
-- **Local Search** sangat cocok untuk pertanyaan berorientasi mikro (fakta spesifik dari satu record EMR).
-- **Global Search** sangat cocok untuk mendeteksi pola umum atau tren di seluruh dokumen karena menggunakan rangkuman komunitas.
-- **DRIFT (Dynamic Relation Iteration for Fact Tracking)** memakan sumber daya komputasi LLM lebih besar karena melakukan panggilan API LLM iteratif untuk memilih "jalur lompatan" relasi terbaik.
+## Catatan Penting Buat Junior
+
+1. **Local Search** = nanya detail spesifik. Misal: "Apa aja komponen yang terlibat di hydraulic leak?" → jawabannya detail, spesifik, cuma yang nyambung langsung.
+
+2. **Global Search** = nanya gambaran besar. Misal: "Apa tren kerusakan engine secara umum?" → jawabannya dari summary komunitas, lebih luas.
+
+3. **Hybrid** itu pilihan paling aman. Cocok buat pertanyaan yang gak jelas butuh detail atau gambaran besar. Sistem jalanin 2 mode sekaligus, hasilnya digabung.
+
+4. **DRIFT itu paling mahal** (pake LLM berulang kali). Makanya dipake kalo emang perlu aja, misal buat investigasi mendalam.
+
+5. **Yang dipanggil dari `ask_emr_graph` tool.** Kamu gak perlu pusing mikirin mode apa yang dipake — tool `ask_emr_graph` di `src/agent/tools.py` yang ngatur ini semua.

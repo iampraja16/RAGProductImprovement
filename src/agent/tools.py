@@ -11,6 +11,7 @@ from src.graph.retrieval.local import LocalSearchRetriever
 from src.graph.retrieval.global_search import GlobalSearchRetriever
 from src.graph.retrieval.drift import DriftSearchRetriever
 from src.agent.prompts import estimate_tokens, truncate_to_tokens
+from src.services.site_map import resolve_site_mentions, SITE_MAP
 
 import pandas as pd
 
@@ -303,18 +304,27 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
             if community_info["community_ids"]:
                 logger.info(f"Community IDs: {community_info['community_ids']}")
 
+            site_query, site_hint = resolve_site_mentions(query)
+            if site_hint:
+                logger.info(f"Site resolution: {site_hint}")
+            span.set_attribute("has_site_hint", site_hint is not None)
+
             symptom_cids = community_info.get("symptom_community_ids", [])
             has_model_entities = (
                 resolved.entities
                 and any(e.entity_type == "model" for e in resolved.entities)
             )
-            should_inject_community = bool(symptom_cids) and not has_model_entities
+            should_inject_community = bool(symptom_cids) and not has_model_entities and not site_hint
             span.set_attribute("inject_community_id", should_inject_community)
             if resolved.entities and has_model_entities:
                 logger.info("Model entities present — skipping community_id injection")
+            if site_hint:
+                logger.info("Site filter present — skipping community_id injection, using ILIKE instead")
 
             modified = resolved.modified_query
-            if should_inject_community:
+            if site_hint:
+                modified = f"{site_query}. Gunakan filter: {site_hint}. Gunakan ILIKE untuk mencari masalah — JANGAN gunakan community_id."
+            elif should_inject_community:
                 cid_hint = " OR ".join(f"'{c}' = ANY(community_id)" for c in symptom_cids)
                 if modified != query:
                     modified = f"{modified}. Gunakan filter community_id: {cid_hint}"
@@ -364,7 +374,8 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
             )
             if (df is None or df.empty or is_count_query_zero) and should_inject_community:
                 logger.info("Community ID search returned 0, falling back to ILIKE")
-                fallback_sql = _build_iliake_count_query(query, community_info["canonical_names"])
+                fallback_names = community_info.get("canonical_names", []) + community_info.get("expanded_names", [])
+                fallback_sql = _build_iliake_count_query(query, list(set(fallback_names)))
                 if fallback_sql:
                     logger.info(f"ILIKE fallback SQL: {fallback_sql}")
                     df = vn.run_sql(fallback_sql)
@@ -530,3 +541,115 @@ def generate_executive_summary(family: str) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error in generate_executive_summary: {e}")
         return {"answer": f"Error generating report: {e}"}
+
+
+class SmrAnalysisArgs(BaseModel):
+    query: str = Field(description="The user's query about SMR/service meter readings for a specific problem, e.g., 'hydraulic leak muncul di smr berapa saja'")
+
+
+@register_tool(args_schema=SmrAnalysisArgs)
+def analyze_smr(query: str) -> Dict[str, Any]:
+    from src.services.telemetry import tracer
+    with tracer.start_as_current_span("analyze_smr") as span:
+        span.set_attribute("tool_query", query)
+        logger.info(f"Using tool analyze_smr for query: {query}")
+        try:
+            resolver = EntityResolver(
+                get_graph_client(),
+                get_llm(temperature=0.0),
+                get_embeddings(),
+            )
+            resolved = resolver.resolve_query(query)
+            community_info = resolver.resolve_mentions_to_community_ids(query)
+
+            symptom_cids = community_info.get("symptom_community_ids", [])
+            canonical_names = community_info.get("canonical_names", [])
+
+            site_query, site_hint = resolve_site_mentions(query)
+            if site_hint:
+                logger.info(f"SMR site resolution: {site_hint}")
+
+            from sqlalchemy import create_engine, text
+            from src.config import settings
+
+            engine = create_engine(settings.readonly_postgres_url)
+            with engine.connect() as conn:
+                site_cond = f" AND ({site_hint})" if site_hint else ""
+                if symptom_cids and not site_hint:
+                    cond = " OR ".join(f"'{c}' = ANY(community_id)" for c in symptom_cids)
+                    sql = f"""
+                        SELECT smr_trouble, emr_name, created_date, symptom, machine_model
+                        FROM emr_records
+                        WHERE ({cond})
+                        ORDER BY created_date
+                    """
+                elif symptom_cids and site_hint:
+                    ilike_names = list(set(canonical_names + community_info.get("expanded_names", [])))
+                    ors = " OR ".join(
+                        f"(symptom ILIKE '%{n}%' OR caused_of_problem ILIKE '%{n}%' OR subjects ILIKE '%{n}%')"
+                        for n in ilike_names
+                    )
+                    sql = f"""
+                        SELECT smr_trouble, emr_name, created_date, symptom, machine_model
+                        FROM emr_records
+                        WHERE ({ors}){site_cond}
+                        ORDER BY created_date
+                    """
+                elif canonical_names:
+                    ilike_names = list(set(canonical_names + community_info.get("expanded_names", [])))
+                    ors = " OR ".join(
+                        f"(symptom ILIKE '%{n}%' OR caused_of_problem ILIKE '%{n}%' OR subjects ILIKE '%{n}%')"
+                        for n in ilike_names
+                    )
+                    sql = f"""
+                        SELECT smr_trouble, emr_name, created_date, symptom, machine_model
+                        FROM emr_records
+                        WHERE {ors}{site_cond}
+                        ORDER BY created_date
+                    """
+                else:
+                    return {"answer": "Tidak dapat mengidentifikasi masalah dari query.", "smr_data": [], "count": 0}
+
+                if not _is_safe_select_query(sql):
+                    logger.warning(f"Blocked unsafe SQL in analyze_smr: {sql}")
+                    return {"answer": "Blocked unsafe query.", "smr_data": [], "count": 0}
+
+                logger.info(f"Executing SMR analysis SQL: {sql}")
+                rows = conn.execute(text(sql)).fetchall()
+                cols = rows[0]._fields if rows else []
+
+            smr_data = []
+            for row in rows:
+                d = dict(zip(cols, row))
+                smr_val = d.get("smr_trouble")
+                if smr_val is not None:
+                    smr_data.append({
+                        "smr": float(smr_val) if not isinstance(smr_val, float) else smr_val,
+                        "emr_name": d.get("emr_name", ""),
+                        "created_date": str(d.get("created_date", ""))[:10] if d.get("created_date") else "",
+                        "symptom": d.get("symptom", "")[:80] if d.get("symptom") else "",
+                        "machine_model": d.get("machine_model", ""),
+                    })
+
+            answer = (
+                f"Ditemukan {len(smr_data)} record dengan SMR untuk masalah terkait.\n"
+                f"Rentang SMR: {min(d['smr'] for d in smr_data):.0f} - {max(d['smr'] for d in smr_data):.0f}\n"
+                f"Rata-rata SMR: {sum(d['smr'] for d in smr_data) / len(smr_data):.0f}\n\n"
+                f"Data divisualisasikan di bagian grafik."
+            ) if smr_data else "Tidak ada data SMR yang ditemukan untuk masalah tersebut."
+
+            return {
+                "answer": answer,
+                "smr_data": smr_data,
+                "count": len(smr_data),
+                "entities": [
+                    {"mention": e.mention, "canonical_name": e.canonical_name,
+                     "type": e.entity_type, "score": round(e.score, 3)}
+                    for e in resolved.entities
+                ] if resolved.entities else [],
+            }
+
+        except Exception as e:
+            span.record_exception(e)
+            logger.error(f"Error in analyze_smr: {e}")
+            return {"answer": f"Error analyzing SMR data: {e}", "smr_data": [], "count": 0}

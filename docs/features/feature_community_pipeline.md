@@ -1,47 +1,106 @@
 # Dokumentasi Fitur: Community Pipeline
 
-## Overview
-Fitur `Community Pipeline` dirancang untuk mengelompokkan jutaan entitas di database graf Neo4j ke dalam klaster semantik hierarkis, lalu membuat rangkuman otomatis untuk masing-masing klaster tersebut. Fitur ini menggunakan algoritma deteksi komunitas Leiden dari library Graph Data Science (GDS) Neo4j untuk menetapkan ID komunitas, lalu menggunakan LLM secara paralel untuk membuat deskripsi rangkuman dari masing-masing komunitas guna mendukung pencarian global (*Global Search*).
+## Apa yang Dilakukan Fitur Ini?
 
-## Flowchart
+Fitur ini tugasnya **ngelompokin data-data di Neo4j ke dalam grup (komunitas)**, trus bikin rangkuman buat masing-masing grup.
+
+Kenapa perlu dikelompokin? Bayangin kamu punya 20.000+ record EMR. Masing-masing record nyambung ke symptom, komponen, model, dll. Nah, beberapa data ini punya **pola yang mirip** (misal: semua engine overheat di model PC200). Community Pipeline bakal ngelompokin yang mirip-mirip jadi satu grup.
+
+Hasil grup ini dipake buat **Global Search** — jadi kalau user nanya "Apa tren kerusakan engine?", sistem tinggal baca rangkuman grupnya, gak perlu baca satu-satu.
+
+## Alur Kerja (Flowchart)
 
 ```mermaid
 graph TD
-    A[Neo4j Graph Database] --> B[GDS Graph Projection]
-    B -->|CALL gds.graph.project| C[Leiden Community Detection]
-    C -->|CALL gds.leiden.write Level 0, 1, 2| D[LLM Community Summarizer]
-    D -->|ThreadPoolExecutor max_workers 4| E[Save Community Summaries]
-    E -->|MERGE node Community| F[Graph RAG Global Search Ready]
+    A[Database Graf Neo4j\n(node + relasi EMR)] --> B[GDS Graph Projection\ncopy data ke memori\nbuat diproses]
+    
+    B --> C[Leiden Community Detection\njalanin algoritma Leiden\nbuat ngelompokin node]
+    
+    C --> D[Level 0: grup terkecil\n(detail spesifik)]
+    C --> E[Level 1: grup menengah]
+    C --> F[Level 2: grup terbesar\n(gambaran umum)]
+    
+    D --> G[LLM Summarizer\nbaca semua node\ndalam komunitas]
+    E --> G
+    F --> G
+    
+    G --> H[Bikin summary\nteks rangkuman]
+    H --> I[Simpan ke Neo4j sebagai\nnode Community]
+    
+    I --> J[Siap dipake\nGlobal Search]
 ```
 
-## Input → Process → Output
-- **Input**: Struktur graf Neo4j yang berisi entitas dan relasi yang belum terklaster.
-- **Process**: Sistem memproyeksikan graf ke memori graf Neo4j GDS. Algoritma Leiden dijalankan untuk mempartisi node menjadi klaster hierarkis (Level 0, 1, 2) dan menyimpan `communityId` ke properti node. Selanjutnya, sistem mengumpulkan semua informasi entitas yang berada di bawah ID komunitas yang sama, mengirimkannya ke LLM menggunakan 4 *worker* secara paralel via `ThreadPoolExecutor` untuk dirangkum, dan menuliskan teks rangkuman tersebut kembali ke Neo4j sebagai node `Community`.
-- **Output**: Node `Community` terisi dengan properti `summary` dan `communityId` di Neo4j.
+## Parameter Leiden Clustering
 
-## Kode Contoh
+| Parameter | Nilai | Artinya |
+|-----------|-------|---------|
+| `gamma` | 1.0 | Seberapa detail grupnya. Makin kecil → makin banyak grup kecil. Default 1.0. |
+| `theta` | 0.01 | Threshold resolusi. Makin kecil → lebih sensitif. |
+| `level` | 0, 1, 2 | Level hierarki. 0 = paling detail, 2 = paling umum. |
+
+⚠️ **Yang dipake buat sync ke PostgreSQL cuma Level 0** — yang paling detail.
+
+## Input → Proses → Output
+
+### Input
+Struktur graf Neo4j yang udah ada node dan relasi dari hasil ekstraksi.
+
+### Proses
+
+**Langkah 1 — Project Graph**
+Semua data di Neo4j di-copy ke memori khusus GDS biar bisa diproses cepat.
+```
+CALL gds.graph.project('emr-leiden', '*', '*')
+```
+
+**Langkah 2 — Leiden Detection**
+Algoritma Leiden jalan. Hasilnya: setiap node dapet `communityId` untuk Level 0, 1, dan 2.
+```
+CALL gds.leiden.write('emr-leiden', {writeProperty: 'communityId', ...})
+```
+
+**Langkah 3 — Bikin Summary**
+Buat setiap grup (komunitas), sistem ngumpulin semua entity di dalemnya, trus dikirim ke LLM buat dirangkum. Proses ini paralel pake 4 worker biar cepet.
+
+**Langkah 4 — Simpan ke Neo4j**
+Rangkuman disimpen sebagai node `Community` baru di Neo4j.
+
+### Output
+Node `Community` di Neo4j dengan properti:
+```
+Community {
+    communityId: 1258,
+    level: 0,
+    summary: "Komunitas ini berisi gejala-gejala terkait kebocoran oli ..."
+}
+```
+
+## Kode Contoh (Simplified)
+
 ```python
 # File: src/community/detection.py & summarization.py
 
 class CommunityPipelineRunner:
     def execute(self) -> bool:
-        """
-        Parameter: None
-        Return:
-          bool: True jika projeksi graf, deteksi Leiden, dan rangkuman LLM berhasil dijalankan.
-        """
-        # 1. Jalankan deteksi Leiden via GDS
+        # 1. Jalanin Leiden
         detector = LeidenDetector(graph_client)
         detector.run_leiden_detection()
         
-        # 2. Rangkum komunitas menggunakan parallel worker
+        # 2. Rangkum pake 4 worker paralel
         summarizer = CommunitySummarizer(graph_client, llm_client)
         summarizer.summarize_all(max_workers=4)
         
         return True
 ```
 
-## Catatan Penting
-- Modul ini mutlak memerlukan plugin **Neo4j Graph Data Science (GDS)** dan **APOC** yang aktif pada instansi Neo4j.
-- Penggunaan `max_workers=4` pada LLM Summarizer sangat membantu memangkas waktu pemrosesan ratusan kelompok komunitas Level 0 tanpa memicu batas kuota API secara berlebihan.
-- Komunitas Level 0 adalah tingkat klaster semantik terkecil yang diekspor dan dicocokkan ke database PostgreSQL untuk sinkronisasi.
+## Catatan Penting Buat Junior
+
+1. **Community_id BUKAN synonym group.** Ini penting! Leiden clustering itu ngelompokin berdasarkan **graph proximity** — yaitu seberapa dekat hubungan node-node di dalam graf. Bukan berdasarkan kesamaan teks. Jadi "Hydraulic Oil Leaks" dan "Oil Hydraulic leaks" bisa beda komunitas.
+
+2. **Level 0 dipake buat sync ke PostgreSQL.** Community_id Level 0 (yang paling detail) disalin ke tabel `emr_records` di PostgreSQL. Ini yang dipake buat filter di `ask_emr_database`.
+
+3. **Gamma=1.0 menghasilkan ~24.000 komunitas** untuk 20.630 record. Ini normal buat modularity-based clustering.
+
+4. **Butuh plugin GDS + APOC.** Pastikan Neo4j kamu udah install plugin `graph-data-science` dan `apoc`. Tanpa ini pipeline gak bisa jalan.
+
+5. **max_workers=4 biar gak kena rate limit LLM.** Summarize 24.000 komunitas butuh waktu. Pake 4 thread paralel biar cepet tapi tetap aman dari batas kuota API.

@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 MAX_MENTIONS = 5
+MAX_EXPANDED_SYNONYMS = 30
 
 EXTRACT_PROMPT = """Extract up to {max} entity mentions from this EMR maintenance query.
 Entity types:
@@ -268,18 +269,34 @@ class EntityResolver:
             return result
         return original
 
-    def resolve_community_id(self, canonical_name: str) -> Optional[str]:
+    def resolve_community_ids(self, canonical_name: str) -> List[str]:
         query = """
         MATCH (n {name: $name})-[:IN_COMMUNITY]->(c:Community {level: 0})
-        RETURN c.communityId AS community_id
-        LIMIT 1
+        RETURN DISTINCT c.communityId AS community_id
         """
         try:
             results = self.graph_client.run_query(query, {"name": canonical_name})
-            return results[0]["community_id"] if results else None
+            return [r["community_id"] for r in results]
         except Exception as e:
             logger.warning(f"Community ID resolution failed for '{canonical_name}': {e}")
-            return None
+            return []
+
+    def _expand_synonyms(self, community_ids: List[str]) -> List[str]:
+        """Get ALL entity names sharing any of the given communities (synonym expansion)."""
+        if not community_ids:
+            return []
+        query = """
+        MATCH (n)-[:IN_COMMUNITY]->(c:Community {level: 0})
+        WHERE c.communityId IN $cids
+        RETURN DISTINCT n.name AS name
+        LIMIT $limit
+        """
+        try:
+            results = self.graph_client.run_query(query, {"cids": community_ids, "limit": MAX_EXPANDED_SYNONYMS})
+            return [r["name"] for r in results if r.get("name")]
+        except Exception as e:
+            logger.warning(f"Synonym expansion failed: {e}")
+            return []
 
     def resolve_mentions_to_community_ids(self, query: str) -> Dict[str, Any]:
         mentions = self._extract_mentions(query)
@@ -295,14 +312,17 @@ class EntityResolver:
             if entity is not None:
                 resolved.append(entity)
                 canonical_names.add(entity.canonical_name)
-                cid = self.resolve_community_id(entity.canonical_name)
-                if cid:
+                cids = self.resolve_community_ids(entity.canonical_name)
+                for cid in cids:
                     community_ids.add(cid)
                     if entity.entity_type in ("symptom", "root_cause", "component", "part"):
                         symptom_community_ids.add(cid)
 
+        expanded_names = self._expand_synonyms(symptom_community_ids)
+
         return {
             "canonical_names": sorted(canonical_names),
+            "expanded_names": sorted(expanded_names),
             "community_ids": sorted(community_ids),
             "symptom_community_ids": sorted(symptom_community_ids),
             "entities": [

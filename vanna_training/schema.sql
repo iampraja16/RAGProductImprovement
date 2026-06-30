@@ -1,3 +1,8 @@
+CREATE TABLE site_reference (
+    code VARCHAR(10) PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL
+);
+
 CREATE TABLE emr_records (
     status VARCHAR,
     emr_name VARCHAR,
@@ -22,5 +27,6 @@ CREATE TABLE emr_records (
     emr_last_closed_date TIMESTAMP,
     model_family VARCHAR,
     graph_community_summary TEXT,
-    community_id TEXT[]
+    community_id TEXT[],
+    smr_trouble NUMERIC
 );

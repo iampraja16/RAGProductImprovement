@@ -1,58 +1,139 @@
 # Dokumentasi Fitur: Entity Resolution Service
 
-## Overview
-Layanan `Entity Resolution` adalah mesin penerjemah inti yang berjalan secara *runtime* untuk menjembatani bahasa alami dari pengguna ke dalam format entitas graf di Neo4j. Layanan ini mengekstrak kata kunci dari pertanyaan pengguna, menormalisasinya, lalu menggunakan pendekatan hibrida (Fulltext Search dan Vector Search) untuk menemukan Node persis (Canonical Name) dan ID Komunitas di dalam database graf.
+## Apa yang Dilakukan Fitur Ini?
 
-## Flowchart
+Entity Resolution adalah **jembatan antara bahasa kamu dengan database graf (Neo4j)**.
+
+Masalahnya gini: di database, data EMR pake istilah-istilah baku (canonical names). Misalnya:
+- Kamu bilang **"oli bocor"** → di database namanya **"OIL LEAK"**
+- Kamu bilang **"mesin kepanasan"** → di database namanya **"ENGINE OVERHEAT"**
+- Kamu bilang **"hidrolik bocor"** → di database namanya **"HYDRAULIC OIL LEAK"**
+
+Nah, Entity Resolution ini tugasnya: **nerjemahin bahasa kamu ke bahasa database.**
+
+## Alur Kerja (Flowchart)
 
 ```mermaid
 graph TD
-    A[User Query] --> B[_extract_mentions LLM]
-    B -->|Mendeteksi kata kunci e.g., Overheat| C[Loop tiap Mention]
-    C --> D[_resolve_single]
-    D -->|Cari di Neo4j: Fulltext Match| E{Ditemukan?}
-    E -->|Tidak| F[Vector Similarity Search]
-    E -->|Ya| G[Kompilasi Hasil Resolver: Canonical Name & Tipe Node]
-    F --> G
-    G --> H{Kebutuhan Pipeline}
-    H -->|Jalur A: Pencarian Record| I[_find_connected_emrs]
-    H -->|Jalur B: SQL Agregasi| J[Dapatkan community_id]
+    A[Kamu tanya:\"oli bocor di PC200\"] --> B[LLM Ekstrak Kata Kunci\n_extract_mentions()]
+    
+    B --> C[LLM dapet:\n1. symptom: \"oli bocor\"\n2. model: \"PC200\"]
+    
+    C --> D[Loop: proses satu per satu]
+    
+    D --> E[For \"oli bocor\":\n_resolve_single()]
+    E --> F[Cari di Neo4j pake\nFulltext Search]
+    F --> G{Cocok?}
+    G -->|Enggak| H[Cari pake\nVector Search\n(embedding)]
+    G -->|Ya| I[Canonical name:\n\"OIL LEAK\"]
+    H --> I
+    
+    D --> J[For \"PC200\":\n_resolve_single()]
+    J --> K[Cari MachineModel\ndi Neo4j]
+    K --> L[Canonical name:\n\"PC200-10M0\"]
+    
+    I --> M[Dapetin SEMUA\ncommunity_id]
+    L --> M
+    
+    M --> N[Query ke Neo4j:\nMATCH (n)-[:IN_COMMUNITY]\n->(c:Community {level:0})\nWHERE c.communityId = ...]
+    
+    N --> O[Return:\n- canonical names\n- expanded names (sinonim)\n- community_ids\n- entities]
+    
+    subgraph P[Synonym Expansion]
+        Q[Dari community_id yg didapat,\ncari SEMUA entity\ndi komunitas yang sama]
+        Q --> R[Dapet sinonim:\n\"Hydraulic Oil Leaks\"\n\"Oil Hydraulic Leaks\"\n\"OIL LEAK\"]
+    end
+    
+    N --> P
+    P --> O
 ```
 
-## Input → Process → Output
-- **Input**: String kueri pengguna.
-- **Process**: Sistem memanggil fungsi LLM di `prompts.py` untuk mengisolasi penyebutan entitas teknis (Mentions). Fungsi `_resolve_single()` kemudian memadankan teks bebas ini dengan entitas terdekat di Neo4j menggunakan indeks *Fulltext* atau *Vector Similarity*. Hasil pemadanan ini kemudian diteruskan untuk menemukan EMR yang terhubung langsung (`_find_connected_emrs` / `_search_emrs_by_model`) atau diekstrak `community_id`-nya untuk `ask_emr_database`.
-- **Output**: Objek atau struktur data yang berisi *Canonical Name*, ID Node, tipe entitas, dan *Community ID*.
+## Input → Proses → Output
 
-## Kode Contoh
+### Input
+String pertanyaan dari kamu dalam bahasa Indonesia atau Inggris.
+
+### Proses (Langkah demi Langkah)
+
+**Langkah 1 — Ekstraksi Kata Kunci**
+LLM (AI) baca pertanyaan kamu, trus ekstrak kata-kata yang penting.
+
+Yang diekstrak:
+| Tipe Entity | Contoh | Maksudnya |
+|------------|--------|-----------|
+| `symptom` | "oli bocor", "overheat", "hydraulic leak" | Gejala kerusakan |
+| `model` | "PC200", "HD785", "D155A" | Nama model alat berat |
+| `component` | "FINAL DRIVE", "engine", "transmission" | Nama komponen |
+| `part` | "seal", "injector", "oring" | Nama part |
+| `root_cause` | "kontaminasi", "aus", "salah setel" | Akar masalah |
+
+⚠️ LLM sengaja **diinstruksikan untuk skip** kata-kata generik kayak "fault", "error", "problem", "data", "cari", "tolong" — karena kata-kata itu bukan entitas teknis.
+
+**Langkah 2 — Pencarian di Neo4j**
+Setiap kata kunci dicari di Neo4j dengan 2 cara:
+1. **Fulltext Search** — cocokin kata persis (cepat, prioritized)
+2. **Vector Search** — cocokin makna pake embedding (lambat tapi akurat buat sinonim)
+
+Hasil dari kedua cara digabung, diurutkan berdasarkan skor kecocokan.
+
+**Langkah 3 — Dapetin Canonical Name**
+Dari hasil pencarian, diambil yang paling cocok → dapet **canonical name** (nama resmi).
+
+Contoh:
+| Kamu bilang | Canonical Name |
+|------------|----------------|
+| "oli bocor" | "OIL LEAK" |
+| "mesin kepanasan" | "ENGINE OVERHEAT" |
+| "PC200" | "PC200-10M0" |
+
+**Langkah 4 — Dapetin Community ID**
+Setiap canonical name punya community_id di Neo4j. Sistem ngambil **SEMUA** community_id yang terhubung ke entity itu (gak cuma 1).
+
+Ini penting karena satu entity bisa ada di beberapa komunitas (misal "HYDRAULIC OIL LEAK" ada di 130+ komunitas, tergantung model alatnya).
+
+**Langkah 5 — Synonym Expansion (Fitur Baru! 🔥)**
+Setelah dapet community_id, sistem balik nanya ke Neo4j:
+> "Di dalam komunitas ini, ada entity apa aja lagi?"
+
+Hasilnya: dapet **nama-nama sinonim** — yaitu entity lain yang satu komunitas. Ini ngebantu banget buat nyari data yang lebih lengkap.
+
+Contoh: user nyebut "hydraulic oil leak"
+1. EntityResolver dapet canonical name: "HYDRAULIC OIL LEAK"
+2. Dapet community_id: [1258, 907, 945, ...]
+3. Synonym expansion: dapet "Oil Hydraulic leaks", "HYDRAULIC OIL LEAKS", "Hydraulic Pump Leaks Oil", dll
+4. Nama-nama ini dipake di ILIKE fallback → hasil pencarian jadi lebih luas
+
+### Output
 ```python
-# File: src/services/entity_resolver.py
-
-class EntityResolver:
-    def resolve_query(self, query: str) -> list:
-        """
-        Parameter: query (str) bahasa alami.
-        Return: List of dictionaries berisi entitas Neo4j yang tervalidasi.
-        """
-        mentions = self._extract_mentions(query)
-        resolved_entities = []
-        for m in mentions:
-            entity = self._resolve_single(m)
-            if entity:
-                resolved_entities.append(entity)
-        return resolved_entities
-
-    def resolve_community_id(self, query: str) -> list:
-        """
-        Parameter: query (str).
-        Return: List of integer (community ID Level 0).
-        """
-        entities = self.resolve_query(query)
-        # Ekstrak community_id dari entities
-        return [e["community_id"] for e in entities]
+{
+    "canonical_names": ["OIL LEAK", "PC200-10M0"],
+    "expanded_names": ["OIL LEAK", "Oil Hydraulic Leaks", "OIL LEAKAGE", ...],  # ← sinonim!
+    "community_ids": ["1258", "907", "945", ...],
+    "symptom_community_ids": ["1258", "907", "945", ...],
+    "entities": [
+        {"mention": "oli bocor", "canonical_name": "OIL LEAK", "type": "symptom", "score": 0.95}
+    ]
+}
 ```
 
-## Catatan Penting
-- Resolusi sangat mengandalkan *prompt engineering* (`prompts.py`) untuk memisahkan instruksi pengguna dari entitas teknis alat berat (Entity Extraction).
-- Proses ini cukup lambat jika mengandalkan *Vector Search* terus menerus, sehingga *Fulltext Search* harus dieksekusi pertama kali sebagai langkah prioritas.
-- Layanan ini merupakan titik pusat kegagalan (Single Point of Failure) untuk akurasi kuantitatif; jika resolusi gagal, pencarian SQL akan meleset.
+## Method Penting di EntityResolver
+
+| Method | Fungsi | Dipanggil oleh |
+|--------|--------|---------------|
+| `resolve_query()` | Lengkap: ekstrak + resolve + modified query | `ask_emr_database`, `analyze_smr` |
+| `resolve_mentions_to_community_ids()` | Dapetin semua community_id + expanded_names | `ask_emr_database`, `analyze_smr` |
+| `resolve_community_ids()` | Cari semua community_id dari satu canonical name | Internal |
+| `_expand_synonyms()` | Cari semua entity satu komunitas (sinonim) | Internal |
+| `search_emr_records()` | Cari EMR record lewat graf Neo4j | `search_emr_records` tool |
+
+## Catatan Penting Buat Junior
+
+1. **EntityResolver itu pake LLM untuk ekstrak kata kunci.** Jadi hasilnya kadang bisa beda-beda untuk pertanyaan yang mirip. Makanya kita pake prompt khusus (`EXTRACT_PROMPT`) yang udah di-tuning.
+
+2. **Dulu community_id cuma dapet 1, sekarang dapet BANYAK.** Awalnya sistem cuma ngambil 1 community_id (pake `LIMIT 1`). Tapi itu terlalu sempit. Sekarang kita ambil semua community_id yang terhubung. Ini bikin pencarian jauh lebih luas.
+
+3. **Synonym expansion itu baru.** Fitur ini nyari entity lain dalam komunitas yang sama. Contoh praktis: kalau kamu search "hydraulic leak", sistem juga bakal nyari "Oil Hydraulic leaks", "Hydraulic Oil Leaks", dll. Ini ngebantu banget buat dapetin data yang lebih lengkap.
+
+4. **Ada brand map juga di `_build_modified_query()`.** Kalau kamu nyebut "Komatsu", sistem akan otomatis ganti jadi "KOMAT" (kode di database). Ini khusus buat brand.
+
+5. **EntityResolver gak tau soal nama site.** Resolusi nama site (Jembayan → JBY) ditangani oleh modul terpisah: `site_map.py`. Ini sengaja dipisah biar tanggung jawabnya jelas.

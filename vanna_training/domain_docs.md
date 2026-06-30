@@ -75,6 +75,41 @@ The `emr_records` table contains Equipment Maintenance Records for heavy machine
   IMPORTANT: Do NOT map a generic phrase like "masalah engine" to a specific symptom
   like "overheat". Use the actual keywords from the query.
 
+## Service Meter Reading (SMR)
+
+- `smr_trouble` is a NUMERIC column storing the equipment's service meter reading (operating hours) at the time the problem was reported.
+- This is critical for SMR-based failure analysis: "pada SMR berapa masalah X muncul".
+- Use ORDER BY smr_trouble when returning SMR data for visualization.
+- Common analysis patterns:
+  - SMR distribution for a specific symptom: `SELECT smr_trouble, emr_name, created_date FROM emr_records WHERE ... ORDER BY smr_trouble`
+  - Average SMR for a problem: `SELECT AVG(smr_trouble) FROM emr_records WHERE ...`
+  - SMR range: `SELECT MIN(smr_trouble), MAX(smr_trouble), AVG(smr_trouble) FROM emr_records WHERE ...`
+- For SMR analysis queries, DO NOT use LIMIT — the user needs ALL data points for visualization.
+  The system handles this automatically in the SMR analysis tool.
+
+## Site / Branch Location Mapping
+
+- `branch_site` stores SHORT CODES (3-4 uppercase letters), not full location names.
+  Example values: `JBY`, `SMD`, `BIN`, `TJR`, `MLW`.
+- Use the `site_reference` table to translate full location names to codes:
+  ```sql
+  SELECT * FROM site_reference
+  ```
+  This table has columns: `code` (VARCHAR), `full_name` (VARCHAR).
+  Examples: code `JBY` = 'Jembayan', `SMD` = 'Samarinda', `BIN` = 'Binungan'.
+
+- When a user mentions a site by its full name (e.g., "Jembayan", "Samarinda", "Balikpapan"),
+  JOIN with `site_reference` to match the correct code:
+  - Correct: `JOIN site_reference sr ON e.branch_site = sr.code WHERE sr.full_name ILIKE '%jembayan%'`
+  - Correct: `WHERE e.branch_site = 'JBY'` (if user used the code directly)
+  - Wrong: `WHERE e.branch_site ILIKE '%Jembayan%'` (code != full name)
+
+- Examples:
+  - "masalah sering di site Jembayan" → `JOIN site_reference sr ON e.branch_site = sr.code WHERE LOWER(sr.full_name) = 'jembayan'`
+  - "top 5 kerusakan di Balikpapan" → `JOIN site_reference sr ON e.branch_site = sr.code WHERE LOWER(sr.full_name) = 'balikpapan'`
+  - "emr dari site JBY" → `WHERE e.branch_site = 'JBY'`
+  - "bandingkan site Samarinda dan Binungan" → `WHERE e.branch_site IN ('SMD', 'BIN')`
+
 ## Manufacturer / Brand Filtering
 
 - `machine_product` is the MANUFACTURER/BRAND code. It uses SHORT CODES, not full names:

@@ -27,14 +27,17 @@ pip install -r requirements.txt
 # 3. Infrastructure (Neo4j, PostgreSQL, Qdrant, Redis)
 cd docker && docker compose up -d && cd ..
 
-# 4. Neo4j indexes (required before ingestion)
+# 4. Site lookup table (required before Vanna training)
+python scripts/migrate_site_lookup.py
+
+# 5. Neo4j indexes (required before ingestion)
 python scripts/setup_indexes.py
 
-# 5. Data ingestion pipeline (run notebooks in order)
+# 6. Data ingestion pipeline (run notebooks in order)
 # notebook/1_sql_ingestion.ipynb → 2_graph_extraction.ipynb → 3_entity_resolution.ipynb
 # → 4_community_pipeline.ipynb → 5_graph_to_sql_sync.ipynb → 6_vanna_training.ipynb
 
-# 6. Run services
+# 7. Run services
 uvicorn src.main:app --reload          # Backend on :8000
 streamlit run src/streamlit_app.py     # Frontend on :8501
 ```
@@ -51,6 +54,7 @@ streamlit run src/streamlit_app.py     # Frontend on :8501
 | Sync Graph↔SQL (bidirectional) | `python scripts/sync_graph_to_sql.py [--dry-run]` |
 | Create read-only PG user | `python scripts/create_readonly_user.py` |
 | Setup Neo4j indexes | `python scripts/setup_indexes.py` |
+| Create site_reference table | `python scripts/migrate_site_lookup.py` |
 
 ---
 
@@ -138,6 +142,18 @@ OTEL_EXPORTER_ENDPOINT=...
 
 ---
 
+## Site / Branch Location Mapping
+
+| File | Purpose |
+|------|---------|
+| `data/plottingSite.csv` | Source CSV: `code,full_name` (55 sites) |
+| `src/agent/site_map.py` | `SITE_MAP`, `resolve_site_mentions()` — pre-processes user query to replace full names with codes |
+| `vanna_training/schema.sql` | `site_reference` table DDL |
+| `vanna_training/domain_docs.md` | Docs teaching Vanna to JOIN `site_reference` on `branch_site = code` |
+| `scripts/migrate_site_lookup.py` | Migration: creates + populates `site_reference` PG table |
+
+**Flow**: `resolve_site_mentions()` runs in both `ask_emr_database` and `analyze_smr` tools. If user types "Jembayan", the query is modified to "JBY" + SQL hint `branch_site = 'JBY'`. This ensures Vanna generates correct WHERE filters and SMR queries include site filter.
+
 ## Common Gotchas
 
 | Issue | Cause / Fix |
@@ -161,10 +177,12 @@ src/
 ├── agent/
 │   ├── agent.py           # LangGraph agent (router → tool → synthesizer)
 │   ├── tools.py           # 4 registered tools + SQL sandbox
+│   ├── prompts.py         # Router & synthesizer prompts
 │   └── prompts.py         # Router & synthesizer prompts
 ├── services/
 │   ├── providers.py       # Cached singletons: LLM, Graph, Qdrant, Vanna
 │   ├── entity_resolver.py # Free-text → canonical + community_id
+│   ├── site_map.py        # SITE_MAP + resolve_site_mentions() (site code↔name)
 │   ├── resilience.py      # Circuit breakers + retry logic
 │   ├── cache_service.py   # Semantic (Qdrant) + Redis cache
 │   └── embedding_service.py

@@ -1,45 +1,103 @@
 # Dokumentasi Fitur: Graph Extraction Pipeline
 
-## Overview
-Fitur `Graph Extraction Pipeline` bertanggung jawab untuk mengubah data rekam medis/perawatan alat berat (EMR) yang masih berformat CSV mentah menjadi struktur graf semantik yang saling terhubung di Neo4j. Proses ini membaca ribuan baris rekaman secara bertahap, mengekstrak entitas (SymptomPattern, Component, RootCausePattern, ActionPattern, Model) dan hubungan relasinya menggunakan LLM Azure OpenAI, lalu menyisipkannya menggunakan skema optimasi batch ke database Neo4j.
+## Apa yang Dilakukan Fitur Ini?
 
-## Flowchart
+Fitur ini tugasnya **ngubah data CSV mentah jadi struktur graf di Neo4j**.
+
+Prosesnya: baca data EMR dari file CSV → kirim ke AI untuk diekstrak entity dan relasinya → simpan hasilnya ke Neo4j.
+
+Contoh: satu baris CSV:
+```
+emr_name: U-00000158, model: PC200-10M0, symptom: ENGINE OVERHEAT, component: ENGINE
+```
+
+Nah, dari satu baris ini, AI bakal bikin node dan relasi di Neo4j:
+```
+[MachineModel: PC200-10M0] --(HAS_SYMPTOM)--> [SymptomPattern: ENGINE OVERHEAT]
+[EMRRecord: U-00000158] --(HAS_COMPONENT)--> [Component: ENGINE]
+[EMRRecord: U-00000158] --(HAS_MODEL)--> [MachineModel: PC200-10M0]
+```
+
+## Alur Kerja (Flowchart)
 
 ```mermaid
 graph TD
-    A[Dashboard EMR.csv] --> B[Loop 20.630 EMR Records]
-    B --> C[Azure OpenAI LLM Extraction extractor.py]
-    C -->|Ekstrak Nodes & Edges| D[Graph Schema Validator]
-    D -->|Verifikasi Format Output LLM| E[Neo4j Batch MERGE Batch size 500 via UNWIND]
-    E -->|BatchEmbeddingWriter & GraphEnricher| F[Neo4j Graph Database Complete]
+    A[Dashboard EMR.csv\n20.630 baris data] --> B[Loop:\nproses per batch 500]
+    
+    B --> C[LLM Extraction\nKirim ke AI\n(Azure OpenAI / OpenAI)\nbuat deteksi entitas]
+    
+    C --> D[AI ekstrak:\n- Symptom, Component\n- Model, Root Cause\n- Action, Part Number]
+    
+    D --> E[Validasi Format\nPastikan output AI\nsesuai skema]
+    
+    E --> F[BATCH MERGE ke Neo4j\n500 record sekaligus\npake query UNWIND]
+    
+    F --> G[Graph Enricher:\ntambah relasi\nIN_COMMUNITY ke\nCommunity nodes]
+    
+    G --> H[Neo4j Graph Database\nSiap dipake!]
 ```
 
-## Input → Process → Output
-- **Input**: File data mentah `Dashboard EMR.csv` berisi baris data perawatan alat berat.
-- **Process**: Sistem memuat file CSV, membaginya menjadi partisi kecil untuk menghindari pemuatan memori berlebih. Setiap record dikirim ke Azure OpenAI untuk mendeteksi entitas dan relasi berdasarkan petunjuk ekstraksi. Hasil deteksi divalidasi, lalu di-MERGE ke Neo4j dalam batch berukuran 500 baris menggunakan query `UNWIND` teroptimasi untuk menghindari tabrakan kunci penulisan database (lock contention).
-- **Output**: Kumpulan Node (EMRRecord, SymptomPattern, dll.) dan Edge relasi yang saling terhubung di Neo4j.
+## Input → Proses → Output
 
-## Kode Contoh
+### Input
+File CSV: `data/Dashboard EMR.csv` — 20.630 baris data perawatan alat berat.
+
+### Proses
+
+**Langkah 1 — Baca CSV**
+Data dibaca dalam batch 500 baris biar gak boros memory.
+
+**Langkah 2 — AI Extraction**
+Setiap batch dikirim ke LLM (Azure OpenAI atau OpenAI biasa) untuk diekstrak:
+
+| Yang Diekstrak | Contoh |
+|---------------|--------|
+| Symptom | ENGINE OVERHEAT, OIL LEAK |
+| Component | ENGINE, FINAL DRIVE, TRANSMISSION |
+| Root Cause | KONTAMINASI, AUS, MALFUNCTION |
+| Action | OVERHAUL, REPLACE, REPAIR |
+| Model | PC200-10M0, HD785-7 |
+| Part | SEAL, INJECTOR, ORING |
+
+**Langkah 3 — Validasi**
+Output AI dicek: apakah formatnya sesuai? Kalau ada yang error, dilewatin aja (jangan sampe ngebreak seluruh pipeline).
+
+**Langkah 4 — Batch MERGE ke Neo4j**
+Data yang valid di-MERGE ke Neo4j dalam batch 500 record pake query `UNWIND`. MERGE itu artinya: kalau node udah ada, update aja. Kalau belum ada, buat baru.
+
+**Langkah 5 — Graph Enricher**
+Tambahin relasi `IN_COMMUNITY` yang nyambungin EMRRecord ke Community node.
+
+### Output
+Graph Neo4j yang berisi:
+- ~20.630 node `EMRRecord`
+- Ribuan node `SymptomPattern`, `Component`, `MachineModel`, `RootCausePattern`, `ActionPattern`
+- Relasi antar node: `HAS_SYMPTOM`, `HAS_COMPONENT`, `HAS_MODEL`, `MENTIONS`, dll
+
+## Kode Contoh (Simplified)
+
 ```python
 # File: src/ingestion/extractor.py
 
 class GraphExtractor:
     def extract_and_ingest(self, csv_path: str, batch_size: int = 500) -> None:
-        """
-        Parameter:
-          csv_path (str): Lokasi file CSV mentah EMR.
-          batch_size (int): Jumlah baris yang diproses per batch.
-        
-        Return:
-          None
-        """
         df = pd.read_csv(csv_path)
         for i in range(0, len(df), batch_size):
             chunk = df.iloc[i : i + batch_size]
-            extracted_data = self.llm_client.extract_entities_and_relations(chunk)
-            self.graph_client.write_batch_unwind(extracted_data)
+            extracted = self.llm_client.extract(chunk)  # pake AI
+            self.graph_client.write_batch(extracted)     # MERGE ke Neo4j
 ```
 
-## Catatan Penting
-- Pipeline ini berjalan secara berurutan (*sequential*) dan sangat dibatasi oleh kecepatan respon dan batas kuota (*rate-limit*) Azure OpenAI API.
-- Proses ekstraksi untuk seluruh 20.630 data memerlukan waktu sekitar 2 hingga 3 jam, sehingga sistem membutuhkan mekanisme pencatatan riwayat kemajuan (*checkpointing*) agar proses dapat dilanjutkan jika terputus di tengah jalan.
+## Catatan Penting Buat Junior
+
+1. **Pipeline ini PELAN.** Proses 20.630 record butuh 2-3 jam karena tergantung kecepatan AI (LLM). Sabar ya kalau jalanin.
+
+2. **Butuh checkpoint.** Kalau listrik mati atau error di tengah jalan, jangan khawatir — ada mekanisme checkpoint biar bisa lanjut dari batch terakhir, bukan dari awal.
+
+3. **Support Azure OpenAI dan OpenAI biasa.** Di config, kamu bisa pilih provider. Yang penting API key-nya bener.
+
+4. **AI kadang ngasih output yang aneh.** Validasi di langkah 3 itu penting banget buat nyaring hasil yang gak sesuai format.
+
+5. **CSV header harus sesuai.** Pastikan kolom di CSV sesuai dengan yang diharapkan extractor. Biasanya: `EMR`, `Unit`, `Model`, `Component`, `Symptom`, `SMR`, `Date`, dll.
+
+6. **Batch size 500 itu optimal.** Lebih gede dari itu risiko timeout atau error koneksi ke Neo4j.

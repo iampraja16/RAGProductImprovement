@@ -142,6 +142,7 @@ TOOL_LABELS = {
     "ask_emr_graph":              "Knowledge Graph Search",
     "ask_emr_database":           "SQL Database Query",
     "generate_executive_summary": "Executive Summary Generator",
+    "analyze_smr":                "SMR Analysis",
 }
 
 def render_reasoning_trace(steps: list, timing_ms: dict = None, cache_hit: str = None):
@@ -334,6 +335,27 @@ for message in st.session_state.messages:
                 st.markdown("#### Graph Section")
                 render_graph_visualization(message["graph_traversal"])
 
+            # SMR scatter plot
+            if message.get("smr_data"):
+                st.markdown("#### SMR Distribution")
+                try:
+                    import plotly.express as px
+                    df_smr = pd.DataFrame(message["smr_data"])
+                    if not df_smr.empty and "smr" in df_smr.columns:
+                        df_smr["smr"] = pd.to_numeric(df_smr["smr"], errors="coerce")
+                        df_smr = df_smr.dropna(subset=["smr"])
+                        fig = px.scatter(
+                            df_smr, x="created_date", y="smr",
+                            hover_data=["emr_name", "symptom", "machine_model"],
+                            title=f"SMR Distribution ({len(df_smr)} data points)",
+                            labels={"smr": "Service Meter Reading (hours)", "created_date": "Date"},
+                            opacity=0.7,
+                        )
+                        fig.update_traces(marker=dict(size=8))
+                        st.plotly_chart(fig, use_container_width=True)
+                except Exception as e:
+                    st.caption(f"Scatter plot unavailable: {e}")
+
             if message.get("sql"):
                 st.markdown("#### SQL Section")
                 st.code(message["sql"], language="sql")
@@ -388,6 +410,7 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                 sql_data = None
                 chunks = []
                 graph_traversal = None
+                smr_data = None
                 steps = []
                 timing_ms = None
                 cache_hit = None
@@ -414,6 +437,7 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                         sql_data = data.get("sql_data")
                         graph_traversal = data.get("graph_traversal")
                         chunks = data.get("chunks", [])
+                        smr_data = data.get("smr_data")
 
                     elif chunk_type == "token":
                         token = data.get("content", "")
@@ -433,6 +457,8 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                         steps = data.get("steps", [])
                         timing_ms = data.get("timing_ms", None)
                         cache_hit = data.get("cache_hit", None)
+                        if data.get("smr_data"):
+                            smr_data = data.get("smr_data")
                         
                         # Remove cursor at completion
                         divider = "--- EVIDENCE/PROVENANCE ---"
@@ -494,6 +520,26 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                     st.markdown("#### Database Table (PostgreSQL)")
                     st.dataframe(pd.DataFrame(sql_data), use_container_width=True)
 
+                if smr_data:
+                    st.markdown("#### SMR Distribution")
+                    try:
+                        import plotly.express as px
+                        df = pd.DataFrame(smr_data)
+                        if not df.empty and "smr" in df.columns:
+                            df["smr"] = pd.to_numeric(df["smr"], errors="coerce")
+                            df = df.dropna(subset=["smr"])
+                            fig = px.scatter(
+                                df, x="created_date", y="smr",
+                                hover_data=["emr_name", "symptom", "machine_model"],
+                                title=f"SMR Distribution ({len(df)} data points)",
+                                labels={"smr": "Service Meter Reading (hours)", "created_date": "Date"},
+                                opacity=0.7,
+                            )
+                            fig.update_traces(marker=dict(size=8))
+                            st.plotly_chart(fig, use_container_width=True)
+                    except Exception as e:
+                        st.caption(f"Scatter plot unavailable: {e}")
+
                 if chunks:
                     with st.expander("View Raw Retrieved Chunks"):
                         for i, chunk in enumerate(chunks):
@@ -519,6 +565,7 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                     "sql_data": sql_data,
                     "chunks": chunks,
                     "graph_traversal": graph_traversal,
+                    "smr_data": smr_data,
                     "steps": steps,
                     "timing_ms": timing_ms,
                     "cache_hit": cache_hit,
