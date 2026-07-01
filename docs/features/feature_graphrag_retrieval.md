@@ -16,20 +16,34 @@ Ada **4 mode** pencarian yang bisa dipake. Masing-masing punya kegunaan beda.
 graph TD
     A[Pertanyaan Kamu] --> B{Pilih Mode}
     
-    B -->|Local| C[Local Search:\nCari entitas cocok\ndi graf, ambil tetangga\n1-hop (langsung)]
+    B -->|Local| C[Local Search:
+Cari entitas cocok
+di graf, ambil tetangga
+1-hop langsung]
     
-    B -->|Global| D[Global Search:\nCari node Community\nyang relevan,\nbaca summary-nya]
+    B -->|Global| D[Global Search:
+Cari node Community
+yang relevan,
+baca summary-nya]
     
-    B -->|DRIFT| E[DRIFT Search:\nCari entitas,\niterasi lompat relasi\nmulti-hop pake LLM]
+    B -->|DRIFT| E[DRIFT Search:
+Cari entitas,
+iterasi lompat relasi
+multi-hop pake LLM]
     
-    B -->|Hybrid| F[Hybrid Search:\nLocal + Global\ndigabung jadi\nsatu konteks]
+    B -->|Hybrid| F[Hybrid Search:
+Local + Global
+digabung jadi
+satu konteks]
     
-    C --> G[Kumpulin semua\nfakta semantik]
+    C --> G[Kumpulin semua
+fakta semantik]
     D --> G
     E --> G
     F --> G
     
-    G --> H[Jadi teks konteks\nbuat LLM ngejawab]
+    G --> H[Jadi teks konteks
+buat LLM ngejawab]
 ```
 
 ## Perbandingan Mode

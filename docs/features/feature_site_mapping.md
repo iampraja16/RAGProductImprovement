@@ -31,17 +31,33 @@ Ada **55 site** yang didukung. Contoh beberapa:
 
 ```mermaid
 graph TD
-    A[Kamu tanya:\n\"Hydraulic leak di\nsite Jembayan\"] --> B[resolve_site_mentions()\nscan kata per kata\ndalam query]
+    A[Kamu tanya:
+Hydraulic leak di
+site Jembayan] --> B[resolve_site_mentions
+scan kata per kata
+dalam query]
     
-    B --> C{Cocokin ke\nSITE_MAP\n(kode) dan\nSITE_MAP_REVERSE\n(nama lengkap)}
+    B --> C{Cocokin ke
+SITE_MAP kode
+dan SITE_MAP_REVERSE
+nama lengkap}
     
-    C -->|Cocok: Jembayan| D[Dapet:\n- site_code: JBY\n- site_name: Jembayan]
+    C -->|Cocok: Jembayan| D[Dapet:
+- site_code: JBY
+- site_name: Jembayan]
     
-    C -->|Gak cocok| E[Return: None\n(query ttp jalan\nnormal aja)]
+    C -->|Gak cocok| E[Return: None
+query tetap jalan
+normal aja]
     
-    D --> F[Ubah query:\n\"Hydraulic leak di\nsite JBY\"]
+    D --> F[Ubah query:
+Hydraulic leak di
+site JBY]
     
-    F --> G[Inject petunjuk\nke tool:\n\"Gunakan filter\nbranch_site = 'JBY'\"]
+    F --> G[Inject petunjuk
+ke tool:
+Gunakan filter
+branch_site = JBY]
 ```
 
 ## Input → Proses → Output

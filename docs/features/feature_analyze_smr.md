@@ -32,22 +32,37 @@ Contoh query yang bener:
 
 ```mermaid
 graph TD
-    A[Kamu tanya:\n\"Hydraulic leak di\nBengalon + SMR\"] --> B[EntityResolver\nresolusi kata kunci\n+ site mapping]
+    A[Kamu tanya:
+Hydraulic leak di
+Bengalon + SMR] --> B[EntityResolver
+resolusi kata kunci
++ site mapping]
     
     B --> C{Ada nama site?}
-    C -->|Ya| D[Filter: branch_site='BGL'\n+ ILIKE hydraulic\n+ SMK tidak kosong]
-    C -->|Enggak| E[Filter:\ncommunity_id atau ILIKE\n+ SMR tidak kosong]
+    C -->|Ya| D[Filter: branch_site = BGL
++ ILIKE hydraulic
++ SMR tidak kosong]
+    C -->|Enggak| E[Filter:
+community_id atau ILIKE
++ SMR tidak kosong]
     
-    D --> F[Jalankan SQL ke\nPostgreSQL LANGSUNG\npake SQLAlchemy\nTANPA LIMIT]
+    D --> F[Jalankan SQL ke
+PostgreSQL LANGSUNG
+pake SQLAlchemy
+TANPA LIMIT]
     E --> F
     
     F --> G{Dapet data?}
-    G -->|Ya| H[Return smr_data[]\nbuat scatter plot]
-    G -->|Enggak| I[Fallback ILIKE\npake expanded names]
+    G -->|Ya| H[Return data smr
+buat scatter plot]
+    G -->|Enggak| I[Fallback ILIKE
+pake expanded names]
     
     I --> H
     
-    H --> J[Streamlit render\nPlotly scatter plot\nSMR vs urutan record]
+    H --> J[Streamlit render
+Plotly scatter plot
+SMR vs urutan record]
 ```
 
 ## Kenapa Pake SQLAlchemy Langsung, Bukan Vanna?

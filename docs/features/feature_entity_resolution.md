@@ -15,33 +15,56 @@ Nah, Entity Resolution ini tugasnya: **nerjemahin bahasa kamu ke bahasa database
 
 ```mermaid
 graph TD
-    A[Kamu tanya:\"oli bocor di PC200\"] --> B[LLM Ekstrak Kata Kunci\n_extract_mentions()]
+    A[Kamu tanya: oli bocor di PC200] --> B[LLM Ekstrak Kata Kunci
+extract_mentions]
     
-    B --> C[LLM dapet:\n1. symptom: \"oli bocor\"\n2. model: \"PC200\"]
+    B --> C[LLM dapet:
+1. symptom: oli bocor
+2. model: PC200]
     
     C --> D[Loop: proses satu per satu]
     
-    D --> E[For \"oli bocor\":\n_resolve_single()]
-    E --> F[Cari di Neo4j pake\nFulltext Search]
+    D --> E[Untuk oli bocor:
+resolve_single]
+    E --> F[Cari di Neo4j pake
+Fulltext Search]
     F --> G{Cocok?}
-    G -->|Enggak| H[Cari pake\nVector Search\n(embedding)]
-    G -->|Ya| I[Canonical name:\n\"OIL LEAK\"]
+    G -->|Enggak| H[Cari pake
+Vector Search
+via embedding]
+    G -->|Ya| I[Canonical name:
+OIL LEAK]
     H --> I
     
-    D --> J[For \"PC200\":\n_resolve_single()]
-    J --> K[Cari MachineModel\ndi Neo4j]
-    K --> L[Canonical name:\n\"PC200-10M0\"]
+    D --> J[Untuk PC200:
+resolve_single]
+    J --> K[Cari MachineModel
+di Neo4j]
+    K --> L[Canonical name:
+PC200-10M0]
     
-    I --> M[Dapetin SEMUA\ncommunity_id]
+    I --> M[Dapetin SEMUA
+community_id]
     L --> M
     
-    M --> N[Query ke Neo4j:\nMATCH (n)-[:IN_COMMUNITY]\n->(c:Community {level:0})\nWHERE c.communityId = ...]
+    M --> N[Query ke Neo4j:
+cari community_id
+dari entity yang cocok]
     
-    N --> O[Return:\n- canonical names\n- expanded names (sinonim)\n- community_ids\n- entities]
+    N --> O[Return:
+- canonical names
+- expanded names
+- community_ids
+- entities]
     
     subgraph P[Synonym Expansion]
-        Q[Dari community_id yg didapat,\ncari SEMUA entity\ndi komunitas yang sama]
-        Q --> R[Dapet sinonim:\n\"Hydraulic Oil Leaks\"\n\"Oil Hydraulic Leaks\"\n\"OIL LEAK\"]
+        Q[Dari community_id yg didapat,
+cari SEMUA entity
+di komunitas yang sama]
+        Q --> R[Dapet sinonim:
+Hydraulic Oil Leaks
+Oil Hydraulic Leaks
+OIL LEAK]
     end
     
     N --> P

@@ -19,23 +19,41 @@ Contoh penggunaan yang pas:
 
 ```mermaid
 graph TD
-    A[Kamu tanya:\n\"Cari EMR tentang\nhydraulic leak\"] --> B[EntityResolver\n_extract_mentions]
+    A[Kamu tanya:
+Cari EMR tentang
+hydraulic leak] --> B[EntityResolver
+extract_mentions]
     
-    B --> C[AI ekstrak kata kunci:\nsymptom: \"hydraulic leak\"\nmodel: (kalo ada)]
+    B --> C[AI ekstrak kata kunci:
+symptom: hydraulic leak
+model: kalo ada]
     
-    C --> D[EntityResolver\n_resolve_single:\ncari di Neo4j pake\nfulltext + vector search]
+    C --> D[EntityResolver
+resolve_single:
+cari di Neo4j pake
+fulltext + vector search]
     
-    D --> E[Cari EMRRecord\nyang terhubung\n(dari graf)]
+    D --> E[Cari EMRRecord
+yang terhubung
+lewat graf]
     
     E --> F{Dapet hasil?}
     
-    F -->|Ya| G[Ambil 5 record\npaling relevan]
-    F -->|Enggak| H[Fallback:\ncari pake model\npake CONTAINS]
+    F -->|Ya| G[Ambil 5 record
+paling relevan]
+    F -->|Enggak| H[Fallback:
+cari pake model
+pake CONTAINS]
     
-    G --> I[Enrichment:\ntambahin data\ndari PostgreSQL\n(SMR, site, dll)]
+    G --> I[Enrichment:
+tambahin data
+dari PostgreSQL
+SMR, site, dll]
     H --> I
     
-    I --> J[Tampilkan Markdown\n5 record EMR\ndetail lengkap]
+    I --> J[Tampilkan Markdown
+5 record EMR
+detail lengkap]
 ```
 
 ## Input → Proses → Output

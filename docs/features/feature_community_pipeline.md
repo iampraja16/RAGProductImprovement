@@ -12,22 +12,34 @@ Hasil grup ini dipake buat **Global Search** — jadi kalau user nanya "Apa tren
 
 ```mermaid
 graph TD
-    A[Database Graf Neo4j\n(node + relasi EMR)] --> B[GDS Graph Projection\ncopy data ke memori\nbuat diproses]
+    A[Database Graf Neo4j
+node + relasi EMR] --> B[GDS Graph Projection
+copy data ke memori
+buat diproses]
     
-    B --> C[Leiden Community Detection\njalanin algoritma Leiden\nbuat ngelompokin node]
+    B --> C[Leiden Community Detection
+jalanin algoritma Leiden
+buat ngelompokin node]
     
-    C --> D[Level 0: grup terkecil\n(detail spesifik)]
+    C --> D[Level 0: grup terkecil
+detail spesifik]
     C --> E[Level 1: grup menengah]
-    C --> F[Level 2: grup terbesar\n(gambaran umum)]
+    C --> F[Level 2: grup terbesar
+gambaran umum]
     
-    D --> G[LLM Summarizer\nbaca semua node\ndalam komunitas]
+    D --> G[LLM Summarizer
+baca semua node
+dalam komunitas]
     E --> G
     F --> G
     
-    G --> H[Bikin summary\nteks rangkuman]
-    H --> I[Simpan ke Neo4j sebagai\nnode Community]
+    G --> H[Bikin summary
+teks rangkuman]
+    H --> I[Simpan ke Neo4j sebagai
+node Community]
     
-    I --> J[Siap dipake\nGlobal Search]
+    I --> J[Siap dipake
+Global Search]
 ```
 
 ## Parameter Leiden Clustering

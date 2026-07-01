@@ -17,14 +17,18 @@ Fitur ini kerjanya: **mengubah pertanyaan bahasa Indonesia → SQL → menjalank
 
 ```mermaid
 graph TD
-    A[Kamu tanya: \"Berapa total hydraulic leak?\"] --> B[EntityResolver]
+    A[Kamu tanya: Berapa total hydraulic leak] --> B[EntityResolver]
     
-    B --> C1{Ada masalah\nspesifik?}
-    C1 -->|Ya| D[EntityResolver cari\ncommunity_id di Neo4j]
+    B --> C1{Ada masalah
+spesifik?}
+    C1 -->|Ya| D[EntityResolver cari
+community_id di Neo4j]
     C1 -->|Tidak| E[Skip community_id]
     
-    D --> F{Ada nama site\nJembayan, Samarinda?}
-    F -->|Ya| G[Skip community_id\nPakai ILIKE aja + filter branch_site]
+    D --> F{Ada nama site
+Jembayan, Samarinda?}
+    F -->|Ya| G[Skip community_id
+Pakai ILIKE aja + filter branch_site]
     F -->|Tidak| H[Pakai community_id]
     
     E --> I[Vanna AI bikin SQL]
@@ -36,11 +40,13 @@ graph TD
     J -->|Berbahaya| L[Tolak!]
     
     K --> M{Hasilnya 0?}
-    M -->|Ya| N[ILIKE Fallback:\nCari pake kata kunci biasa\n+ sinonim dari community yg sama]
+    M -->|Ya| N[ILIKE Fallback:
+Cari pake kata kunci biasa
++ sinonim dari community yg sama]
     M -->|Tidak| O[Tampilkan tabel + metadata]
     
     N --> O
-    L --> P[Balas: \"SQL diblokir\"]
+    L --> P[Balas: SQL diblokir]
 ```
 
 ## Input → Proses → Output

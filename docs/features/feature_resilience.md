@@ -14,31 +14,45 @@ Bayangin: database lagi sibuk, atau koneksi ke AI lagi lemot. Biasanya aplikasi 
 
 ```mermaid
 graph TD
-    A[Sistem mau panggil\nNeo4j / PostgreSQL\n/ Qdrant / LLM] --> B{Circuit Breaker\nlagi NYALA?}
+    A[Sistem mau panggil
+Neo4j / PostgreSQL
+/ Qdrant / LLM] --> B{Circuit Breaker
+lagi NYALA?}
     
-    B -->|Iya (OPEN)| C[Jalanin request\nke database / AI]
+    B -->|Iya OPEN| C[Jalanin request
+ke database / AI]
     C --> D{Berhasil?}
     
-    D -->|Ya ✅| E[Reset hitungan error\nKembalikan hasil]
-    D -->|Gagal ❌| F[Count error +1]
+    D -->|Ya| E[Reset hitungan error
+Kembalikan hasil]
+    D -->|Gagal| F[Count error +1]
     
-    F --> G{Error >= 5\nberuntun?}
-    G -->|Belum| H[Coba lagi\n(retry 3x)]
-    G -->|Udah| I[Nyalakan Circuit Breaker\n= OPEN\nTunggu 30 detik]
+    F --> G{Error >= 5
+beruntun?}
+    G -->|Belum| H[Coba lagi
+retry 3 kali]
+    G -->|Udah| I[Nyalakan Circuit Breaker
+= OPEN
+Tunggu 30 detik]
     
-    I --> J[30 detik kemudian:\nHALF-OPEN\nCoba 1 request]
+    I --> J[30 detik kemudian:
+HALF-OPEN
+Coba 1 request]
     J --> K{Berhasil?}
-    K -->|Ya ✅| L[Tutup breaker\n= CLOSED\nNormal lagi]
-    K -->|Gagal ❌| M[Tetap OPEN\nTunggu 30 detik lagi]
+    K -->|Ya| L[Tutup breaker
+= CLOSED
+Normal lagi]
+    K -->|Gagal| M[Tetap OPEN
+Tunggu 30 detik lagi]
     
-    B -->|Iya (OPEN)| N[LANGSUNG ERROR\nGak usah coba-coba\n-> Pake cache / fallback]
-    
-    H --> C
-    L --> E
-    M --> I
+    B -->|Iya OPEN| N[LANGSUNG ERROR
+Gak usah coba-coba
+langsung pake cache]
     N --> O{Cache available?}
     O -->|Ya| P[Return hasil cache]
-    O -->|Gak| Q[Return error message\n+\n\"lagi sibuk, coba lagi\"]
+    O -->|Gak| Q[Return error message
++
+lagi sibuk coba lagi]
 ```
 
 ## State Circuit Breaker

@@ -17,19 +17,29 @@ Nah, Agent Routing ini tugasnya: **baca pertanyaan kamu, trus pilih alat yang pa
 
 ```mermaid
 graph TD
-    A[Pertanyaan Kamu] --> B[LLM Router\nbaca RAG_ROUTER_PROMPT]
+    A[Pertanyaan Kamu] --> B[LLM Router
+baca RAG_ROUTER_PROMPT]
     
-    B --> C{Pertanyaan ini\nminta apa?}
+    B --> C{Pertanyaan ini
+minta apa?}
     
-    C -->|\"Kenapa?\" \"Gimana cara?\"\n\"Apa penyebab?\"| D[ask_emr_graph\nJawab pake teori\n+ graph knowledge]
+    C -->|Kenapa / Gimana cara / Apa penyebab| D[ask_emr_graph
+Jawab pake teori
++ graph knowledge]
     
-    C -->|\"Berapa?\" \"Top 5\"\n\"Total\" \"Paling sering\"\n\"Tren\"| E[ask_emr_database\nHitung + SQL]
+    C -->|Berapa / Top 5 / Total / Paling sering / Tren| E[ask_emr_database
+Hitung + SQL]
     
-    C -->|\"Cari EMR U-001...\"\n\"Tampilkan EMR tentang...\"\n\"Detail EMR...\"| F[search_emr_records\nCari record spesifik\ndi Neo4j]
+    C -->|Cari EMR detail / Tampilkan EMR| F[search_emr_records
+Cari record spesifik
+di Neo4j]
     
-    C -->|\"SMR\" \"Jam operasi\"\n\"Scatter plot\"\n\"Site X + masalah Y\n+ SMR\"| G[analyze_smr\nAmbil data SMR\nbuat scatter plot]
+    C -->|SMR / Jam operasi / Scatter plot| G[analyze_smr
+Ambil data SMR
+buat scatter plot]
     
-    C -->|\"Buat laporan\"\n\"Executive summary\"\n\"PDF\"| H[generate_executive_summary\nGenerate PDF report]
+    C -->|Buat laporan / Executive summary / PDF| H[generate_executive_summary
+Generate PDF report]
     
     D --> I[Output: Jawaban + konteks graf]
     E --> J[Output: Jawaban + tabel SQL]

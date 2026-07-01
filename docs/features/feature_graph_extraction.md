@@ -22,19 +22,35 @@ Nah, dari satu baris ini, AI bakal bikin node dan relasi di Neo4j:
 
 ```mermaid
 graph TD
-    A[Dashboard EMR.csv\n20.630 baris data] --> B[Loop:\nproses per batch 500]
+    A[Dashboard EMR.csv
+20.630 baris data] --> B[Loop:
+proses per batch 500]
     
-    B --> C[LLM Extraction\nKirim ke AI\n(Azure OpenAI / OpenAI)\nbuat deteksi entitas]
+    B --> C[LLM Extraction
+Kirim ke AI
+Azure OpenAI atau OpenAI
+buat deteksi entitas]
     
-    C --> D[AI ekstrak:\n- Symptom, Component\n- Model, Root Cause\n- Action, Part Number]
+    C --> D[AI ekstrak:
+- Symptom, Component
+- Model, Root Cause
+- Action, Part Number]
     
-    D --> E[Validasi Format\nPastikan output AI\nsesuai skema]
+    D --> E[Validasi Format
+Pastikan output AI
+sesuai skema]
     
-    E --> F[BATCH MERGE ke Neo4j\n500 record sekaligus\npake query UNWIND]
+    E --> F[BATCH MERGE ke Neo4j
+500 record sekaligus
+pake query UNWIND]
     
-    F --> G[Graph Enricher:\ntambah relasi\nIN_COMMUNITY ke\nCommunity nodes]
+    F --> G[Graph Enricher:
+tambah relasi
+IN_COMMUNITY ke
+Community nodes]
     
-    G --> H[Neo4j Graph Database\nSiap dipake!]
+    G --> H[Neo4j Graph Database
+Siap dipake!]
 ```
 
 ## Input → Proses → Output
