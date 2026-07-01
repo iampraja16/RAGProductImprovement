@@ -352,23 +352,7 @@ Ini bakal jalanin 4 containers sekaligus:
 
 > ⚠️ **Neo4j plugins:** Pastikan `NEO4J_PLUGINS=["apoc","graph-data-science"]` udah ada di `docker/docker-compose.yml`. Kalau belum, tambahin.
 
-### Tahap 4 — Setup Indeks & Lookup Tables
-
-Sebelum ngisi data, kita perlu setup indeks dulu:
-
-```bash
-# 1. Setup indeks Neo4j (fulltext + vector)
-python scripts/setup_indexes.py
-
-# 2. Migrasi tabel site_lookup (55 data site)
-python scripts/migrate_site_lookup.py
-```
-
-**Apa yang terjadi:**
-- `setup_indexes.py` — bikin indeks pencarian di Neo4j biar EntityResolver bisa cari data dengan cepat
-- `migrate_site_lookup.py` — bikin tabel `site_reference` di PostgreSQL dan ngisi 55 data site dari `data/plottingSite.csv`
-
-### Tahap 5 — Data Ingestion Pipeline
+### Tahap 4 — Data Ingestion Pipeline
 
 Ini bagian yang **paling penting dan paling lama**. Kita ngisi database dengan 20.630 record EMR.
 
@@ -379,27 +363,29 @@ Jalanin notebook-notebook ini **berurutan** — jangan ada yang dilewatin:
 cd notebook
 ```
 
-| Urutan | Notebook | Fungsi | Estimasi Waktu |
-|--------|----------|--------|---------------|
-| **1** | `1_sql_ingestion.ipynb` | Muat CSV ke PostgreSQL | ~5 menit |
-| **2** | `2_graph_extraction.ipynb` | Ekstrak entitas ke Neo4j (pake AI) | **~2-3 jam** ⏳ |
-| **3** | `3_entity_resolution.ipynb` | Buat indeks pencarian | ~10 menit |
-| **4** | `4_community_pipeline.ipynb` | Leiden clustering + summary | ~1 jam |
-| **5** | `5_graph_to_sql_sync.ipynb` | Sync community_id ke PostgreSQL | ~5 menit |
-| **6** | `6_vanna_training.ipynb` | Latih Vanna AI | ~10 menit |
+| Urutan | Notebook | Fungsi | Setup Otomatis | Estimasi Waktu |
+|--------|----------|--------|----------------|---------------|
+| **1** | `1_sql_ingestion.ipynb` | Muat CSV ke PostgreSQL + bikin tabel `site_reference` | ✅ | ~5 menit |
+| **2** | `2_graph_extraction.ipynb` | Ekstrak entitas ke Neo4j (pake AI) | — | **~2-3 jam** ⏳ |
+| **3** | `3_entity_resolution.ipynb` | Entity Resolution + setup indeks Neo4j (fulltext + vector) | ✅ | ~10 menit |
+| **4** | `4_community_pipeline.ipynb` | Leiden clustering + summary | — | ~1 jam |
+| **5** | `5_graph_to_sql_sync.ipynb` | Sync community_id ke PostgreSQL | — | ~5 menit |
+| **6** | `6_vanna_training.ipynb` | Latih Vanna AI | — | ~10 menit |
 
 > ⏳ **Notebook #2 paling lama** (2-3 jam) karena pake AI buat ekstrak entity. Kalau mati di tengah, ada mekanisme checkpoint — tinggal jalanin ulang, dia lanjut dari batch terakhir.
 
 > ⏳ **Notebook #4 juga agak lama** karena harus nge-cluster 24.000+ komunitas dan bikin summary pake AI.
 
 **Catatan tambahan:**
+- **Notebook #1 otomatis bikin tabel `site_reference`** dari `data/plottingSite.csv`. Gak perlu jalanin script terpisah. Idempotent — kalau tabel udah ada, skip insert.
+- **Notebook #3 otomatis setup indeks Neo4j** (fulltext + vector search). Gak perlu jalanin `scripts/setup_indexes.py` manual.
 - **Notebook #5 — Sinkronisasi SMR.** Abis sync community_id, data SMR (`smr_trouble`) juga udah di-copy dari PostgreSQL ke Neo4j. Jadi scatter plot bisa jalan.
 - **Notebook #6 — Training Vanna.** Vanna belajar dari:
   - `vanna_training/schema.sql` — struktur tabel
   - `vanna_training/qa_pairs.yaml` — contoh tanya-jawab
   - `vanna_training/domain_docs.md` — dokumentasi domain
 
-### Tahap 6 — Jalankan Backend & Frontend
+### Tahap 5 — Jalankan Backend & Frontend
 
 ```bash
 # Terminal 1: Backend FastAPI
@@ -415,7 +401,7 @@ Kalau berhasil, kamu bakal liat:
 - **Backend**: `INFO: Uvicorn running on http://localhost:8000`
 - **Frontend**: `You can now view your Streamlit app at http://localhost:8501`
 
-### Tahap 7 — Test Dengan Beberapa Pertanyaan
+### Tahap 6 — Test Dengan Beberapa Pertanyaan
 
 Coba tanya-tanya ini di dashboard Streamlit:
 
@@ -448,8 +434,8 @@ Coba tanya-tanya ini di dashboard Streamlit:
 | **Jalanin semua test** | `python -m unittest discover -s tests` | 6 file test |
 | **Test 1 file** | `python -m unittest tests.test_agent_tools` | Test tool tertentu |
 | **Sync graf → SQL** | `python scripts/sync_graph_to_sql.py [--dry-run]` | Sinkronisasi 2 arah |
-| **Setup indeks Neo4j** | `python scripts/setup_indexes.py` | Fulltext + vector index |
-| **Migrasi site** | `python scripts/migrate_site_lookup.py` | Tabel `site_reference` |
+| **Setup indeks Neo4j** | `python scripts/setup_indexes.py` | Opsional — otomatis di Notebook 3 |
+| **Migrasi site** | `python scripts/migrate_site_lookup.py` | Opsional — otomatis di Notebook 1 |
 | **Jalanin evaluasi** | `python eval/run_eval.py` | Test golden QA dataset |
 | **Aktifkan venv (Win)** | `.\venv\Scripts\Activate.ps1` | Masuk Python env |
 | **Aktifkan venv (Linux)** | `source venv/bin/activate` | Masuk Python env |
