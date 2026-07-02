@@ -24,9 +24,26 @@ class IndexManager:
         self._create_vector_index("rootcause-embeddings", "RootCausePattern", "embedding")
         self._create_vector_index("action-embeddings", "ActionPattern", "embedding")    
         self._create_vector_index(settings.neo4j_vector_index_community, "Community", "embedding")
+        self.ensure_ppi_indexes()
         self._create_constraints()
         
         logger.info("All Neo4j indexes setup successfully.")
+
+    def ensure_ppi_indexes(self):
+        self._create_vector_index("ppi-embeddings", "PPI", "embedding")
+        self._create_fulltext_index(
+            "ppi-fulltext",
+            ["PPI"],
+            ["external_id", "improvement_name", "phenomenon", "corrective_action", "symptom", "component", "summary_text"]
+        )
+        try:
+            self.client.run_query("""
+                CREATE CONSTRAINT ppi_external_id_unique IF NOT EXISTS
+                FOR (p:PPI) REQUIRE p.external_id IS UNIQUE
+            """)
+            logger.info("PPI uniqueness constraint ensured.")
+        except Exception as e:
+            logger.warning(f"PPI uniqueness constraint failed: {e}")
 
     def _create_constraints(self):
         try:

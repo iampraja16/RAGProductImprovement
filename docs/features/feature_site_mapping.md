@@ -172,6 +172,8 @@ def resolve_site_mentions(query: str) -> dict:
 
 3. **Site filter bikin community_id di-skip.** Logikanya: kalau kamu udah filter site tertentu, ditambah community_id malah bikin terlalu sempit. Misal: "Hydraulic leak di Jembayan" — filter site JBY + ILIKE hydraulic udah cukup spesifik.
 
-4. **Migration tabel site_reference** ada di `scripts/migrate_site_lookup.py`. Jalanin dulu sebelum pake fitur ini. Datanya dari `data/plottingSite.csv`.
+4. **Ada juga Account Mapping.** Fitur yang mirip — tapi buat customer/account. Bedanya site pake hardcode (55 site), account pake dynamic load dari database (1.193 account). Lihat [`feature_account_mapping.md`](feature_account_mapping.md).
 
-5. **Case insensitive.** "jembayan", "Jembayan", "JEMBAYAN" — semuanya ketemu.
+5. **Migration tabel site_reference** ada di `scripts/migrate_site_lookup.py`. Jalanin dulu sebelum pake fitur ini. Datanya dari `data/plottingSite.csv`.
+
+6. **Case insensitive.** "jembayan", "Jembayan", "JEMBAYAN" — semuanya ketemu.

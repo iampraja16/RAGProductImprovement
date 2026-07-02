@@ -3,6 +3,10 @@ CREATE TABLE site_reference (
     full_name VARCHAR(100) NOT NULL
 );
 
+CREATE TABLE account_reference (
+    full_name VARCHAR(200) PRIMARY KEY
+);
+
 CREATE TABLE emr_records (
     status VARCHAR,
     emr_name VARCHAR,
@@ -28,5 +32,9 @@ CREATE TABLE emr_records (
     model_family VARCHAR,
     graph_community_summary TEXT,
     community_id TEXT[],
-    smr_trouble NUMERIC
+    smr_trouble NUMERIC,
+    ppi_external_id VARCHAR,
+    ppi_improvement_name TEXT,
+    ppi_phenomenon TEXT,
+    ppi_corrective_action TEXT
 );

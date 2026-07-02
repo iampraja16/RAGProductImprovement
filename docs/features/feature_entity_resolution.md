@@ -160,3 +160,5 @@ Contoh: user nyebut "hydraulic oil leak"
 4. **Ada brand map juga di `_build_modified_query()`.** Kalau kamu nyebut "Komatsu", sistem akan otomatis ganti jadi "KOMAT" (kode di database). Ini khusus buat brand.
 
 5. **EntityResolver gak tau soal nama site.** Resolusi nama site (Jembayan → JBY) ditangani oleh modul terpisah: `site_map.py`. Ini sengaja dipisah biar tanggung jawabnya jelas.
+
+6. **EntityResolver juga gak tau soal nama customer/account.** Resolusi nama account (PAMA → PAMAPERSADA NUSANTARA) ditangani oleh modul terpisah: `account_map.py`. Sama kayak site mapping, sengaja dipisah. Lihat [`feature_account_mapping.md`](feature_account_mapping.md).

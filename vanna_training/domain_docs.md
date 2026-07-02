@@ -32,8 +32,10 @@ The `emr_records` table contains Equipment Maintenance Records for heavy machine
 - `model_family` is the BROAD category WITHOUT suffix (e.g., 'HD785', 'PC200', 'D155A'). 
   Only use this column when the user asks about a general family like "semua model PC200" without specifying the exact variant.
 - `branch_site` is the location where the equipment is operated. When user mentions a site/location name, use ILIKE.
-- `account_account_name` is the customer/company name (e.g., 'PAMA', 'PETROSEA Tbk.', 'BANDANG MINING COAL').
-  When user mentions a company/account name, filter using ILIKE on this column.
+- `account_account_name` is the customer/company name (e.g., 'PAMAPERSADA NUSANTARA', 'PETROSEA Tbk.').
+  When user mentions a company/account name, the system resolves abbreviations to full names
+  (e.g., 'PAMA' → 'PAMAPERSADA NUSANTARA'). Use exact match (=) for known account names.
+  For raw user-entered partial names, use ILIKE as fallback.
 - Use `created_date` when filtering by month or year.
 
 ## Categorical Columns (use = for filtering)
@@ -134,3 +136,34 @@ The `emr_records` table contains Equipment Maintenance Records for heavy machine
     - Wrong: `WHERE model_family = 'PC200'` (misses PC2000 variants)
 - The system handles problem-specific filtering automatically. Do not add community_id conditions.
 - If the query does NOT mention any machine model, DO NOT add any model filter — aggregate across ALL models.
+
+## Account / Customer Mapping
+
+- `account_account_name` stores the customer/company name (e.g., 'PAMAPERSADA NUSANTARA', 'PETROSEA Tbk.').
+- Use the `account_reference` table to look up valid account names:
+  ```sql
+  SELECT * FROM account_reference
+  ```
+- When a user mentions a company/account name (including abbreviations like 'PAMA' for 'PAMAPERSADA NUSANTARA',
+  'ADARO' for 'ADARO INDONESIA', 'FREEPORT' for 'FREEPORT INDONESIA'), use exact match:
+  - Correct: `WHERE account_account_name = 'PAMAPERSADA NUSANTARA'`
+  - Wrong: `WHERE account_account_name ILIKE '%PAMA%'`
+- For partial/fuzzy matches provided by the user directly, use ILIKE:
+  - Correct: `WHERE account_account_name ILIKE '%PAMA%'`
+- Examples:
+  - "Problem apa yang sering terjadi di PAMA?" → `WHERE account_account_name = 'PAMAPERSADA NUSANTARA'`
+  - "Masalah apa saja di account ADARO?" → `WHERE account_account_name = 'ADARO INDONESIA' OR account_account_name = 'ADARO LOGISTICS'`
+  - "Total EMR di FREEPORT" → `WHERE account_account_name = 'FREEPORT INDONESIA'`
+
+## Product Problem Information (PPI)
+
+- `ppi_external_id` is the PPI identifier (e.g., 'PPI.000004', 'PPI.000017'). Use ILIKE for partial matching.
+- `ppi_improvement_name` is the PPI title (e.g., 'Techcare.PPI.000004').
+- `ppi_phenomenon` describes the problem phenomenon in free text.
+- `ppi_corrective_action` describes the recommended corrective action.
+- Only ~2.7% of EMR records have PPI data. Always LEFT JOIN or use nullable checks.
+- Common PPI queries:
+  - "tampilkan emr yang punya PPI" → `WHERE ppi_external_id IS NOT NULL`
+  - "PPI apa saja yang ada" → `SELECT DISTINCT ppi_external_id, ppi_improvement_name FROM emr_records WHERE ppi_external_id IS NOT NULL`
+  - "cari PPI PPI.000004" → `WHERE ppi_external_id = 'PPI.000004'`
+  - "tampilkan EMR dengan PPI tertentu" → `JOIN` or `WHERE ppi_external_id = '...'`

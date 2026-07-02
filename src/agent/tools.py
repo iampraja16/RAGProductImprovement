@@ -12,6 +12,7 @@ from src.graph.retrieval.global_search import GlobalSearchRetriever
 from src.graph.retrieval.drift import DriftSearchRetriever
 from src.agent.prompts import estimate_tokens, truncate_to_tokens
 from src.services.site_map import resolve_site_mentions, SITE_MAP
+from src.services.account_map import resolve_account_mentions
 
 import pandas as pd
 
@@ -56,6 +57,44 @@ class GraphRetrievalArgs(BaseModel):
     mode: str = Field(default="drift", description="Retrieval mode: 'local', 'global', or 'drift'")
 
 
+def _enrich_with_ppi(
+    emr_names: list[str],
+    query: str = "",
+    max_direct: int = 5,
+    max_fallback: int = 3,
+) -> str:
+    gc = get_graph_client()
+    lines = []
+    try:
+        emr_ppis = gc.get_ppi_for_emrs(emr_names)
+        if emr_ppis:
+            lines.append("\n\n--- PPI (Product Problem Information) ---")
+            shown = 0
+            for emr_name, ppis in emr_ppis.items():
+                if shown >= max_direct:
+                    break
+                for ppi in ppis[:2]:
+                    lines.append(
+                        f"- {emr_name} → {ppi['external_id']}: {ppi['improvement_name']}"
+                    )
+                    shown += 1
+
+        if not emr_ppis and query:
+            embedder = get_embeddings()
+            fallback = gc.find_ppi_by_symptom_component(query, embedder, limit=max_fallback, score_threshold=0.5)
+            if fallback:
+                lines.append("\n\n--- PPI (semantik) ---")
+                lines.append("Tidak ada PPI langsung. Berdasarkan kesamaan semantik, berikut PPI yang relevan dengan pertanyaan ini:")
+                for ppi in fallback:
+                    score = ppi.get("score", 0)
+                    lines.append(
+                        f"- {ppi['external_id']}: {ppi['improvement_name']} (kesamaan: {score:.2f})"
+                    )
+    except Exception as e:
+        logger.debug(f"PPI enrichment skipped: {e}")
+    return "\n".join(lines)
+
+
 @register_tool(args_schema=GraphRetrievalArgs)
 def ask_emr_graph(query: str, mode: str = "drift") -> Dict[str, Any]:
     from src.services.telemetry import tracer
@@ -80,11 +119,16 @@ def ask_emr_graph(query: str, mode: str = "drift") -> Dict[str, Any]:
             if estimate_tokens(answer) > 2000:
                 answer = truncate_to_tokens(answer, 2000)
 
+            ppi_info = _enrich_with_ppi([], query=query)
+            if ppi_info:
+                answer += ppi_info
+
             return {
                 "answer": answer,
                 "chunks": [],
                 "sql": None,
-                "graph_traversal": result.graph_context
+                "graph_traversal": result.graph_context,
+                "ppi_data": ppi_info
             }
         except Exception as e:
             span.record_exception(e)
@@ -290,7 +334,6 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
         span.set_attribute("tool_query", query)
         logger.info(f"Using tool ask_emr_database for query: {query}")
         try:
-            from src.services.providers import get_vanna
             resolver = EntityResolver(
                 get_graph_client(),
                 get_llm(temperature=0.0),
@@ -309,21 +352,34 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
                 logger.info(f"Site resolution: {site_hint}")
             span.set_attribute("has_site_hint", site_hint is not None)
 
+            account_query, account_hint = resolve_account_mentions(query)
+            if account_hint:
+                logger.info(f"Account resolution: {account_hint}")
+            span.set_attribute("has_account_hint", account_hint is not None)
+
             symptom_cids = community_info.get("symptom_community_ids", [])
             has_model_entities = (
                 resolved.entities
                 and any(e.entity_type == "model" for e in resolved.entities)
             )
-            should_inject_community = bool(symptom_cids) and not has_model_entities and not site_hint
+            should_inject_community = bool(symptom_cids) and not has_model_entities and not site_hint and not account_hint
             span.set_attribute("inject_community_id", should_inject_community)
             if resolved.entities and has_model_entities:
                 logger.info("Model entities present — skipping community_id injection")
             if site_hint:
                 logger.info("Site filter present — skipping community_id injection, using ILIKE instead")
+            if account_hint:
+                logger.info("Account filter present — skipping community_id injection")
 
             modified = resolved.modified_query
-            if site_hint:
-                modified = f"{site_query}. Gunakan filter: {site_hint}. Gunakan ILIKE untuk mencari masalah — JANGAN gunakan community_id."
+            if site_hint or account_hint:
+                filters = []
+                if site_hint:
+                    filters.append(site_hint)
+                if account_hint:
+                    filters.append(account_hint)
+                combined_hint = " AND ".join(filters)
+                modified = f"Gunakan filter: {combined_hint}. Gunakan ILIKE untuk mencari masalah — JANGAN gunakan community_id."
             elif should_inject_community:
                 cid_hint = " OR ".join(f"'{c}' = ANY(community_id)" for c in symptom_cids)
                 if modified != query:
@@ -441,7 +497,12 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
                      "type": e.entity_type, "score": round(e.score, 3)}
                     for e in resolved.entities
                 ]
-            return {"answer": result_str, "chunks": None, "sql": sql, "sql_data": sql_data, "resolved_entities": resolved_info}
+
+            ppi_info = _enrich_with_ppi(record_identifiers, query=query)
+            if ppi_info:
+                result_str += ppi_info
+
+            return {"answer": result_str, "chunks": None, "sql": sql, "sql_data": sql_data, "resolved_entities": resolved_info, "ppi_data": ppi_info if ppi_info else None}
         except Exception as e:
             span.record_exception(e)
             logger.error(f"Error in ask_emr_database: {e}")
@@ -470,6 +531,11 @@ def search_emr_records(query: str) -> Dict[str, Any]:
 
             emr_names = [r["emr_name"] for r in neo4j_records if r.get("emr_name")]
 
+            _, account_hint = resolve_account_mentions(query)
+            if account_hint:
+                logger.info(f"Account filter for EMR records: {account_hint}")
+            account_cond = f" AND ({account_hint})" if account_hint else ""
+
             full_records = []
             if emr_names:
                 try:
@@ -479,8 +545,9 @@ def search_emr_records(query: str) -> Dict[str, Any]:
                     with engine.connect() as conn:
                         placeholders = ", ".join(f":n{i}" for i in range(len(emr_names)))
                         params = {f"n{i}": name for i, name in enumerate(emr_names)}
+                        sql = f"SELECT * FROM emr_records WHERE emr_name IN ({placeholders}){account_cond} ORDER BY emr_name"
                         rows = conn.execute(
-                            text(f"SELECT * FROM emr_records WHERE emr_name IN ({placeholders}) ORDER BY emr_name"),
+                            text(sql),
                             params
                         ).fetchall()
                         cols = rows[0]._fields if rows else []
@@ -522,7 +589,12 @@ def search_emr_records(query: str) -> Dict[str, Any]:
             if canonical_names:
                 answer_lines.append(f"\nPencarian berdasarkan: {', '.join(canonical_names)}")
 
-            return {"answer": "\n".join(answer_lines), "emr_records": full_records or neo4j_records, "entities": entities}
+            full_answer = "\n".join(answer_lines)
+            ppi_info = _enrich_with_ppi(emr_names, query=query)
+            if ppi_info:
+                full_answer += ppi_info
+
+            return {"answer": full_answer, "emr_records": full_records or neo4j_records, "entities": entities, "ppi_data": ppi_info if ppi_info else None}
         except Exception as e:
             span.record_exception(e)
             logger.error(f"Error in search_emr_records: {e}")
@@ -569,13 +641,19 @@ def analyze_smr(query: str) -> Dict[str, Any]:
             if site_hint:
                 logger.info(f"SMR site resolution: {site_hint}")
 
+            account_query, account_hint = resolve_account_mentions(query)
+            if account_hint:
+                logger.info(f"SMR account resolution: {account_hint}")
+
             from sqlalchemy import create_engine, text
             from src.config import settings
 
             engine = create_engine(settings.readonly_postgres_url)
             with engine.connect() as conn:
                 site_cond = f" AND ({site_hint})" if site_hint else ""
-                if symptom_cids and not site_hint:
+                account_cond = f" AND ({account_hint})" if account_hint else ""
+                extra_cond = f"{site_cond}{account_cond}"
+                if symptom_cids and not site_hint and not account_hint:
                     cond = " OR ".join(f"'{c}' = ANY(community_id)" for c in symptom_cids)
                     sql = f"""
                         SELECT smr_trouble, emr_name, created_date, symptom, machine_model
@@ -583,7 +661,7 @@ def analyze_smr(query: str) -> Dict[str, Any]:
                         WHERE ({cond})
                         ORDER BY created_date
                     """
-                elif symptom_cids and site_hint:
+                elif symptom_cids and (site_hint or account_hint):
                     ilike_names = list(set(canonical_names + community_info.get("expanded_names", [])))
                     ors = " OR ".join(
                         f"(symptom ILIKE '%{n}%' OR caused_of_problem ILIKE '%{n}%' OR subjects ILIKE '%{n}%')"
@@ -592,7 +670,7 @@ def analyze_smr(query: str) -> Dict[str, Any]:
                     sql = f"""
                         SELECT smr_trouble, emr_name, created_date, symptom, machine_model
                         FROM emr_records
-                        WHERE ({ors}){site_cond}
+                        WHERE ({ors}){extra_cond}
                         ORDER BY created_date
                     """
                 elif canonical_names:
@@ -604,7 +682,7 @@ def analyze_smr(query: str) -> Dict[str, Any]:
                     sql = f"""
                         SELECT smr_trouble, emr_name, created_date, symptom, machine_model
                         FROM emr_records
-                        WHERE {ors}{site_cond}
+                        WHERE {ors}{extra_cond}
                         ORDER BY created_date
                     """
                 else:
@@ -638,10 +716,15 @@ def analyze_smr(query: str) -> Dict[str, Any]:
                 f"Data divisualisasikan di bagian grafik."
             ) if smr_data else "Tidak ada data SMR yang ditemukan untuk masalah tersebut."
 
+            ppi_info = _enrich_with_ppi([d["emr_name"] for d in smr_data], query=query)
+            if ppi_info:
+                answer += ppi_info
+
             return {
                 "answer": answer,
                 "smr_data": smr_data,
                 "count": len(smr_data),
+                "ppi_data": ppi_info if ppi_info else None,
                 "entities": [
                     {"mention": e.mention, "canonical_name": e.canonical_name,
                      "type": e.entity_type, "score": round(e.score, 3)}

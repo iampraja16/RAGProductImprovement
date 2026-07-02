@@ -94,24 +94,26 @@ Backend nerima pertanyaan kamu, trus **LLM Router** baca dan mutusin:
 
 > 🧠 **Untuk junior:** Router ini pake AI juga, jadi kadang hasilnya bisa beda-beda. Makanya penting buat milih kata kunci yang tepat. Misal: daripada "masalah hydraulic" (ambigu), lebih baik "hitung hydraulic leak" (pasti ke DB) atau "penyebab hydraulic leak" (pasti ke Graph).
 
-### Langkah 3 — Entity Resolution + Site Mapping
+### Langkah 3 — Entity Resolution + Site Mapping + Account Mapping
 
 Sebelum tool dijalankan, sistem **nerjemahin dulu kata-kata kamu** ke bahasa database.
 
 ```
-"oli bocor di PC200 site Jembayan"
+"oli bocor di PC200 site Jembayan account PAMA"
          ↓
     EntityResolver: "oli bocor" → "OIL LEAK" (canonical name)
                   + community_ids: ["1258", "907", "945"]
                   + expanded_names: ["OIL LEAK", "Hydraulic Oil Leaks", ...]
     SiteMapper: "Jembayan" → "JBY"
+    AccountMapper: "PAMA" → "PAMAPERSADA NUSANTARA"
 ```
 
 Apa yang terjadi:
 1. **EntityResolver** — nyari kata kunci teknis (symptom, model, component) di Neo4j, dapetin nama resmi + community_id
 2. **Synonym Expansion** — dari community_id, nyari SEMUA entity lain dalam komunitas yang sama (biar pencarian lebih luas)
 3. **SiteMapper** — deteksi nama site (Jembayan → JBY), inject filter `branch_site = 'JBY'`
-4. Kalau ada **site + masalah** → community_id di-skip (biar gak terlalu sempit)
+4. **AccountMapper** — deteksi nama customer/company (PAMA → PAMAPERSADA NUSANTARA), inject filter `account_account_name = 'PAMAPERSADA NUSANTARA'`
+5. Kalau ada **site/account + masalah** → community_id di-skip (biar gak terlalu sempit)
 
 ### Langkah 4 — Eksekusi Tool
 
@@ -119,8 +121,8 @@ Setiap tool jalan dengan caranya masing-masing:
 
 **`ask_emr_database` (angka/statistik):**
 ```
-Query + hint → Vanna AI generate SQL → SQL Sandbox (cek keamanan) 
-→ Inject community_id filter + LIMIT 100 → PostgreSQL → Hasil
+Query + site/account hint → Vanna AI generate SQL → SQL Sandbox (cek keamanan) 
+→ Inject community_id / site / account filter + LIMIT 100 → PostgreSQL → Hasil
 → Kalau 0: fallback ILIKE pake expanded_names
 ```
 
@@ -132,14 +134,14 @@ Query → GraphRAG Retriever (Local/Global/Hybrid/DRIFT)
 
 **`search_emr_records` (detail EMR):**
 ```
-Query → EntityResolver cari entity → Traversal graf cari EMRRecord 
-→ Ambil 5 record → Enrichment dari PostgreSQL (SMR, site, dll)
-→ Format Markdown
+Query → EntityResolver cari entity + AccountMapper → Traversal graf cari EMRRecord 
+→ Ambil 5 record → Enrichment dari PostgreSQL (SMR, site, account, dll)
+→ Format Markdown + PPI enrichment
 ```
 
 **`analyze_smr` (scatter plot SMR):**
 ```
-Query → EntityResolver + SiteMapper → SQL LANGSUNG (bukan Vanna)
+Query → EntityResolver + SiteMapper + AccountMapper → SQL LANGSUNG (bukan Vanna)
 → Query semua SMR (TANPA LIMIT) → Return smr_data[] → Streamlit render scatter plot
 ```
 
@@ -174,10 +176,10 @@ graph TD
     D -->|SMR / Scatter plot| H[analyze_smr]
     D -->|Buat laporan PDF| I[generate_executive_summary]
     
-    E --> J[EntityResolver\ncari community_id\n+ nama canon]
-    J --> K[SEMUA tool:\nResolve Site?]
+    E --> J[EntityResolver\ncari community_id\n+ canonical names]
+    J --> K[SiteMapper + AccountMapper\nbranch_site + account filter]
     
-    K --> L[Inject filter:\ncommunity_id / ILIKE / site]
+    K --> L[Inject filter:\ncommunity_id / ILIKE / site / account]
     
     E --> M[Vanna AI bikin SQL]
     M --> N[SQL Sandbox\ncek keamanan]
@@ -245,6 +247,7 @@ Config: `src/config.py` — semua diatur lewat `.env`
 |---------|------|-------|
 | EntityResolver | `src/services/entity_resolver.py` | Terjemahin kata → entity teknis |
 | SiteMapper | `src/services/site_map.py` | Deteksi nama site (Jembayan → JBY) |
+| AccountMapper | `src/services/account_map.py` | Deteksi nama customer (PAMA → PAMAPERSADA NUSANTARA) |
 | Circuit Breaker | `src/services/resilience.py` | Proteksi dari error beruntun |
 | Cache | `src/services/cache_service.py` | Simpen jawaban biar cepet |
 | Provider | `src/services/providers.py` | Koneksi ke database + LLM |
@@ -371,6 +374,7 @@ cd notebook
 | **4** | `4_community_pipeline.ipynb` | Leiden clustering + summary | — | ~1 jam |
 | **5** | `5_graph_to_sql_sync.ipynb` | Sync community_id ke PostgreSQL | — | ~5 menit |
 | **6** | `6_vanna_training.ipynb` | Latih Vanna AI | — | ~10 menit |
+| **7** | `7_ppi_ingestion.ipynb` | Ingest PPI (dual-write PG + Neo4j) | — | ~2 menit |
 
 > ⏳ **Notebook #2 paling lama** (2-3 jam) karena pake AI buat ekstrak entity. Kalau mati di tengah, ada mekanisme checkpoint — tinggal jalanin ulang, dia lanjut dari batch terakhir.
 
@@ -469,6 +473,7 @@ local-rag-comparator/
 │   ├── services/
 │   │   ├── entity_resolver.py    # Penterjemah kata → entity
 │   │   ├── site_map.py           # Deteksi nama site
+│   │   ├── account_map.py        # Deteksi nama customer/account
 │   │   ├── resilience.py         # Circuit breaker
 │   │   ├── cache_service.py      # Semantic + Redis cache
 │   │   ├── providers.py          # Koneksi ke DB + LLM
@@ -498,7 +503,7 @@ local-rag-comparator/
 │   └── domain_docs.md            # Dokumentasi domain
 ├── docker/
 │   └── docker-compose.yml        # Infrastruktur (4 containers)
-├── docs/features/                # Dokumentasi fitur (11 file)
+├── docs/features/                # Dokumentasi fitur (12 file)
 │   ├── feature_agent_routing.md
 │   ├── feature_ask_emr_db.md
 │   ├── feature_entity_resolution.md
@@ -509,13 +514,15 @@ local-rag-comparator/
 │   ├── feature_search_emr.md
 │   ├── feature_analyze_smr.md      # ➕ Baru
 │   ├── feature_site_mapping.md     # ➕ Baru
+│   ├── feature_account_mapping.md  # ➕ Baru
 │   └── feature_resilience.md       # ➕ Baru
 ├── eval/                          # Evaluasi model
 │   ├── golden_qa.jsonl            # Dataset pertanyaan + jawaban
 │   └── run_eval.py                # Script evaluasi
 ├── data/                          # Data mentah
 │   ├── Dashboard EMR.csv          # 20.630 record EMR
-│   └── plottingSite.csv           # 55 data site
+│   ├── plottingSite.csv           # 55 data site
+│   └── account_lookup.csv         # 1.193 nama customer
 ├── .env                           # Credentials (jangan di-commit!)
 ├── .env.example                   # Template .env
 ├── AGENTS.md                      # Catatan internal developer
@@ -535,7 +542,7 @@ local-rag-comparator/
 | API 403 | `API_KEY` belum diset | Isi `API_KEY` di `.env` |
 | Streamlit error "can't connect" | Backend belum jalan | Jalanin `uvicorn src.main:app --reload` dulu |
 | Greenlet build error (Windows) | Versi greenlet salah | Pinned `greenlet>=3.0.0,<3.2.0` di requirements |
-| Hasil query 0 terus | Community_id terlalu sempit | Coba pake query yang nyebut site (skip community_id) |
+| Hasil query 0 terus | Community_id terlalu sempit | Coba pake query yang nyebut site atau account (skip community_id) |
 
 ---
 
@@ -555,6 +562,7 @@ Penjelasan teknis yang lebih dalem buat masing-masing fitur ada di folder `docs/
 | search_emr_records | [`feature_search_emr.md`](docs/features/feature_search_emr.md) | Mau tau cara cari EMR detail |
 | analyze_smr | [`feature_analyze_smr.md`](docs/features/feature_analyze_smr.md) | Mau tau cara scatter plot SMR |
 | Site Mapping | [`feature_site_mapping.md`](docs/features/feature_site_mapping.md) | Mau tau gimana sistem deteksi nama site |
+| Account Mapping | [`feature_account_mapping.md`](docs/features/feature_account_mapping.md) | Mau tau gimana sistem deteksi nama customer (PAMA → PAMAPERSADA) |
 | Resilience | [`feature_resilience.md`](docs/features/feature_resilience.md) | Mau tau circuit breaker + caching |
 
 ---
