@@ -62,9 +62,31 @@ def _enrich_with_ppi(
     query: str = "",
     max_direct: int = 5,
     max_fallback: int = 3,
-) -> str:
+    ppi_ids: list[str] = None
+) -> tuple[str, list[dict]]:
+    """
+    Returns (display_str, ppi_list).
+    - display_str  : formatted text appended to LLM context
+    - ppi_list     : structured list[dict] with keys
+                     {external_id, improvement_name, salesforce_url}
+                     consumed by inject_ppi_links() in the Streamlit frontend
+    """
     gc = get_graph_client()
     lines = []
+    ppi_list: list[dict] = []
+    ppi_ids = ppi_ids or []
+    
+    # Check if user explicitly asked for PPI. If not, do NOT return PPI.
+    import re
+    if query and not re.search(r'\bppi\b|\btechcare\b|\bproduct problem information\b', query, re.IGNORECASE):
+        return "", []
+    
+    # Extract EMR IDs mentioned in the query (e.g., U-00013147) as direct targets
+    if query:
+        query_emrs = re.findall(r"\bU-\d{8}\b", query, re.IGNORECASE)
+        if query_emrs:
+            emr_names = list(set(emr_names + [name.upper() for name in query_emrs]))
+            
     try:
         emr_ppis = gc.get_ppi_for_emrs(emr_names)
         if emr_ppis:
@@ -74,25 +96,65 @@ def _enrich_with_ppi(
                 if shown >= max_direct:
                     break
                 for ppi in ppis[:2]:
-                    lines.append(
-                        f"- {emr_name} → {ppi['external_id']}: {ppi['improvement_name']}"
-                    )
+                    ext_id = ppi['external_id']
+                    name   = ppi['improvement_name']
+                    sf_url = ppi.get('salesforce_url') or ""
+                    lines.append(f"- {emr_name} \u2192 {ext_id}: {name}")
+                    ppi_list.append({
+                        "external_id":      ext_id,
+                        "improvement_name": name,
+                        "salesforce_url":   sf_url,
+                        "emr_name":         emr_name,
+                    })
                     shown += 1
 
-        if not emr_ppis and query:
+        direct_ppis = gc.get_ppi_details_by_ids(ppi_ids)
+        if direct_ppis:
+            if not emr_ppis:
+                lines.append("\n\n--- PPI (Product Problem Information) ---")
+            for ppi in direct_ppis:
+                ext_id = ppi['external_id']
+                name   = ppi['improvement_name']
+                sf_url = ppi.get('salesforce_url') or ""
+                # Avoid duplicating lines if already added via EMR
+                if not any(p["external_id"] == ext_id for p in ppi_list):
+                    lines.append(f"- {ext_id}: {name}")
+                    ppi_list.append({
+                        "external_id":      ext_id,
+                        "improvement_name": name,
+                        "salesforce_url":   sf_url,
+                        "emr_name":         None,
+                    })
+
+        if not emr_ppis and not direct_ppis and query:
             embedder = get_embeddings()
             fallback = gc.find_ppi_by_symptom_component(query, embedder, limit=max_fallback, score_threshold=0.5)
             if fallback:
                 lines.append("\n\n--- PPI (semantik) ---")
-                lines.append("Tidak ada PPI langsung. Berdasarkan kesamaan semantik, berikut PPI yang relevan dengan pertanyaan ini:")
+                lines.append("Tidak ada PPI langsung. Berdasarkan kesamaan semantik, berikut PPI yang relevan:")
                 for ppi in fallback:
-                    score = ppi.get("score", 0)
-                    lines.append(
-                        f"- {ppi['external_id']}: {ppi['improvement_name']} (kesamaan: {score:.2f})"
-                    )
+                    score  = ppi.get("score", 0)
+                    ext_id = ppi['external_id']
+                    name   = ppi['improvement_name']
+                    sf_url = ppi.get('salesforce_url') or ""
+                    lines.append(f"- {ext_id}: {name} (kesamaan: {score:.2f})")
+                    ppi_list.append({
+                        "external_id":      ext_id,
+                        "improvement_name": name,
+                        "salesforce_url":   sf_url,
+                        "emr_name":         None,
+                    })
     except Exception as e:
         logger.debug(f"PPI enrichment skipped: {e}")
-    return "\n".join(lines)
+    # Deduplicate by external_id — multiple EMRs can share the same PPI
+    seen: set[str] = set()
+    deduped: list[dict] = []
+    for entry in ppi_list:
+        eid = entry["external_id"]
+        if eid not in seen:
+            seen.add(eid)
+            deduped.append(entry)
+    return "\n".join(lines), deduped
 
 
 @register_tool(args_schema=GraphRetrievalArgs)
@@ -119,7 +181,20 @@ def ask_emr_graph(query: str, mode: str = "drift") -> Dict[str, Any]:
             if estimate_tokens(answer) > 2000:
                 answer = truncate_to_tokens(answer, 2000)
 
-            ppi_info = _enrich_with_ppi([], query=query)
+            # Extract EMR names from graph traversal context so that the
+            # direct HAS_PPI Neo4j lookup works. We check both the seed entity
+            # and any neighbor nodes that start with 'U-'.
+            graph_raw_rows = (result.graph_context or {}).get("raw_rows", [])
+            emr_names_from_graph = set()
+            for row in graph_raw_rows:
+                ent = str(row.get("entity", ""))
+                neigh = str(row.get("neighbor", ""))
+                if ent.startswith("U-"):
+                    emr_names_from_graph.add(ent)
+                if neigh.startswith("U-"):
+                    emr_names_from_graph.add(neigh)
+
+            ppi_info, ppi_list = _enrich_with_ppi(list(emr_names_from_graph), query=query)
             if ppi_info:
                 answer += ppi_info
 
@@ -128,7 +203,7 @@ def ask_emr_graph(query: str, mode: str = "drift") -> Dict[str, Any]:
                 "chunks": [],
                 "sql": None,
                 "graph_traversal": result.graph_context,
-                "ppi_data": ppi_info
+                "ppi_links": ppi_list or None,
             }
         except Exception as e:
             span.record_exception(e)
@@ -220,55 +295,12 @@ def _summarize_dataframe(df: pd.DataFrame) -> str:
     return truncate_to_tokens(full_summary, settings.dataframe_summary_token_limit)
 
 
-def _build_iliake_count_query(query: str, canonical_names: List[str]) -> Optional[str]:
-    stopwords = {
-        "yang", "di", "ke", "dan", "atau", "pada", "dengan", "untuk",
-        "saya", "kamu", "ini", "itu", "ada", "tidak", "akan", "dapat",
-        "the", "a", "an", "of", "in", "on", "to", "for", "with",
-        "and", "or", "is", "are", "was", "were",
-        "please", "show", "list", "find", "cari",
-        "tampilkan", "sebutkan", "berikan", "tolong", "mohon",
-        "membahas", "mengenai", "tentang", "dimana", "bagaimana",
-        "apakah", "adakah", "berapa", "total", "banyak",
-        "semua", "setiap", "beberapa", "kerusakan", "masalah",
-    }
-    words = set()
-    for name in canonical_names:
-        for w in re.findall(r"[a-zA-Z0-9]+", name):
-            wl = w.lower()
-            if len(wl) > 2 and wl not in stopwords:
-                words.add(wl)
-    for w in re.findall(r"[a-zA-Z0-9]+", query):
-        wl = w.lower()
-        if len(wl) > 2 and wl not in stopwords:
-            words.add(wl)
-    if not words:
-        return None
-    text_cols = ["symptom", "caused_of_problem", "action_how_was_problem_corrected", "subjects"]
-    model_kws = []
-    text_kws = []
-    for kw in sorted(words)[:6]:
-        # If kw looks like a model code (starts with letter, contains digits), search machine_model
-        if re.search(r'^[a-z]+\d', kw) and any(c.isdigit() for c in kw):
-            model_kws.append(kw)
-        else:
-            text_kws.append(kw)
-    col_pats = []
-    for kw in model_kws:
-        col_pats.append(f"(machine_model ILIKE '%{kw}%' OR model_family ILIKE '%{kw}%')")
-    for kw in text_kws:
-        ors = " OR ".join(f"{c} ILIKE '%{kw}%'" for c in text_cols)
-        col_pats.append(f"({ors})")
-    if not col_pats:
-        return None
-    conds = " AND ".join(col_pats)
-    return f"SELECT COUNT(*) FROM emr_records WHERE {conds} LIMIT 100;"
 
 
-def _inject_community_filter(sql: str, community_ids: List[str]) -> str:
-    if not community_ids:
+
+def _inject_sql_condition(sql: str, cond: str) -> str:
+    if not cond:
         return sql
-    cond = " OR ".join(f"'{c}' = ANY(community_id)" for c in community_ids)
     cond = f"({cond})"
 
     sql_strip = sql.strip()
@@ -276,8 +308,7 @@ def _inject_community_filter(sql: str, community_ids: List[str]) -> str:
     if has_semicolon:
         sql_strip = sql_strip[:-1].rstrip()
 
-    if re.search(r'\bcommunity_id\b', sql_strip, re.IGNORECASE):
-        return sql
+    # Removed hardcoded community_id check to make it generic
 
     where_match = re.search(r'\bWHERE\b', sql_strip, re.IGNORECASE)
     group_match = re.search(r'\bGROUP\s+BY\b', sql_strip, re.IGNORECASE)
@@ -362,16 +393,13 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
                 resolved.entities
                 and any(e.entity_type == "model" for e in resolved.entities)
             )
-            should_inject_community = bool(symptom_cids) and not has_model_entities and not site_hint and not account_hint
+            should_inject_community = bool(symptom_cids) and not has_model_entities
             span.set_attribute("inject_community_id", should_inject_community)
             if resolved.entities and has_model_entities:
                 logger.info("Model entities present — skipping community_id injection")
-            if site_hint:
-                logger.info("Site filter present — skipping community_id injection, using ILIKE instead")
-            if account_hint:
-                logger.info("Account filter present — skipping community_id injection")
 
             modified = resolved.modified_query
+            
             if site_hint or account_hint:
                 filters = []
                 if site_hint:
@@ -379,23 +407,27 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
                 if account_hint:
                     filters.append(account_hint)
                 combined_hint = " AND ".join(filters)
-                modified = f"Gunakan filter: {combined_hint}. Gunakan ILIKE untuk mencari masalah — JANGAN gunakan community_id."
-            elif should_inject_community:
-                cid_hint = " OR ".join(f"'{c}' = ANY(community_id)" for c in symptom_cids)
                 if modified != query:
-                    modified = f"{modified}. Gunakan filter community_id: {cid_hint}"
+                    modified = f"{modified}. WAJIB gunakan filter pasti ini untuk lokasi/customer, JANGAN GUNAKAN ILIKE UNTUK LOKASI: {combined_hint}."
                 else:
-                    modified = f"{query}. Gunakan filter community_id: {cid_hint}"
+                    modified = f"{query}. WAJIB gunakan filter pasti ini untuk lokasi/customer, JANGAN GUNAKAN ILIKE UNTUK LOKASI: {combined_hint}."
+            if should_inject_community:
+                cid_hint = " OR ".join(f"'{c}' = ANY(community_id)" for c in symptom_cids)
+                modified = f"{modified} WAJIB Gunakan HANYA filter community_id ini untuk masalah: {cid_hint}. JANGAN gunakan filter ILIKE untuk symptom/problem!"
             else:
-                if modified == query:
-                    has_only_models = (
-                        resolved.entities
-                        and all(e.entity_type == "model" for e in resolved.entities)
-                    )
-                    if has_only_models:
-                        modified = f"{query}. JANGAN gunakan community_id — query ini murni filter model."
-                    else:
-                        modified = f"{query}. JANGAN gunakan community_id."
+                has_only_models = (
+                    resolved.entities
+                    and all(e.entity_type == "model" for e in resolved.entities)
+                )
+                if has_only_models:
+                    modified = f"{modified} JANGAN gunakan community_id — query ini murni filter model."
+                else:
+                    modified = f"{modified} JANGAN gunakan community_id."
+                    
+            if "tunjukkan emr" in query.lower() or "tampilkan emr" in query.lower() or "list emr" in query.lower():
+                modified = f"{modified} User meminta list EMR. WAJIB HANYA SELECT emr_name, ppi_external_id, ppi_improvement_name. JANGAN GUNAKAN FUNGSI AGREGASI COUNT() SAMA SEKALI!"
+            if "ppi" in query.lower():
+                modified = f"{modified} JANGAN PERNAH menambahkan filter 'ppi_external_id IS NOT NULL' pada klausa WHERE! Hitung semua masalah secara normal terlepas apakah memiliki PPI atau tidak."
 
             vn = get_vanna()
             sql = vn.generate_sql(modified, allow_llm_to_see_data=False)
@@ -408,42 +440,36 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
             span.set_attribute("sql_query", sql)
 
             if should_inject_community:
-                sql = _inject_community_filter(sql, symptom_cids)
+                if not re.search(r'\bcommunity_id\b', sql, re.IGNORECASE):
+                    sql = _inject_sql_condition(sql, cid_hint)
             else:
                 sql = _strip_community_filter(sql)
+                
+            if site_hint or account_hint:
+                combined_hint = " AND ".join(filter(None, [site_hint, account_hint]))
+                sql = _inject_sql_condition(sql, combined_hint)
 
             if not _is_safe_select_query(sql):
                 logger.warning(f"Blocked unsafe or non-SELECT query generated by LLM: {sql}")
                 return {"answer": "Blocked unsafe or non-SELECT query generated by LLM.", "chunks": None, "sql": sql, "sql_data": None}
 
-            sql = _inject_limit_if_missing(sql, settings.sql_row_limit)
             logger.info(f"Executing sandboxed SQL: {sql}")
 
             df = vn.run_sql(sql)
 
-            is_count_query_zero = (
-                df is not None
-                and not df.empty
-                and len(df.columns) == 1
-                and any(x in str(df.columns[0]).lower() for x in ["count", "total"])
-                and df.iloc[0, 0] == 0
-            )
-            if (df is None or df.empty or is_count_query_zero) and should_inject_community:
-                logger.info("Community ID search returned 0, falling back to ILIKE")
-                fallback_names = community_info.get("canonical_names", []) + community_info.get("expanded_names", [])
-                fallback_sql = _build_iliake_count_query(query, list(set(fallback_names)))
-                if fallback_sql:
-                    logger.info(f"ILIKE fallback SQL: {fallback_sql}")
-                    df = vn.run_sql(fallback_sql)
-                    sql = fallback_sql
-
             if df is None or df.empty:
                 result_str = "No data returned from database."
                 sql_data = []
+                record_identifiers = []
                 span.set_attribute("rows_returned", 0)
             else:
                 span.set_attribute("rows_returned", len(df))
                 span.set_attribute("columns_returned", len(df.columns))
+                
+                # Prioritize EMRs with PPIs in the summarized dataframe
+                if "ppi_external_id" in df.columns:
+                    df = df.sort_values(by="ppi_external_id", na_position="last").reset_index(drop=True)
+                
                 markdown_table = _summarize_dataframe(df)
                 df_cleaned = df.replace({float('nan'): None, float('inf'): None, float('-inf'): None})
                 sql_data = df_cleaned.to_dict(orient="records")
@@ -498,11 +524,15 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
                     for e in resolved.entities
                 ]
 
-            ppi_info = _enrich_with_ppi(record_identifiers, query=query)
+            ppi_ids = []
+            if df is not None and not df.empty and "ppi_external_id" in df.columns:
+                ppi_ids = df["ppi_external_id"].dropna().unique().astype(str).tolist()
+
+            ppi_info, ppi_list = _enrich_with_ppi(record_identifiers, ppi_ids=ppi_ids, query=query)
             if ppi_info:
                 result_str += ppi_info
 
-            return {"answer": result_str, "chunks": None, "sql": sql, "sql_data": sql_data, "resolved_entities": resolved_info, "ppi_data": ppi_info if ppi_info else None}
+            return {"answer": result_str, "chunks": None, "sql": sql, "sql_data": sql_data, "resolved_entities": resolved_info, "ppi_links": ppi_list or None}
         except Exception as e:
             span.record_exception(e)
             logger.error(f"Error in ask_emr_database: {e}")
@@ -516,12 +546,25 @@ def search_emr_records(query: str) -> Dict[str, Any]:
         span.set_attribute("tool_query", query)
         logger.info(f"Using tool search_emr_records for query: {query}")
         try:
+            from src.services.site_map import resolve_site_mentions
+            from src.services.account_map import resolve_account_mentions
+            
+            site_query, site_hint = resolve_site_mentions(query)
+            if site_hint:
+                logger.info(f"Site resolution (Graph): {site_hint}")
+            span.set_attribute("has_site_hint", site_hint is not None)
+
+            account_query, account_hint = resolve_account_mentions(query)
+            if account_hint:
+                logger.info(f"Account resolution (Graph): {account_hint}")
+            span.set_attribute("has_account_hint", account_hint is not None)
+
             resolver = EntityResolver(
                 get_graph_client(),
                 get_llm(temperature=0.0),
                 get_embeddings(),
             )
-            result = resolver.search_emr_records(query)
+            result = resolver.search_emr_records(query, site_hint=site_hint, account_hint=account_hint)
             canonical_names = result.get("canonical_names", [])
             neo4j_records = result.get("emr_records", [])
             entities = result.get("entities", [])
@@ -590,11 +633,11 @@ def search_emr_records(query: str) -> Dict[str, Any]:
                 answer_lines.append(f"\nPencarian berdasarkan: {', '.join(canonical_names)}")
 
             full_answer = "\n".join(answer_lines)
-            ppi_info = _enrich_with_ppi(emr_names, query=query)
+            ppi_info, ppi_list = _enrich_with_ppi(emr_names, query=query)
             if ppi_info:
                 full_answer += ppi_info
 
-            return {"answer": full_answer, "emr_records": full_records or neo4j_records, "entities": entities, "ppi_data": ppi_info if ppi_info else None}
+            return {"answer": full_answer, "emr_records": full_records or neo4j_records, "entities": entities, "ppi_links": ppi_list or None}
         except Exception as e:
             span.record_exception(e)
             logger.error(f"Error in search_emr_records: {e}")
@@ -652,25 +695,28 @@ def analyze_smr(query: str) -> Dict[str, Any]:
             with engine.connect() as conn:
                 site_cond = f" AND ({site_hint})" if site_hint else ""
                 account_cond = f" AND ({account_hint})" if account_hint else ""
-                extra_cond = f"{site_cond}{account_cond}"
-                if symptom_cids and not site_hint and not account_hint:
+                
+                model_entities = [e.canonical_name for e in resolved.entities if e.entity_type == "model"]
+                model_conds = []
+                if model_entities:
+                    brand_codes = list(EntityResolver._BRAND_MAP.values())
+                    or_conds_list = []
+                    for m in model_entities:
+                        if m in brand_codes:
+                            or_conds_list.append(f"machine_product = '{m}'")
+                        else:
+                            or_conds_list.append(f"(machine_model ILIKE '%{m}%' OR model_family ILIKE '%{m}%')")
+                    if or_conds_list:
+                        model_conds.append(f"({' OR '.join(or_conds_list)})")
+                model_cond = f" AND {' AND '.join(model_conds)}" if model_conds else ""
+                
+                extra_cond = f"{site_cond}{account_cond}{model_cond}"
+                if symptom_cids:
                     cond = " OR ".join(f"'{c}' = ANY(community_id)" for c in symptom_cids)
                     sql = f"""
                         SELECT smr_trouble, emr_name, created_date, symptom, machine_model
                         FROM emr_records
-                        WHERE ({cond})
-                        ORDER BY created_date
-                    """
-                elif symptom_cids and (site_hint or account_hint):
-                    ilike_names = list(set(canonical_names + community_info.get("expanded_names", [])))
-                    ors = " OR ".join(
-                        f"(symptom ILIKE '%{n}%' OR caused_of_problem ILIKE '%{n}%' OR subjects ILIKE '%{n}%')"
-                        for n in ilike_names
-                    )
-                    sql = f"""
-                        SELECT smr_trouble, emr_name, created_date, symptom, machine_model
-                        FROM emr_records
-                        WHERE ({ors}){extra_cond}
+                        WHERE ({cond}){extra_cond}
                         ORDER BY created_date
                     """
                 elif canonical_names:
@@ -716,7 +762,7 @@ def analyze_smr(query: str) -> Dict[str, Any]:
                 f"Data divisualisasikan di bagian grafik."
             ) if smr_data else "Tidak ada data SMR yang ditemukan untuk masalah tersebut."
 
-            ppi_info = _enrich_with_ppi([d["emr_name"] for d in smr_data], query=query)
+            ppi_info, ppi_list = _enrich_with_ppi([d["emr_name"] for d in smr_data], query=query)
             if ppi_info:
                 answer += ppi_info
 
@@ -724,7 +770,7 @@ def analyze_smr(query: str) -> Dict[str, Any]:
                 "answer": answer,
                 "smr_data": smr_data,
                 "count": len(smr_data),
-                "ppi_data": ppi_info if ppi_info else None,
+                "ppi_links": ppi_list or None,
                 "entities": [
                     {"mention": e.mention, "canonical_name": e.canonical_name,
                      "type": e.entity_type, "score": round(e.score, 3)}

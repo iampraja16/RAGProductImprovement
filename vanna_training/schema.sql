@@ -33,6 +33,7 @@ CREATE TABLE emr_records (
     graph_community_summary TEXT,
     community_id TEXT[],
     smr_trouble NUMERIC,
+    ppi_record_id VARCHAR(20),
     ppi_external_id VARCHAR,
     ppi_improvement_name TEXT,
     ppi_phenomenon TEXT,

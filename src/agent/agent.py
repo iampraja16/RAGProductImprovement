@@ -25,6 +25,8 @@ class AgentState(TypedDict):
     sql: str
     sql_data: list
     graph_traversal: dict
+    smr_data: list
+    ppi_links: list
 
 class Agent:
     def __init__(self):
@@ -122,6 +124,7 @@ class Agent:
                     "sql_data": tool_result.get("sql_data"),
                     "graph_traversal": tool_result.get("graph_traversal"),
                     "smr_data": tool_result.get("smr_data"),
+                    "ppi_links": tool_result.get("ppi_links"),
                     "steps": [{"node": "synthesizer", "status": "prepared"}]
                 }
             else:
@@ -196,6 +199,7 @@ class Agent:
                 "steps": final_state.get("steps", []),
                 "token_usage": usage_meta,
                 "smr_data": final_state.get("smr_data"),
+                "ppi_links": final_state.get("ppi_links"),
             }
 
     def stream_response(self, query: str, chat_history: List[Dict] = None):
@@ -241,6 +245,7 @@ class Agent:
                                 "chunks": tr.get("chunks"),
                                 "graph_traversal": tr.get("graph_traversal"),
                                 "smr_data": tr.get("smr_data"),
+                                "ppi_links": tr.get("ppi_links"),
                             }, default=str) + "\n"
                             
                         final_state.update(node_state)
@@ -311,4 +316,5 @@ class Agent:
                     "type": "done",
                     "steps": final_state.get("steps", []),
                     "smr_data": final_state.get("smr_data"),
+                    "ppi_links": final_state.get("ppi_links"),
                 }, default=str) + "\n"

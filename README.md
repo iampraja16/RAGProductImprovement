@@ -374,7 +374,7 @@ cd notebook
 | **4** | `4_community_pipeline.ipynb` | Leiden clustering + summary | — | ~1 jam |
 | **5** | `5_graph_to_sql_sync.ipynb` | Sync community_id ke PostgreSQL | — | ~5 menit |
 | **6** | `6_vanna_training.ipynb` | Latih Vanna AI | — | ~10 menit |
-| **7** | `7_ppi_ingestion.ipynb` | Ingest PPI (dual-write PG + Neo4j) | — | ~2 menit |
+| **7** | `7_ppi_ingestion.ipynb` | Ingest PPI data (dual-write PG + Neo4j) — termasuk `ppi_record_id` untuk Salesforce deep-link | ✅ | ~2 menit |
 
 > ⏳ **Notebook #2 paling lama** (2-3 jam) karena pake AI buat ekstrak entity. Kalau mati di tengah, ada mekanisme checkpoint — tinggal jalanin ulang, dia lanjut dari batch terakhir.
 
@@ -487,8 +487,11 @@ local-rag-comparator/
 ├── scripts/
 │   ├── setup_indexes.py          # Setup indeks Neo4j
 │   ├── migrate_site_lookup.py    # Migrasi tabel site_reference
+│   ├── migrate_ppi.py            # Migrasi kolom PPI (termasuk ppi_record_id)
+│   ├── ingest_ppi.py             # Ingest data PPI dari Excel (dual-write PG + Neo4j)
 │   ├── sync_graph_to_sql.py      # Sinkronisasi 2 arah
 │   ├── migrate_smr.py            # Migrasi kolom smr_trouble
+│   ├── verify_ppi_links.py       # Verifikasi integritas ppi_record_id + Salesforce URL
 │   └── create_readonly_user.py   # User read-only buat Vanna
 ├── tests/                        # Unit test
 │   ├── test_agent_tools.py       # Test SQL sandbox, LIMIT, provenance
@@ -520,7 +523,8 @@ local-rag-comparator/
 │   ├── golden_qa.jsonl            # Dataset pertanyaan + jawaban
 │   └── run_eval.py                # Script evaluasi
 ├── data/                          # Data mentah
-│   ├── Dashboard EMR.csv          # 20.630 record EMR
+│   ├── Dashboard EMR(report1776669858353).csv  # 20.630 record EMR
+│   ├── EMR with PPI Report-2026-07-01-15-08-38.xlsx  # Data PPI (termasuk PPI: Record ID)
 │   ├── plottingSite.csv           # 55 data site
 │   └── account_lookup.csv         # 1.193 nama customer
 ├── .env                           # Credentials (jangan di-commit!)

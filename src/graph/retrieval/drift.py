@@ -30,7 +30,10 @@ class DriftSearchRetriever(BaseRetriever):
         context_query = """
         MATCH (e) WHERE e.name IN $names
         OPTIONAL MATCH (e)-[r]-(neighbor)
-        RETURN e.name AS entity, type(r) AS relation, neighbor.name AS neighbor, labels(neighbor)[0] AS n_label
+        RETURN e.name AS entity, 
+               type(r) AS relation, 
+               coalesce(neighbor.name, neighbor.emr_name, toString(neighbor.communityId)) AS neighbor, 
+               labels(neighbor)[0] AS n_label
         LIMIT 30
         """
         local_context = self.graph_client.run_query(context_query, {"names": entity_names})

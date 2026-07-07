@@ -112,3 +112,5 @@
   sql: "SELECT ppi_external_id, ppi_improvement_name, COUNT(*) AS total_emr FROM emr_records WHERE ppi_external_id IS NOT NULL GROUP BY ppi_external_id, ppi_improvement_name ORDER BY total_emr DESC"
 - question: "model apa yang paling banyak memiliki PPI"
   sql: "SELECT machine_model, COUNT(DISTINCT ppi_external_id) AS total_ppi FROM emr_records WHERE ppi_external_id IS NOT NULL GROUP BY machine_model ORDER BY total_ppi DESC LIMIT 10"
+- question: "tunjukkan masalah yang paling banyak dan tunjukkan emr nya"
+  sql: "SELECT e.techcare_component, e.emr_name, e.symptom, e.caused_of_problem FROM emr_records e WHERE e.techcare_component = (SELECT techcare_component FROM emr_records WHERE techcare_component IS NOT NULL GROUP BY techcare_component ORDER BY count(*) DESC LIMIT 1) ORDER BY e.emr_name"

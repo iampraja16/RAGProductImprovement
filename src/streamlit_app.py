@@ -34,6 +34,69 @@ def clean_markdown_content(text: str) -> str:
             
     return "\n".join(cleaned_lines).strip()
 
+
+import re
+
+def inject_ppi_links(text: str, ppi_links: list) -> str:
+    """Inject markdown hyperlinks for PPI identifiers in the LLM-generated text.
+
+    Handles variant formats the LLM may produce for the same PPI ID:
+      - PPI.000119          (canonical format stored in Neo4j)
+      - PPI-000119          (dash separator)
+      - Techcare.PPI.000119 (with prefix)
+      - PPI 000119          (space separator)
+
+    The match is anchored to the numeric suffix only, so all variants are caught.
+    If salesforce_url is present  -> renders as [PPI.000119](url).
+    If salesforce_url is missing  -> renders as **PPI.000119** (bold, no link).
+    """
+    if not ppi_links or not text:
+        return text
+
+    for ppi in ppi_links:
+        ext_id = ppi.get("external_id")
+        sf_url = ppi.get("salesforce_url") or ""
+        if not ext_id:
+            continue
+
+        # Extract the numeric part (e.g. "000119" from "PPI.000119")
+        num_part = re.escape(ext_id.split(".")[-1])
+
+        # Match variants: optional 'Techcare.' prefix, then 'PPI' + separator + number
+        # Negative lookbehind/ahead prevents double-linking an already-linked ID
+        pattern = rf"(?<!\[)(?:Techcare\.)?PPI[.\- ]?{num_part}(?!\]\()"
+
+        if sf_url:
+            replacement = f"[{ext_id}]({sf_url})"
+        else:
+            replacement = f"**{ext_id}**"
+
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+
+    return text
+
+
+def render_ppi_references(ppi_links: list):
+    """Render a dedicated PPI References section as clickable markdown links.
+
+    This is a reliable fallback: PPI links always appear here regardless of
+    how the LLM phrased the answer, since inject_ppi_links() depends on the
+    LLM reproducing a recognizable PPI ID format in its output text.
+    """
+    if not ppi_links:
+        return
+    st.markdown("#### \U0001f517 PPI References")
+    for ppi in ppi_links:
+        ext_id = ppi.get("external_id", "")
+        sf_url = ppi.get("salesforce_url", "")
+        name = ppi.get("improvement_name", "")
+        if sf_url:
+            st.markdown(f"- [{ext_id}]({sf_url}) \u2014 {name}")
+        else:
+            st.markdown(f"- **{ext_id}** \u2014 {name}")
+
+
+
 st.set_page_config(
     page_title="EMR Fault Analyzer",
     page_icon="EMR",
@@ -298,13 +361,14 @@ st.title("Maintenance Copilot")
 st.markdown("Tanya tentang penyebab masalah, gejala, atau statistik jumlah kerusakan unit.")
 
 # --- Chat History ---
-def render_assistant_answer(content: str):
+def render_assistant_answer(content: str, ppi_links: list = None):
+    content = inject_ppi_links(content, ppi_links)
     divider = "--- EVIDENCE/PROVENANCE ---"
     if divider in content:
         parts = content.split(divider)
         narrative = parts[0].strip()
         evidence = parts[1].strip()
-        
+
         st.markdown("#### Answer")
         st.markdown(clean_markdown_content(narrative))
         st.markdown("#### Evidence Section")
@@ -313,13 +377,17 @@ def render_assistant_answer(content: str):
         st.markdown("#### Answer")
         st.markdown(clean_markdown_content(content))
 
+    # Dedicated PPI section hidden as requested by user
+    pass
+
+
 # --- Chat History ---
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         if message["role"] == "user":
             st.markdown(clean_markdown_content(message["content"]))
         else:
-            render_assistant_answer(message["content"])
+            render_assistant_answer(message["content"], message.get("ppi_links"))
 
         if message["role"] == "assistant":
             # Reasoning trace
@@ -411,6 +479,7 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                 chunks = []
                 graph_traversal = None
                 smr_data = None
+                ppi_links = None
                 steps = []
                 timing_ms = None
                 cache_hit = None
@@ -438,6 +507,7 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                         graph_traversal = data.get("graph_traversal")
                         chunks = data.get("chunks", [])
                         smr_data = data.get("smr_data")
+                        ppi_links = data.get("ppi_links")
 
                     elif chunk_type == "token":
                         token = data.get("content", "")
@@ -445,13 +515,14 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                         
                         # Display cumulative streaming text with sections
                         divider = "--- EVIDENCE/PROVENANCE ---"
-                        if divider in answer:
-                            parts = answer.split(divider)
+                        display_text = inject_ppi_links(answer, ppi_links)
+                        if divider in display_text:
+                            parts = display_text.split(divider)
                             narrative = parts[0].strip()
                             evidence = parts[1].strip()
                             message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(narrative)}\n\n#### Evidence Section\n\n{clean_markdown_content(evidence)}▌")
                         else:
-                            message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(answer)}▌")
+                            message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(display_text)}▌")
 
                     elif chunk_type == "done":
                         steps = data.get("steps", [])
@@ -459,16 +530,20 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                         cache_hit = data.get("cache_hit", None)
                         if data.get("smr_data"):
                             smr_data = data.get("smr_data")
+                        # ppi_links may arrive via done if not in tool_data
+                        if data.get("ppi_links") and not ppi_links:
+                            ppi_links = data.get("ppi_links")
                         
                         # Remove cursor at completion
                         divider = "--- EVIDENCE/PROVENANCE ---"
-                        if divider in answer:
-                            parts = answer.split(divider)
+                        display_text = inject_ppi_links(answer, ppi_links)
+                        if divider in display_text:
+                            parts = display_text.split(divider)
                             narrative = parts[0].strip()
                             evidence = parts[1].strip()
                             message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(narrative)}\n\n#### Evidence Section\n\n{clean_markdown_content(evidence)}")
                         else:
-                            message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(answer)}")
+                            message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(display_text)}")
 
                     elif chunk_type == "metadata":
                         token_usage = data.get("content", {}).get("token_usage")
@@ -547,6 +622,9 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                             st.markdown(chunk)
                             st.divider()
 
+                # Dedicated PPI section hidden as requested by user
+                pass
+
                 # Token Usage Panel
                 if token_usage:
                     with st.expander("📊 Token Usage & Cost", expanded=False):
@@ -566,6 +644,7 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                     "chunks": chunks,
                     "graph_traversal": graph_traversal,
                     "smr_data": smr_data,
+                    "ppi_links": ppi_links,
                     "steps": steps,
                     "timing_ms": timing_ms,
                     "cache_hit": cache_hit,

@@ -14,7 +14,7 @@ _SITE_MAP_RAW = [
     ("RTU","Rantau"),("MTB","Muara Tiga Besar"),("PDG","Padang"),
     ("SPR","Separi"),("LJN","Loajanan"),("TRK","Tarakan"),
     ("JYP","Jayapura"),("BTL","Batulicin"),("PKB","Pekanbaru"),
-    ("BLG","Bandar Lampung"),("PTK","Pontianak"),("SGT","Sangatta"),
+    ("BLG","Bandar Lampung"),("PTK","Pontianak"),("SGT","Sangatta"),("SGT","Sangata"),
     ("SRG","Sorong"),("BHT","Buhut"),("FRP","Freeport"),
     ("DMI","Damai"),("SBT","Sambarata"),("THP","Tuhup"),
     ("SRK","Sorowako"),("LTI","Lati"),("SGA","Sanga-sanga"),

@@ -102,6 +102,7 @@ class ChatResponse(BaseModel):
     timing_ms: Optional[Dict[str, float]] = None
     steps: Optional[List[Dict[str, Any]]] = []  # Reasoning trace
     smr_data: Optional[List[Dict[str, Any]]] = None  # SMR analysis data for scatter plot
+    ppi_links: Optional[List[Dict[str, Any]]] = None  # PPI Salesforce deep-links
 
 class CacheInvalidateRequest(BaseModel):
     level: str = "all"
@@ -264,6 +265,7 @@ def chat(request: ChatRequest):
             timing_ms=timings,
             steps=response.get("steps", []),
             smr_data=response.get("smr_data"),
+            ppi_links=response.get("ppi_links"),
         )
     except Exception as e:
         timings["total_ms"] = round((time.time() - t_start) * 1000, 1)
@@ -280,9 +282,11 @@ def chat(request: ChatRequest):
 def chat_stream(request: ChatRequest):
     """Stream final LLM response with live status updates."""
     # Semantic cache disabled to guarantee live and accurate PostgreSQL/Qdrant queries
-    pass
-
-    return StreamingResponse(agent.stream_response(request.query), media_type="text/event-stream")
+    chat_history = [msg.model_dump() for msg in request.chat_history] if request.chat_history else []
+    return StreamingResponse(
+        agent.stream_response(request.query, chat_history=chat_history),
+        media_type="text/event-stream"
+    )
 
 
 # ===== Cache management endpoints (FASE 2) =====

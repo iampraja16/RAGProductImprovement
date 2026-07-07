@@ -38,7 +38,8 @@ _STOP_WORDS = frozenset({
     "ini", "itu", "ada", "tidak", "the", "a", "an", "of", "in",
     "on", "to", "for", "with", "and", "or", "is", "are", "was",
     "sebutkan", "tampilkan", "berikan", "nomor", "angka", "satu",
-    "dua", "tiga", "empat", "lima",
+    "dua", "tiga", "empat", "lima", "paling", "banyak", "beserta",
+    "urutan", "ranking", "jumlahnya", "hidup", "masalah",
 })
 
 
@@ -111,6 +112,17 @@ class EntityResolver:
 
     def _resolve_single(self, mention: str, entity_type: str) -> Optional[ResolvedEntity]:
         if entity_type == "model":
+            mention_lower = mention.lower()
+            for brand, brand_code in self._BRAND_MAP.items():
+                if brand in mention_lower:
+                    return ResolvedEntity(
+                        mention=mention,
+                        canonical_name=brand_code,
+                        entity_type=entity_type,
+                        neo4j_label="Brand",
+                        score=1.0,
+                    )
+                    
             model_candidates = self._search_machine_models(mention)
             if model_candidates:
                 best = model_candidates[0]
@@ -121,6 +133,14 @@ class EntityResolver:
                     neo4j_label=best["label"],
                     score=best["score"],
                 )
+            # If no model found, return the mention itself as a raw filter, do NOT fallback to symptoms
+            return ResolvedEntity(
+                mention=mention,
+                canonical_name=mention,
+                entity_type=entity_type,
+                neo4j_label="UnknownModel",
+                score=0.5,
+            )
 
         candidates = self._search_all(mention)
         if not candidates:
@@ -248,10 +268,9 @@ class EntityResolver:
         for e in entities:
             col = type_map.get(e.entity_type, e.entity_type)
             if e.entity_type == "model":
-                mention = e.mention.lower()
-                brand_code = self._BRAND_MAP.get(mention)
-                if brand_code:
-                    hints.append(f"machine_product = '{brand_code}'")
+                brand_codes = list(self._BRAND_MAP.values())
+                if e.canonical_name in brand_codes:
+                    hints.append(f"machine_product = '{e.canonical_name}'")
                 else:
                     hints.append(f"machine_model ILIKE '{e.mention}%'")
             else:
@@ -318,7 +337,7 @@ class EntityResolver:
                     if entity.entity_type in ("symptom", "root_cause", "component", "part"):
                         symptom_community_ids.add(cid)
 
-        expanded_names = self._expand_synonyms(symptom_community_ids)
+        expanded_names = self._expand_synonyms(list(symptom_community_ids))
 
         return {
             "canonical_names": sorted(canonical_names),
@@ -332,7 +351,7 @@ class EntityResolver:
             ],
         }
 
-    def search_emr_records(self, query: str, display_limit: int = 5) -> Dict[str, Any]:
+    def search_emr_records(self, query: str, display_limit: int = 5, site_hint: str = None, account_hint: str = None) -> Dict[str, Any]:
         query = query.strip()
         if not query:
             return {"query": query, "emr_records": [], "total_count": 0, "entities": []}
@@ -351,10 +370,15 @@ class EntityResolver:
                     all_entity_names.add(entity.canonical_name)
 
             if all_entity_names:
+                # Combine rigid exact mentions with expanded community synonyms for best practice search
+                community_info = self.resolve_mentions_to_community_ids(query)
+                for en in community_info.get("expanded_names", []):
+                    all_entity_names.add(en)
+                    
                 name_list = list(all_entity_names)
                 model_names = [e.canonical_name for e in resolved if e.entity_type == "model"]
                 total_count, emr_rows = self._find_connected_emrs(
-                    name_list, display_limit, model_names=model_names
+                    name_list, display_limit, model_names=model_names, site_hint=site_hint, account_hint=account_hint
                 )
                 if emr_rows:
                     return {
@@ -375,7 +399,7 @@ class EntityResolver:
             mention_keywords = emr_id_keywords if emr_id_keywords else words
         if not mention_keywords:
             return {"query": query, "emr_records": [], "total_count": 0, "canonical_names": [], "entities": []}
-        total_count, emr_rows = self._search_emrs_by_model(mention_keywords, display_limit)
+        total_count, emr_rows = self._search_emrs_by_model(mention_keywords, display_limit, site_hint=site_hint, account_hint=account_hint)
         return {
             "query": query,
             "emr_records": emr_rows,
@@ -385,7 +409,8 @@ class EntityResolver:
         }
 
     def _find_connected_emrs(self, names: List[str], display_limit: int,
-                             model_names: Optional[List[str]] = None) -> Tuple[int, List[Dict]]:
+                             model_names: Optional[List[str]] = None,
+                             site_hint: str = None, account_hint: str = None) -> Tuple[int, List[Dict]]:
         if not names and not model_names:
             return 0, []
         model_names = model_names or []
@@ -393,13 +418,24 @@ class EntityResolver:
 
         model_clauses = []
         model_params = {}
+        brand_codes = list(self._BRAND_MAP.values())
         for i, mn in enumerate(model_names):
             pk = f"model_{i}"
             model_params[pk] = mn
-            model_clauses.append(
-                f"(toLower(e.machine_model) CONTAINS toLower(${pk}) OR toLower(e.model_family) CONTAINS toLower(${pk}))"
-            )
+            if mn in brand_codes:
+                model_clauses.append(f"e.machine_product = ${pk}")
+            else:
+                model_clauses.append(
+                    f"(toLower(e.machine_model) CONTAINS toLower(${pk}) OR toLower(e.model_family) CONTAINS toLower(${pk}))"
+                )
         model_cond = " OR ".join(model_clauses) if model_clauses else "true"
+        
+        extra_conds = []
+        if site_hint:
+            extra_conds.append(f"({site_hint.replace('branch_site', 'e.branch_site')})")
+        if account_hint:
+            extra_conds.append(f"({account_hint.replace('account_account_name', 'e.account_account_name')})")
+        extra_cond_str = f" AND {' AND '.join(extra_conds)} " if extra_conds else ""
 
         count_query = f"""
         MATCH (e:EMRRecord)
@@ -407,8 +443,8 @@ class EntityResolver:
         WITH e, collect(DISTINCT n.name) AS matched_patterns
         WITH e, matched_patterns,
              size([p IN matched_patterns WHERE p IS NOT NULL]) AS mention_count
-        WHERE mention_count = $expected_count
-          AND ($has_models = false OR ({model_cond}))
+        WHERE mention_count > 0
+          AND ($has_models = false OR ({model_cond})){extra_cond_str}
         RETURN count(DISTINCT e) AS total
         """
         data_query = f"""
@@ -421,8 +457,8 @@ class EntityResolver:
              collect(DISTINCT act.name) AS actions
         WITH e, matched_patterns, root_causes, actions,
              size([p IN matched_patterns WHERE p IS NOT NULL]) AS mention_count
-        WHERE mention_count = $expected_count
-          AND ($has_models = false OR ({model_cond}))
+        WHERE mention_count > 0
+          AND ($has_models = false OR ({model_cond})){extra_cond_str}
         RETURN e.emr_name AS emr_name,
                e.symptom AS symptom,
                e.model_family AS model_family,
@@ -435,7 +471,9 @@ class EntityResolver:
         LIMIT $limit
         """
         try:
-            params = {"names": names, "expected_count": len(names), "has_models": has_models, **model_params}
+            # We no longer use expected_count exact matching, mention_count > 0 is sufficient 
+            # since we expanded names via synonyms, not all names will be present in every single record.
+            params = {"names": names, "has_models": has_models, **model_params}
             total_row = self.graph_client.run_query(count_query, params)
             total = total_row[0]["total"] if total_row else 0
             if total == 0:
@@ -447,7 +485,7 @@ class EntityResolver:
             logger.warning(f"EMR record lookup failed: {e}")
             return 0, []
 
-    def _search_emrs_by_model(self, keywords: set, display_limit: int) -> Tuple[int, List[Dict]]:
+    def _search_emrs_by_model(self, keywords: set, display_limit: int, site_hint: str = None, account_hint: str = None) -> Tuple[int, List[Dict]]:
         if not keywords:
             return 0, []
         keyword_list = sorted(k for k in keywords if k)
@@ -473,15 +511,22 @@ class EntityResolver:
             ]
             and_clauses.append(f"({' OR '.join(or_clauses)})")
         where_clause = " AND ".join(and_clauses)
+        
+        extra_conds = []
+        if site_hint:
+            extra_conds.append(f"({site_hint.replace('branch_site', 'e.branch_site')})")
+        if account_hint:
+            extra_conds.append(f"({account_hint.replace('account_account_name', 'e.account_account_name')})")
+        extra_cond_str = f" AND {' AND '.join(extra_conds)} " if extra_conds else ""
 
         count_query = f"""
         MATCH (e:EMRRecord)
-        WHERE {where_clause}
+        WHERE {where_clause}{extra_cond_str}
         RETURN count(e) AS total
         """
         data_query = f"""
         MATCH (e:EMRRecord)
-        WHERE {where_clause}
+        WHERE {where_clause}{extra_cond_str}
         OPTIONAL MATCH (e)-[:MENTIONS]->(p)
         OPTIONAL MATCH (p)-[:CAUSED_BY]->(rc:RootCausePattern)
         OPTIONAL MATCH (p)-[:RESOLVED_BY]->(act:ActionPattern)
