@@ -1,0 +1,41 @@
+CREATE TABLE site_reference (
+    code VARCHAR(10) PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE account_reference (
+    full_name VARCHAR(200) PRIMARY KEY
+);
+
+CREATE TABLE emr_records (
+    status VARCHAR,
+    emr_name VARCHAR,
+    serial_number VARCHAR,
+    machine_product VARCHAR,
+    machine_model VARCHAR,
+    account_account_name VARCHAR,
+    sub_call_type VARCHAR,
+    pmact_type VARCHAR,
+    subjects TEXT,
+    symptom TEXT,
+    caused_of_problem TEXT,
+    action_how_was_problem_corrected TEXT,
+    branch_site VARCHAR,
+    part_suply VARCHAR,
+    main_cause_part_no VARCHAR,
+    part_description VARCHAR,
+    part_description_1 VARCHAR,
+    techcare_component VARCHAR,
+    techcare_sub_component VARCHAR,
+    created_date TIMESTAMP,
+    emr_last_closed_date TIMESTAMP,
+    model_family VARCHAR,
+    graph_community_summary TEXT,
+    community_id TEXT[],
+    smr_trouble NUMERIC,
+    ppi_record_id VARCHAR(20),
+    ppi_external_id VARCHAR,
+    ppi_improvement_name TEXT,
+    ppi_phenomenon TEXT,
+    ppi_corrective_action TEXT
+);

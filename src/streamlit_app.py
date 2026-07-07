@@ -4,7 +4,8 @@ import json
 import os
 import pandas as pd
 
-API_URL = "http://localhost:8000"
+API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_KEY = os.getenv("API_KEY", "")
 
 def clean_markdown_content(text: str) -> str:
     if not isinstance(text, str):
@@ -33,6 +34,69 @@ def clean_markdown_content(text: str) -> str:
             
     return "\n".join(cleaned_lines).strip()
 
+
+import re
+
+def inject_ppi_links(text: str, ppi_links: list) -> str:
+    """Inject markdown hyperlinks for PPI identifiers in the LLM-generated text.
+
+    Handles variant formats the LLM may produce for the same PPI ID:
+      - PPI.000119          (canonical format stored in Neo4j)
+      - PPI-000119          (dash separator)
+      - Techcare.PPI.000119 (with prefix)
+      - PPI 000119          (space separator)
+
+    The match is anchored to the numeric suffix only, so all variants are caught.
+    If salesforce_url is present  -> renders as [PPI.000119](url).
+    If salesforce_url is missing  -> renders as **PPI.000119** (bold, no link).
+    """
+    if not ppi_links or not text:
+        return text
+
+    for ppi in ppi_links:
+        ext_id = ppi.get("external_id")
+        sf_url = ppi.get("salesforce_url") or ""
+        if not ext_id:
+            continue
+
+        # Extract the numeric part (e.g. "000119" from "PPI.000119")
+        num_part = re.escape(ext_id.split(".")[-1])
+
+        # Match variants: optional 'Techcare.' prefix, then 'PPI' + separator + number
+        # Negative lookbehind/ahead prevents double-linking an already-linked ID
+        pattern = rf"(?<!\[)(?:Techcare\.)?PPI[.\- ]?{num_part}(?!\]\()"
+
+        if sf_url:
+            replacement = f"[{ext_id}]({sf_url})"
+        else:
+            replacement = f"**{ext_id}**"
+
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+
+    return text
+
+
+def render_ppi_references(ppi_links: list):
+    """Render a dedicated PPI References section as clickable markdown links.
+
+    This is a reliable fallback: PPI links always appear here regardless of
+    how the LLM phrased the answer, since inject_ppi_links() depends on the
+    LLM reproducing a recognizable PPI ID format in its output text.
+    """
+    if not ppi_links:
+        return
+    st.markdown("#### \U0001f517 PPI References")
+    for ppi in ppi_links:
+        ext_id = ppi.get("external_id", "")
+        sf_url = ppi.get("salesforce_url", "")
+        name = ppi.get("improvement_name", "")
+        if sf_url:
+            st.markdown(f"- [{ext_id}]({sf_url}) \u2014 {name}")
+        else:
+            st.markdown(f"- **{ext_id}** \u2014 {name}")
+
+
+
 st.set_page_config(
     page_title="EMR Fault Analyzer",
     page_icon="EMR",
@@ -54,145 +118,77 @@ def render_graph_visualization(graph_traversal: dict):
     nodes = []
     edges = []
     added_nodes = set()
+    
+    # 1. Provide a generic dynamic rendering based on 'raw_rows' if available
+    raw_rows = graph_traversal.get("raw_rows", [])
+    seed_entities = graph_traversal.get("entities_found", graph_traversal.get("seed_entities", []))
 
-    symptom  = graph_traversal.get("symptom_matched", "Unknown Symptom")
-    cluster  = graph_traversal.get("problem_cluster", "Unknown Cluster")
-    sim      = graph_traversal.get("similarity", 0)
-    freq     = graph_traversal.get("indicate_freq", 0)
-    actions  = graph_traversal.get("actions", [])
+    # Color mapping for different node labels
+    color_map = {
+        "SymptomPattern": "#FF6B6B",
+        "ProblemCluster": "#FF9F43",
+        "Community": "#FF9F43",
+        "RootCausePattern": "#FFD200",
+        "ActionPattern": "#1DD1A1",
+        "Part": "#5F27CD",
+        "MachineModel": "#48dbfb"
+    }
 
-    # --- Node: Symptom ---
-    sym_id = f"sym_{symptom[:30]}"
-    if sym_id not in added_nodes:
-        nodes.append(Node(
-            id=sym_id,
-            label=f"{symptom[:25]}",
-            title=f"Symptom\nSimilarity: {sim:.0%}",
-            size=28,
-            color="#FF6B6B",
-            font={"size": 13, "color": "#ffffff"},
-            shape="ellipse",
-        ))
-        added_nodes.add(sym_id)
-
-    # --- Node: Problem Cluster ---
-    cl_id = f"cl_{cluster[:30]}"
-    if cl_id not in added_nodes:
-        nodes.append(Node(
-            id=cl_id,
-            label=f"{cluster[:25]}",
-            title=f"Problem Cluster\nFreq: {freq} cases",
-            size=24,
-            color="#FF9F43",
-            font={"size": 12, "color": "#ffffff"},
-            shape="box",
-        ))
-        added_nodes.add(cl_id)
-
-    edges.append(Edge(
-        source=sym_id,
-        target=cl_id,
-        label="INDICATES",
-        color="#aaaaaa",
-        font={"size": 10},
-    ))
-
-    # --- Nodes: Root Causes, Actions & Parts ---
-    rc_counts = {}
-    for action_data in actions:
-        root_cause = action_data.get("root_cause", "Penyebab Tidak Terdefinisi")
-        if root_cause not in rc_counts:
-            rc_counts[root_cause] = []
-        rc_counts[root_cause].append(action_data)
-
-    for root_cause, rc_actions in list(rc_counts.items())[:5]:
-        cause_freq = rc_actions[0].get("cause_freq", 0)
-        rc_id = f"rc_{root_cause[:30]}"
-        
-        # --- Node: Root Cause ---
-        if rc_id not in added_nodes:
-            nodes.append(Node(
-                id=rc_id,
-                label=f"{root_cause[:25]}",
-                title=f"Root Cause\nFreq: {cause_freq} cases",
-                size=22,
-                color="#FFD200",
-                font={"size": 11, "color": "#000000"},
-                shape="box",
-            ))
-            added_nodes.add(rc_id)
-
-            # Hubungkan Problem Cluster -> Root Cause
-            edges.append(Edge(
-                source=cl_id,
-                target=rc_id,
-                label=f"HAS_ROOT_CAUSE ({cause_freq}x)",
-                color="#888888",
-                font={"size": 8},
-            ))
-
-        # Render up to 2 actions for this root cause
-        for action_data in rc_actions[:2]:
-            action_name = action_data.get("action", "Unknown")
-            action_freq = action_data.get("frequency", 0)
-            act_id = f"act_{action_name[:30]}"
+    if raw_rows:
+        for row in raw_rows:
+            e_name = str(row.get("entity", "Unknown"))
+            n_name = str(row.get("neighbor", ""))
+            rel = str(row.get("relation", ""))
+            n_label = str(row.get("n_label", "Entity"))
             
-            # --- Node: Action ---
-            if act_id not in added_nodes:
+            # Source Node (usually the seed entity)
+            if e_name not in added_nodes:
+                is_seed = e_name in seed_entities
                 nodes.append(Node(
-                    id=act_id,
-                    label=f"{action_name[:22]}",
-                    title=f"Action\nFrequency: {action_freq} cases",
-                    size=20,
-                    color="#1DD1A1",
-                    font={"size": 10, "color": "#ffffff"},
-                    shape="ellipse",
+                    id=e_name,
+                    label=e_name[:25] + ("..." if len(e_name)>25 else ""),
+                    title=f"{e_name}",
+                    size=25 if is_seed else 20,
+                    color="#FF6B6B" if is_seed else "#a4b0be",
+                    shape="ellipse" if is_seed else "dot",
                 ))
-                added_nodes.add(act_id)
-
-            # Hubungkan Root Cause -> Action
-            edges.append(Edge(
-                source=rc_id,
-                target=act_id,
-                label=f"RESOLVED_BY ({action_freq}x)",
-                color="#aaaaaa",
-                font={"size": 8},
-            ))
-
-            # Parts
-            valid_parts = [
-                p for p in action_data.get("parts", [])
-                if p.get("part_no") and p["part_no"] != "None"
-            ]
-            for part in valid_parts[:2]:
-                part_id = f"part_{part.get('part_no', '')}_{act_id[-6:]}"
-                if part_id not in added_nodes:
+                added_nodes.add(e_name)
+            
+            # Target Node
+            if n_name and n_name != "None":
+                if n_name not in added_nodes:
+                    node_color = color_map.get(n_label, "#ced6e0")
                     nodes.append(Node(
-                        id=part_id,
-                        label=f"{part.get('description', part.get('part_no', '?'))[:20]}",
-                        title=f"Part No: {part.get('part_no')}\n{part.get('description', '')}",
-                        size=15,
-                        color="#5F27CD",
-                        font={"size": 9, "color": "#333333"},
-                        shape="dot",
+                        id=n_name,
+                        label=n_name[:25] + ("..." if len(n_name)>25 else ""),
+                        title=f"{n_label}\n{n_name}",
+                        size=20,
+                        color=node_color,
+                        shape="box",
                     ))
-                    added_nodes.add(part_id)
-
+                    added_nodes.add(n_name)
+                
+                # Edge
                 edges.append(Edge(
-                    source=act_id,
-                    target=part_id,
-                    label="USES_PART",
-                    color="#cccccc",
-                    font={"size": 8},
-                    dashes=True,
+                    source=e_name,
+                    target=n_name,
+                    label=rel,
+                    color="#aaaaaa",
+                    font={"size": 10},
                 ))
+    else:
+        # Fallback if no raw_rows (e.g. drift mode doesn't return raw_rows yet)
+        for seed in seed_entities:
+            nodes.append(Node(
+                id=seed, label=seed[:25], title="Seed Entity", size=25, color="#FF6B6B", shape="ellipse"
+            ))
 
     config = Config(
         width="100%",
         height=450,
         directed=True,
-        physics=False,  # Matikan physics agar struktur hirarki tetap kaku dan rapi
-        hierarchical=True,  # Aktifkan layout berundak
+        physics=True,  # Turn physics on for dynamic graphing
+        hierarchical=True,  
         nodeHighlightBehavior=True,
         highlightColor="#F7F7F7",
         collapsible=False,
@@ -207,9 +203,9 @@ def render_graph_visualization(graph_traversal: dict):
 
 TOOL_LABELS = {
     "ask_emr_graph":              "Knowledge Graph Search",
-    "ask_emr_knowledge":          "Vector Knowledge Base",
     "ask_emr_database":           "SQL Database Query",
     "generate_executive_summary": "Executive Summary Generator",
+    "analyze_smr":                "SMR Analysis",
 }
 
 def render_reasoning_trace(steps: list, timing_ms: dict = None, cache_hit: str = None):
@@ -323,6 +319,15 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
+    st.divider()
+    st.subheader("Settings")
+    st.session_state.retrieval_mode = st.selectbox(
+        "Graph Retrieval Mode",
+        options=["drift", "local", "global"],
+        index=0,
+        help="DRIFT: Detail + Context (Default)\nLocal: Specific entities only\nGlobal: High-level community trends"
+    )
+
     # Cache stats
     st.divider()
     st.subheader("Cache Stats")
@@ -339,7 +344,8 @@ with st.sidebar:
             st.metric("Embedding Cache Hit Rate", f"{emb_rate:.0%}",
                       help=f"Entries cached: {emb.get('cache_entries',0)}")
         if st.button("Invalidate Cache", use_container_width=True):
-            requests.post(f"{API_URL}/cache/invalidate", json={"level": "all"}, timeout=5)
+            headers = {"X-API-Key": API_KEY}
+            requests.post(f"{API_URL}/cache/invalidate", json={"level": "all"}, headers=headers, timeout=5)
             st.success("Cache cleared!")
     except Exception:
         st.caption("Cache stats unavailable.")
@@ -355,9 +361,33 @@ st.title("Maintenance Copilot")
 st.markdown("Tanya tentang penyebab masalah, gejala, atau statistik jumlah kerusakan unit.")
 
 # --- Chat History ---
+def render_assistant_answer(content: str, ppi_links: list = None):
+    content = inject_ppi_links(content, ppi_links)
+    divider = "--- EVIDENCE/PROVENANCE ---"
+    if divider in content:
+        parts = content.split(divider)
+        narrative = parts[0].strip()
+        evidence = parts[1].strip()
+
+        st.markdown("#### Answer")
+        st.markdown(clean_markdown_content(narrative))
+        st.markdown("#### Evidence Section")
+        st.info(clean_markdown_content(evidence))
+    else:
+        st.markdown("#### Answer")
+        st.markdown(clean_markdown_content(content))
+
+    # Dedicated PPI section hidden as requested by user
+    pass
+
+
+# --- Chat History ---
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        st.markdown(clean_markdown_content(message["content"]))
+        if message["role"] == "user":
+            st.markdown(clean_markdown_content(message["content"]))
+        else:
+            render_assistant_answer(message["content"], message.get("ppi_links"))
 
         if message["role"] == "assistant":
             # Reasoning trace
@@ -370,23 +400,54 @@ for message in st.session_state.messages:
 
             # Graph visualization
             if message.get("graph_traversal"):
-                with st.expander("Knowledge Graph Visualization", expanded=True):
-                    render_graph_visualization(message["graph_traversal"])
+                st.markdown("#### Graph Section")
+                render_graph_visualization(message["graph_traversal"])
+
+            # SMR scatter plot
+            if message.get("smr_data"):
+                st.markdown("#### SMR Distribution")
+                try:
+                    import plotly.express as px
+                    df_smr = pd.DataFrame(message["smr_data"])
+                    if not df_smr.empty and "smr" in df_smr.columns:
+                        df_smr["smr"] = pd.to_numeric(df_smr["smr"], errors="coerce")
+                        df_smr = df_smr.dropna(subset=["smr"])
+                        fig = px.scatter(
+                            df_smr, x="created_date", y="smr",
+                            hover_data=["emr_name", "symptom", "machine_model"],
+                            title=f"SMR Distribution ({len(df_smr)} data points)",
+                            labels={"smr": "Service Meter Reading (hours)", "created_date": "Date"},
+                            opacity=0.7,
+                        )
+                        fig.update_traces(marker=dict(size=8))
+                        st.plotly_chart(fig, use_container_width=True)
+                except Exception as e:
+                    st.caption(f"Scatter plot unavailable: {e}")
 
             if message.get("sql"):
-                with st.expander("View SQL Query"):
-                    st.code(message["sql"], language="sql")
+                st.markdown("#### SQL Section")
+                st.code(message["sql"], language="sql")
 
             if message.get("sql_data"):
-                with st.expander("View Database Table (PostgreSQL)", expanded=True):
-                    st.dataframe(pd.DataFrame(message["sql_data"]), use_container_width=True)
+                st.markdown("#### Database Table (PostgreSQL)")
+                st.dataframe(pd.DataFrame(message["sql_data"]), use_container_width=True)
 
             if message.get("chunks"):
-                with st.expander("View Retrieved Context"):
+                with st.expander("View Raw Retrieved Chunks"):
                     for i, chunk in enumerate(message["chunks"]):
                         st.markdown(f"**Document {i+1}**")
                         st.markdown(chunk)
                         st.divider()
+
+            if message.get("token_usage"):
+                tu = message["token_usage"]
+                with st.expander("📊 Token Usage & Cost", expanded=False):
+                    cols = st.columns(4)
+                    cols[0].metric("Prompt Tokens", f"{tu.get('prompt_tokens', 0):,}")
+                    cols[1].metric("Completion Tokens", f"{tu.get('completion_tokens', 0):,}")
+                    cols[2].metric("Total Tokens", f"{tu.get('total_tokens', 0):,}")
+                    cols[3].metric("Estimated Cost", f"${tu.get('estimated_cost_usd', 0.0):.5f}")
+                    st.caption(f"Estimation method: `{tu.get('estimation_method', 'unknown')}`")
 
 # --- Chat Input ---
 if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
@@ -402,10 +463,14 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
 
         try:
             history_for_api = st.session_state.messages[:-1]
-            payload = {"query": prompt, "chat_history": history_for_api}
+            # Since the API uses Agent calling tools, we prepend a system instruction
+            # for the agent if we want to force a mode, but for simplicity, we pass it via query context
+            mode_context = f"[System: Use '{st.session_state.retrieval_mode}' mode if using ask_emr_graph] "
+            payload = {"query": mode_context + prompt, "chat_history": history_for_api}
 
             # Call FastAPI streaming chat endpoint
-            response = requests.post(f"{API_URL}/chat/stream", json=payload, stream=True, timeout=300)
+            headers = {"X-API-Key": API_KEY}
+            response = requests.post(f"{API_URL}/chat/stream", json=payload, stream=True, headers=headers, timeout=300)
 
             if response.status_code == 200:
                 answer = ""
@@ -413,9 +478,12 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                 sql_data = None
                 chunks = []
                 graph_traversal = None
+                smr_data = None
+                ppi_links = None
                 steps = []
                 timing_ms = None
                 cache_hit = None
+                token_usage = None
 
                 # Create placeholder for streaming text
                 message_placeholder = st.empty()
@@ -438,19 +506,47 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                         sql_data = data.get("sql_data")
                         graph_traversal = data.get("graph_traversal")
                         chunks = data.get("chunks", [])
+                        smr_data = data.get("smr_data")
+                        ppi_links = data.get("ppi_links")
 
                     elif chunk_type == "token":
                         token = data.get("content", "")
                         answer += token
-                        # Display cumulative streaming text with cursor
-                        message_placeholder.markdown(answer + "▌")
+                        
+                        # Display cumulative streaming text with sections
+                        divider = "--- EVIDENCE/PROVENANCE ---"
+                        display_text = inject_ppi_links(answer, ppi_links)
+                        if divider in display_text:
+                            parts = display_text.split(divider)
+                            narrative = parts[0].strip()
+                            evidence = parts[1].strip()
+                            message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(narrative)}\n\n#### Evidence Section\n\n{clean_markdown_content(evidence)}▌")
+                        else:
+                            message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(display_text)}▌")
 
                     elif chunk_type == "done":
                         steps = data.get("steps", [])
                         timing_ms = data.get("timing_ms", None)
                         cache_hit = data.get("cache_hit", None)
+                        if data.get("smr_data"):
+                            smr_data = data.get("smr_data")
+                        # ppi_links may arrive via done if not in tool_data
+                        if data.get("ppi_links") and not ppi_links:
+                            ppi_links = data.get("ppi_links")
+                        
                         # Remove cursor at completion
-                        message_placeholder.markdown(clean_markdown_content(answer))
+                        divider = "--- EVIDENCE/PROVENANCE ---"
+                        display_text = inject_ppi_links(answer, ppi_links)
+                        if divider in display_text:
+                            parts = display_text.split(divider)
+                            narrative = parts[0].strip()
+                            evidence = parts[1].strip()
+                            message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(narrative)}\n\n#### Evidence Section\n\n{clean_markdown_content(evidence)}")
+                        else:
+                            message_placeholder.markdown(f"#### Answer\n\n{clean_markdown_content(display_text)}")
+
+                    elif chunk_type == "metadata":
+                        token_usage = data.get("content", {}).get("token_usage")
 
                     elif chunk_type == "error":
                         st.error(data.get("content"))
@@ -488,23 +584,56 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
 
                 # Interactive graph visualization
                 if graph_traversal:
-                    with st.expander("Knowledge Graph Visualization", expanded=True):
-                        render_graph_visualization(graph_traversal)
+                    st.markdown("#### Graph Section")
+                    render_graph_visualization(graph_traversal)
 
                 if sql:
-                    with st.expander("View SQL Query"):
-                        st.code(sql, language="sql")
+                    st.markdown("#### SQL Section")
+                    st.code(sql, language="sql")
 
                 if sql_data:
-                    with st.expander("View Database Table (PostgreSQL)", expanded=True):
-                        st.dataframe(pd.DataFrame(sql_data), use_container_width=True)
+                    st.markdown("#### Database Table (PostgreSQL)")
+                    st.dataframe(pd.DataFrame(sql_data), use_container_width=True)
+
+                if smr_data:
+                    st.markdown("#### SMR Distribution")
+                    try:
+                        import plotly.express as px
+                        df = pd.DataFrame(smr_data)
+                        if not df.empty and "smr" in df.columns:
+                            df["smr"] = pd.to_numeric(df["smr"], errors="coerce")
+                            df = df.dropna(subset=["smr"])
+                            fig = px.scatter(
+                                df, x="created_date", y="smr",
+                                hover_data=["emr_name", "symptom", "machine_model"],
+                                title=f"SMR Distribution ({len(df)} data points)",
+                                labels={"smr": "Service Meter Reading (hours)", "created_date": "Date"},
+                                opacity=0.7,
+                            )
+                            fig.update_traces(marker=dict(size=8))
+                            st.plotly_chart(fig, use_container_width=True)
+                    except Exception as e:
+                        st.caption(f"Scatter plot unavailable: {e}")
 
                 if chunks:
-                    with st.expander("View Retrieved Context"):
+                    with st.expander("View Raw Retrieved Chunks"):
                         for i, chunk in enumerate(chunks):
                             st.markdown(f"**Document {i+1}**")
                             st.markdown(chunk)
                             st.divider()
+
+                # Dedicated PPI section hidden as requested by user
+                pass
+
+                # Token Usage Panel
+                if token_usage:
+                    with st.expander("📊 Token Usage & Cost", expanded=False):
+                        cols = st.columns(4)
+                        cols[0].metric("Prompt Tokens", f"{token_usage.get('prompt_tokens', 0):,}")
+                        cols[1].metric("Completion Tokens", f"{token_usage.get('completion_tokens', 0):,}")
+                        cols[2].metric("Total Tokens", f"{token_usage.get('total_tokens', 0):,}")
+                        cols[3].metric("Estimated Cost", f"${token_usage.get('estimated_cost_usd', 0.0):.5f}")
+                        st.caption(f"Estimation method: `{token_usage.get('estimation_method', 'unknown')}`")
 
                 # Save to session state
                 st.session_state.messages.append({
@@ -514,9 +643,12 @@ if prompt := st.chat_input("Tanya sesuatu tentang EMR..."):
                     "sql_data": sql_data,
                     "chunks": chunks,
                     "graph_traversal": graph_traversal,
+                    "smr_data": smr_data,
+                    "ppi_links": ppi_links,
                     "steps": steps,
                     "timing_ms": timing_ms,
                     "cache_hit": cache_hit,
+                    "token_usage": token_usage,
                 })
             else:
                 status_box.update(label="Error", state="error")

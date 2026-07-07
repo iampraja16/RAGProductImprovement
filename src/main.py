@@ -11,13 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 
-from .agent import Agent
-
-# ===================================================================
-# FASE 4: Structured JSON Logging
-# BEFORE: logging.basicConfig(format="%(asctime)s - %(name)s - ...")
-# AFTER:  JSON formatter for machine-parseable logs with timing data
-# ===================================================================
+from src.agent.agent import Agent
 
 class JSONFormatter(logging.Formatter):
     """Structured JSON log formatter."""
@@ -28,7 +22,6 @@ class JSONFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
-        # Attach extra fields if present (e.g., timing data)
         if hasattr(record, "extra_data"):
             log_entry.update(record.extra_data)
         return json.dumps(log_entry, ensure_ascii=False)
@@ -47,11 +40,17 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize long-running services at startup."""
-    from .embedding_service import embedding_svc
-    from .cache_service import semantic_cache, redis_cache
+    from src.services.embedding_service import embedding_svc
+    from src.services.cache_service import semantic_cache, redis_cache
+    from src.config import settings
 
-    logger.info("=== STARTUP: Loading embedding model ===")
-    embedding_svc.load_model()
+    logger.info("=== STARTUP: Validating environment and security ===")
+    if settings.env.lower() in ("staging", "production") and not settings.api_key:
+        error_msg = f"CRITICAL: API Key must be set in {settings.env} environment."
+        logger.critical(error_msg)
+        raise RuntimeError(error_msg)
+
+    logger.info("=== STARTUP: Embedding model uses lazy init — skipping preload ===")
 
     logger.info("=== STARTUP: Initializing caches ===")
     try:
@@ -102,15 +101,11 @@ class ChatResponse(BaseModel):
     cache_hit: Optional[str] = None
     timing_ms: Optional[Dict[str, float]] = None
     steps: Optional[List[Dict[str, Any]]] = []  # Reasoning trace
+    smr_data: Optional[List[Dict[str, Any]]] = None  # SMR analysis data for scatter plot
+    ppi_links: Optional[List[Dict[str, Any]]] = None  # PPI Salesforce deep-links
 
 class CacheInvalidateRequest(BaseModel):
     level: str = "all"
-
-
-# ===================================================================
-# FASE 4: Enhanced /health — checks all downstream services
-# BEFORE: return {"status": "healthy"}  (no actual checks)
-# ===================================================================
 
 @app.get("/health")
 def health_check():
@@ -120,7 +115,7 @@ def health_check():
 
     # Neo4j
     try:
-        from .utils import get_graph_client
+        from src.services.providers import get_graph_client
         gc = get_graph_client()
         with gc.driver.session() as s:
             s.run("RETURN 1").consume()
@@ -131,7 +126,7 @@ def health_check():
 
     # Qdrant
     try:
-        from .utils import get_qdrant_client
+        from src.services.providers import get_qdrant_client
         qc = get_qdrant_client()
         qc.get_collections()
         checks["qdrant"] = "ok"
@@ -141,7 +136,7 @@ def health_check():
 
     # PostgreSQL (via Vanna)
     try:
-        from .utils import get_vanna
+        from src.services.providers import get_vanna
         vn = get_vanna()
         vn.run_sql("SELECT 1")
         checks["postgresql"] = "ok"
@@ -149,20 +144,19 @@ def health_check():
         checks["postgresql"] = f"error: {e}"
         overall = False
 
-    # Ollama
+    # Cloud LLM
     try:
-        import requests
-        from .config import settings
-        resp = requests.get(f"{settings.ollama_base_url}/api/tags", timeout=3)
-        resp.raise_for_status()
-        checks["ollama"] = "ok"
+        from src.services.providers import get_llm
+        # Instantiate the LLM to verify configuration
+        llm = get_llm(task_type="mini")
+        checks["cloud_llm"] = "ok"
     except Exception as e:
-        checks["ollama"] = f"error: {e}"
+        checks["cloud_llm"] = f"error: {e}"
         overall = False
 
     # Redis
     try:
-        from .cache_service import redis_cache
+        from src.services.cache_service import redis_cache
         if redis_cache._client and redis_cache._client.ping():
             checks["redis"] = "ok"
         else:
@@ -172,8 +166,8 @@ def health_check():
 
     # Embedding model
     try:
-        from .embedding_service import embedding_svc
-        checks["embedding_model"] = "loaded" if embedding_svc.model is not None else "not loaded"
+        from src.services.embedding_service import embedding_svc
+        checks["embedding_model"] = "loaded" if embedding_svc._client is not None else "lazy (not yet used)"
     except Exception as e:
         checks["embedding_model"] = f"error: {e}"
 
@@ -183,11 +177,30 @@ def health_check():
     }
 
 
+from fastapi.security import APIKeyHeader
+from fastapi import Security, Depends
+from src.config import settings
+
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+def verify_api_key(api_key: str = Depends(api_key_header)):
+    is_prod_staging = settings.env.lower() in ("staging", "production")
+    
+    if is_prod_staging and not settings.api_key:
+        raise HTTPException(
+            status_code=500,
+            detail="API Key is not configured in staging/production environment"
+        )
+        
+    if is_prod_staging or settings.api_key:
+        if not api_key or api_key != settings.api_key:
+            raise HTTPException(status_code=403, detail="Invalid or missing API Key")
+
 # ===================================================================
 # /chat — with FASE 4 structured timing
 # ===================================================================
 
-@app.post("/chat", response_model=ChatResponse)
+@app.post("/chat", response_model=ChatResponse, dependencies=[Depends(verify_api_key)])
 def chat(request: ChatRequest):
     request_id = str(uuid.uuid4())[:8]
     query_hash = hashlib.sha256(request.query.encode()).hexdigest()[:8]
@@ -195,9 +208,9 @@ def chat(request: ChatRequest):
     timings = {}
 
     try:
-        from .embedding_service import embedding_svc
-        from .cache_service import semantic_cache
-        from .prompt import estimate_tokens
+        from src.services.embedding_service import embedding_svc
+        from src.services.cache_service import semantic_cache
+        from src.agent.prompts import estimate_tokens
 
         # --- Step 1: Embedding ---
         t0 = time.time()
@@ -231,14 +244,14 @@ def chat(request: ChatRequest):
         timings["total_ms"] = round((time.time() - t_start) * 1000, 1)
 
         # FASE 4: Structured log with full timing breakdown
-        from .config import settings
+        from src.config import settings
         logger.info("Request completed", extra={"extra_data": {
             "request_id": request_id,
             "query_hash": query_hash,
             "cache_hit": "none",
             "step_timings": timings,
             "token_count": {"prompt": prompt_tokens, "completion": completion_tokens},
-            "model_used": settings.ollama_model,
+            "model_used": settings.model_provider,
         }})
 
         return ChatResponse(
@@ -251,6 +264,8 @@ def chat(request: ChatRequest):
             cache_hit=None,
             timing_ms=timings,
             steps=response.get("steps", []),
+            smr_data=response.get("smr_data"),
+            ppi_links=response.get("ppi_links"),
         )
     except Exception as e:
         timings["total_ms"] = round((time.time() - t_start) * 1000, 1)
@@ -263,20 +278,22 @@ def chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/chat/stream")
+@app.post("/chat/stream", dependencies=[Depends(verify_api_key)])
 def chat_stream(request: ChatRequest):
     """Stream final LLM response with live status updates."""
     # Semantic cache disabled to guarantee live and accurate PostgreSQL/Qdrant queries
-    pass
-
-    return StreamingResponse(agent.stream_response(request.query), media_type="text/event-stream")
+    chat_history = [msg.model_dump() for msg in request.chat_history] if request.chat_history else []
+    return StreamingResponse(
+        agent.stream_response(request.query, chat_history=chat_history),
+        media_type="text/event-stream"
+    )
 
 
 # ===== Cache management endpoints (FASE 2) =====
 
-@app.post("/cache/invalidate")
+@app.post("/cache/invalidate", dependencies=[Depends(verify_api_key)])
 def invalidate_cache(request: CacheInvalidateRequest):
-    from .cache_service import semantic_cache, redis_cache
+    from src.services.cache_service import semantic_cache, redis_cache
     if request.level in ("all", "semantic"):
         semantic_cache.invalidate()
     if request.level in ("all", "graph"):
@@ -285,8 +302,8 @@ def invalidate_cache(request: CacheInvalidateRequest):
 
 @app.get("/cache/stats")
 def cache_stats():
-    from .embedding_service import embedding_svc
-    from .cache_service import semantic_cache, redis_cache
+    from src.services.embedding_service import embedding_svc
+    from src.services.cache_service import semantic_cache, redis_cache
     return {
         "embedding_cache": embedding_svc.cache_stats,
         "semantic_cache": semantic_cache.stats,

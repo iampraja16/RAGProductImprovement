@@ -25,14 +25,10 @@ import numpy as np
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader
 
-# ---------------------------------------------------------------------------
-# Logger & Paths
-# ---------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-# Environment
-from .config import settings
+from src.config import settings
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _DATA_DIR = _PROJECT_ROOT / settings.data_dir
@@ -44,7 +40,6 @@ _OUTPUT_DIR = _PROJECT_ROOT / "output"
 EMR_FILE_NAME: str = settings.emr_file_name
 EMR_SHEET_NAME: str = settings.emr_sheet_name
 
-# Design Tokens
 _COLORS = ["#4361ee", "#3a86ff", "#4895ef", "#4cc9f0", "#72efdd",
            "#8338ec", "#ff006e", "#fb5607", "#ffbe0b", "#06d6a0"]
 _ACCENT = "#e63946"
@@ -52,35 +47,31 @@ _BG_COLOR = "#ffffff"
 _TEXT_COLOR = "#1a1a2e"
 _GRID_COLOR = "#f0f0f0"
 
-
-# ===================================================================
-# Data Loading
-# ===================================================================
 def _load_emr_data() -> pd.DataFrame:
-    """Load EMR data. Prefer clustered CSV if available, else raw CSV/XLSX."""
-    clustered_path = _OUTPUT_DIR / "clustered_emr.csv"
-    if clustered_path.exists():
-        logger.info("Loading clustered EMR data from: %s", clustered_path)
-        df = pd.read_csv(clustered_path)
-        # Parse dates
+    """Load EMR data directly from PostgreSQL."""
+    try:
+        from sqlalchemy import create_engine
+        engine = create_engine(settings.postgres_url)
+        df = pd.read_sql("SELECT * FROM emr_records", engine)
+        
+        rename_map = {
+            "machine_model": "Machine Model",
+            "branch_site": "Branch / Site",
+            "account_account_name": "Account: Account Name",
+            "created_date": "Created Date",
+            "emr_last_closed_date": "EMR Last Closed Date",
+            "techcare_component": "Techcare Component"
+        }
+        df.rename(columns=rename_map, inplace=True)
+        
         for col in ("Created Date", "EMR Last Closed Date"):
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], errors="coerce")
+                
         return df
-
-    raw_path = _DATA_DIR / EMR_FILE_NAME
-    if not raw_path.exists():
-        raise FileNotFoundError(f"Data not found: {raw_path}")
-
-    logger.info("Loading raw EMR data (no clustering yet): %s", raw_path)
-    if raw_path.suffix.lower() == '.csv':
-        try:
-            return pd.read_csv(raw_path, encoding='utf-8-sig')
-        except UnicodeDecodeError:
-            logger.info("  UTF-8 decoding failed — falling back to 'latin1' encoding")
-            return pd.read_csv(raw_path, encoding='latin1')
-    else:
-        return pd.read_excel(raw_path, sheet_name=EMR_SHEET_NAME)
+    except Exception as e:
+        logger.error("Failed to load from PostgreSQL: %s", e)
+        return pd.DataFrame()
 
 
 def extract_model_family(model_type: str) -> str:
@@ -113,10 +104,6 @@ def _get_subtypes_for_family(df: pd.DataFrame, family: str) -> List[str]:
     )
     return sorted(df.loc[mask, "Machine Model"].unique().tolist())
 
-
-# ===================================================================
-# Summary Data Extraction
-# ===================================================================
 def extract_summary_data(family: str) -> Dict[str, Any]:
     """
     Extract all summary data for a model family directly from EMR data.
@@ -150,10 +137,10 @@ def extract_summary_data(family: str) -> Dict[str, Any]:
     data["total_models"] = len(rank_list)
 
     # --- Top fault categories (from clustering) ---
-    has_clusters = "cluster_label" in fdf.columns
+    has_clusters = "graph_community_summary" in fdf.columns
     if has_clusters:
         cluster_dist = (
-            fdf["cluster_label"]
+            fdf["graph_community_summary"]
             .value_counts()
             .head(5)
             .reset_index()
@@ -164,7 +151,7 @@ def extract_summary_data(family: str) -> Dict[str, Any]:
             cluster_dist["frequency"] / total * 100, 2
         )
         data["top_faults"] = cluster_dist.to_dict("records")
-        data["unique_fault_count"] = fdf["cluster_label"].nunique()
+        data["unique_fault_count"] = fdf["graph_community_summary"].nunique()
     else:
         # Fallback: use Techcare Component
         tc = fdf["Techcare Component"].str.strip()
@@ -232,9 +219,9 @@ def extract_summary_data(family: str) -> Dict[str, Any]:
 
 
 def _generate_recommendation(data: Dict[str, Any]) -> str:
-    """Generate AI recommendation using Ollama."""
+    """Generate AI recommendation using cloud LLM."""
     try:
-        from .utils import get_llm
+        from src.services.providers import get_llm
         from langchain_core.messages import HumanMessage
 
         llm = get_llm(temperature=0.0)
