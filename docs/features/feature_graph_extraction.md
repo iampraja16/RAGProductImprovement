@@ -20,7 +20,7 @@ Nah, dari satu baris ini, AI bakal bikin node dan relasi di Neo4j:
 
 ## Alur Kerja (Flowchart)
 
-`mermaid
+```mermaid
 graph TD
     A[Dashboard EMR.csv
 20.630 baris data] --> B[Loop:

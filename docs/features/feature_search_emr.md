@@ -17,7 +17,7 @@ Contoh penggunaan yang pas:
 
 ## Alur Kerja (Flowchart)
 
-`mermaid
+```mermaid
 graph TD
     A[Kamu tanya:
 Cari EMR tentang

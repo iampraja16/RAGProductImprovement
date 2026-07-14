@@ -12,7 +12,7 @@ Ada **4 mode** pencarian yang bisa dipake. Masing-masing punya kegunaan beda.
 
 ## Alur Kerja (Flowchart)
 
-`mermaid
+```mermaid
 graph TD
     A[Pertanyaan Kamu] --> B{Pilih Mode}
     

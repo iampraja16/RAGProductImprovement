@@ -16,7 +16,7 @@ Nah, sync ini yang ngejembatani.
 
 ## Alur Kerja (Flowchart)
 
-`mermaid
+```mermaid
 graph TD
     Start[Mulai Sinkronisasi] --> A{Arah?\nGraph ke SQL atau\nSQL ke Graph?}
     

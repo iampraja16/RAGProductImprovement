@@ -10,7 +10,7 @@ Hasil grup ini dipake buat **Global Search** — jadi kalau user nanya "Apa tren
 
 ## Alur Kerja (Flowchart)
 
-`mermaid
+```mermaid
 graph TD
     A[Database Graf Neo4j
 node + relasi EMR] --> B[GDS Graph Projection

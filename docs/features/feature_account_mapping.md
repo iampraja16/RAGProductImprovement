@@ -29,7 +29,7 @@ Jadi:
 
 ## Alur Kerja (Flowchart)
 
-`mermaid
+```mermaid
 graph TD
     A[Kamu tanya:\nengine overheat\ndi PAMA] --> B[resolve_account_mentions\nload 1.193 account\ndari PostgreSQL\n(1x aja)]
     

@@ -30,7 +30,7 @@ Contoh query yang bener:
 
 ## Alur Kerja (Flowchart)
 
-`mermaid
+```mermaid
 graph TD
     A[Kamu tanya:
 Hydraulic leak di

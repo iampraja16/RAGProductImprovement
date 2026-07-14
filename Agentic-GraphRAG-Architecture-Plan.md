@@ -50,7 +50,7 @@ Ini disebut **Agentic GraphRAG** karena keputusan *retrieval path* (SQL vs Graph
 
 ### 3.1 Diagram Alur (Mermaid)
 
-`mermaid
+```mermaid
 flowchart TD
     A[User Query] --> B[Node: Entity & Context Resolver]
     B --> C[Node: Query Planner / Decomposer]

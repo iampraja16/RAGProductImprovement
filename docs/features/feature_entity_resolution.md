@@ -13,7 +13,7 @@ Nah, Entity Resolution ini tugasnya: **nerjemahin bahasa kamu ke bahasa database
 
 ## Alur Kerja (Flowchart)
 
-`mermaid
+```mermaid
 graph TD
     A[Kamu tanya: oli bocor di PC200] --> B[LLM Ekstrak Kata Kunci
     extract_mentions]

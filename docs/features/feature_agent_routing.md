@@ -17,7 +17,7 @@ Nah, Agent Planner ini tugasnya: **baca pertanyaan kamu, trus bikin QueryPlan te
 
 ## Arsitektur Agent (LangGraph)
 
-`mermaid
+```mermaid
 graph TD
     subgraph Agent[LangGraph Agent Pipeline]
         A[Entity Resolve] --> B[Planner\nLLM Structured Output\n→ QueryPlan]
@@ -32,7 +32,7 @@ graph TD
 `
 ## Alur Kerja (Flowchart)
 
-`mermaid
+```mermaid
 graph TD
     A[Pertanyaan Kamu] --> B[Entity Resolver\nExtract entity teknis\n+ community_id]
     

@@ -18,7 +18,7 @@ Sistem AI **all-in-one** buat analisis data perawatan alat berat (EMR). Bayangin
 
 Bayangin arsitektur ini kayak **dapur restoran** — ada beberapa bagian yang kerja bareng biar bisa ngasilin jawaban buat kamu.
 
-`mermaid
+```mermaid
 graph TB
     subgraph Frontend
         S[Streamlit Dashboard\n:8501]
@@ -54,7 +54,7 @@ graph TB
     
     L --> A
     N -->|Entity Resolution| A
-`
+```
 ### Penjelasan Arsitektur Sederhana
 
 Dari kiri ke kanan:
@@ -166,7 +166,7 @@ Streamlit nampilin jawaban. Bagian provenance otomatis disembunyiin di dropdown 
 
 ### Flowchart End-to-End
 
-`mermaid
+```mermaid
 graph TD
     A[Kamu ngetik pertanyaan\ndi Streamlit UI] --> B[FastAPI backend\n:8000]
     B --> C[Agent Planner LLM\nbikin QueryPlan]
@@ -212,7 +212,7 @@ graph TD
     X --> Y
     
     Y --> Z[Streamlit render\njawaban + scatter plot\n+ provenance di dropdown\n+ tabel 5 baris]
-`
+```
 ---
 
 ## Komponen Detail
