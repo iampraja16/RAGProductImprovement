@@ -18,7 +18,7 @@ Sistem AI **all-in-one** buat analisis data perawatan alat berat (EMR). Bayangin
 
 Bayangin arsitektur ini kayak **dapur restoran** — ada beberapa bagian yang kerja bareng biar bisa ngasilin jawaban buat kamu.
 
-```mermaid
+::: mermaid
 graph TB
     subgraph Frontend
         S[Streamlit Dashboard\n:8501]
@@ -54,7 +54,7 @@ graph TB
     
     L --> A
     N -->|Entity Resolution| A
-```
+:::
 
 ### Penjelasan Arsitektur Sederhana
 
@@ -167,7 +167,7 @@ Streamlit nampilin jawaban. Bagian provenance otomatis disembunyiin di dropdown 
 
 ### Flowchart End-to-End
 
-```mermaid
+::: mermaid
 graph TD
     A[Kamu ngetik pertanyaan\ndi Streamlit UI] --> B[FastAPI backend\n:8000]
     B --> C[Agent Planner LLM\nbikin QueryPlan]
@@ -213,7 +213,7 @@ graph TD
     X --> Y
     
     Y --> Z[Streamlit render\njawaban + scatter plot\n+ provenance di dropdown\n+ tabel 5 baris]
-```
+:::
 
 ---
 
@@ -565,7 +565,7 @@ Penjelasan teknis yang lebih dalem buat masing-masing fitur ada di folder `docs/
 
 | Fitur | File | Baca Kalau... |
 |-------|------|---------------|
-| Agent Routing | [`feature_agent_routing.md`](docs/features/feature_agent_routing.md) | Mau tau gimana sistem milih tool yang tepat |
+| Agent Planner | [`feature_agent_routing.md`](docs/features/feature_agent_routing.md) | Mau tau gimana sistem bikin rencana eksekusi |
 | ask_emr_database | [`feature_ask_emr_db.md`](docs/features/feature_ask_emr_db.md) | Mau tau cara kerja SQL + Vanna |
 | Entity Resolution | [`feature_entity_resolution.md`](docs/features/feature_entity_resolution.md) | Mau tau gimana sistem "ngerti" kata-kata kamu |
 | GraphRAG Retrieval | [`feature_graphrag_retrieval.md`](docs/features/feature_graphrag_retrieval.md) | Mau tau 4 mode pencarian di graf |
