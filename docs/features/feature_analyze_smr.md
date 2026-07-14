@@ -30,7 +30,7 @@ Contoh query yang bener:
 
 ## Alur Kerja (Flowchart)
 
-```mermaid
+::: mermaid
 graph TD
     A[Kamu tanya:
 Hydraulic leak di
@@ -63,7 +63,7 @@ pake expanded names]
     H --> J[Streamlit render
 Plotly scatter plot
 SMR vs urutan record]
-```
+:::
 
 ## Kenapa Pake SQLAlchemy Langsung, Bukan Vanna?
 

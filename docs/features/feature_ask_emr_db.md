@@ -15,7 +15,7 @@ Fitur ini kerjanya: **mengubah pertanyaan bahasa Indonesia → SQL → menjalank
 
 ## Alur Kerja (Flowchart)
 
-```mermaid
+::: mermaid
 graph TD
     A[Kamu tanya: Berapa total hydraulic leak] --> B[EntityResolver]
     
@@ -42,7 +42,7 @@ graph TD
     
     O --> P
     L --> Q[Balas: SQL diblokir]
-```
+:::
 
 ## Input → Proses → Output
 

@@ -13,7 +13,7 @@ Nah, Entity Resolution ini tugasnya: **nerjemahin bahasa kamu ke bahasa database
 
 ## Alur Kerja (Flowchart)
 
-```mermaid
+::: mermaid
 graph TD
     A[Kamu tanya: oli bocor di PC200] --> B[LLM Ekstrak Kata Kunci
     extract_mentions]
@@ -188,3 +188,4 @@ else:
 6. **EntityResolver juga gak tau soal nama customer/account.** Resolusi nama account (PAMA → PAMAPERSADA NUSANTARA) ditangani oleh modul terpisah: `account_map.py`. Sama kayak site mapping, sengaja dipisah. Lihat [`feature_account_mapping.md`](feature_account_mapping.md).
 
 7. **EntityResolver di-SKIP kalau site/account sudah ketemu.** Kalau pertanyaan "oil leak di Tarakan", sistem resolve site dulu → dapet `branch_site = 'TRK'` → **EntityResolver gak dipanggil**. Hemat ~5-10 detik + token LLM.
+:::
