@@ -106,7 +106,7 @@ class GraphRAGRetriever:
             return self.drift_retriever.search(query)
 ```
 
-## Catatan Penting Buat Junior
+## Catatan Penting untuk Pengembang Selanjutnya
 
 1. **Local Search** = nanya detail spesifik. Misal: "Apa aja komponen yang terlibat di hydraulic leak?" → jawabannya detail, spesifik, cuma yang nyambung langsung.
 

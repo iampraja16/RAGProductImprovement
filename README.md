@@ -26,12 +26,12 @@ graph TB
     
     subgraph Backend
         F[FastAPI Server\n:8000\n+ Circuit Breaker\n+ API Key Auth]
-        A[Agent LangGraph:\nRouter → Tool → Synthesizer\npilih tool sesuai pertanyaan]
+        A[Agent LangGraph:\nPlanner → Executor → Aggregator → Reflector → Composer\nstructured planning + reflection]
     end
     
     subgraph "Database Layer"
         N[(Neo4j\nKnowledge Graph\n+ GDS Leiden\n+ vector/fulltext index)]
-        P[(PostgreSQL\n+ pgvector\nData Transaksional\n+ site_reference)]
+        P[(PostgreSQL\n+ pgvector\nData Transaksional\n+ site_reference\n+ account_reference)]
         Q[(Qdrant\nVector DB\n+ semantic cache)]
         R[(Redis\nCache Cepat\nexact match)]
     end
@@ -63,9 +63,9 @@ Dari kiri ke kanan:
 | Layer | Isinya | Tugasnya |
 |-------|--------|----------|
 | **Frontend** | Streamlit di `:8501` | Tampilan chat + scatter plot SMR. Kamu ngetik, dia nampilin jawaban. |
-| **Backend** | FastAPI (`:8000`) + Agent LangGraph | Otak utama. Nerima pertanyaan, milih tool yang tepat, nyusun jawaban. |
+| **Backend** | FastAPI (`:8000`) + Agent LangGraph | Otak utama. Agent pake **Planner** (bikin rencana terstruktur) → **Executor** (jalankan tool) → **Aggregator** (kumpulin hasil) → **Reflector** (cek kualitas, retry kalau kosong) → **Composer** (susun jawaban final). |
 | **Database** | Neo4j + PostgreSQL + Qdrant + Redis | Nyimpen data. Graf buat hubungan, SQL buat angka-angka, Qdrant+Redis buat cache. |
-| **AI** | LLM + Vanna | "Otak pembantu". LLM buat nulis jawaban, Vanna buat bikin SQL dari bahasa biasa. |
+| **AI** | LLM + Vanna | "Otak pembantu". LLM buat nulis jawaban + planning, Vanna buat bikin SQL dari bahasa biasa. |
 
 ---
 
@@ -80,19 +80,19 @@ Di dashboard Streamlit, kamu ngetik sesuatu kayak:
 - *"Kenapa engine overheat sering terjadi di PC200?"*
 - *"Hydraulic leak di site Bengalon + SMR scatter plot"*
 
-### Langkah 2 — Router milih Tool
+### Langkah 2 — Planner Pecah Query Jadi Sub-Task
 
-Backend nerima pertanyaan kamu, trus **LLM Router** baca dan mutusin:
+Backend nerima pertanyaan kamu, trus **Planner (LLM structured output)** baca dan bikin rencana eksekusi:
 
-| Kamu nanya... | Router milih... | Karena... |
-|---------------|----------------|-----------|
+| Kamu nanya... | Planner rencana... | Karena... |
+|---------------|-------------------|-----------|
 | "Berapa total..." | `ask_emr_database` | Minta angka/statistik |
 | "Kenapa / apa penyebab..." | `ask_emr_graph` | Minta penjelasan |
 | "Cari EMR tentang..." | `search_emr_records` | Minta detail record |
 | "SMR scatter plot..." | `analyze_smr` | Minta data grafik |
 | "Buat laporan PDF..." | `generate_executive_summary` | Minta dokumen |
 
-> 🧠 **Untuk junior:** Router ini pake AI juga, jadi kadang hasilnya bisa beda-beda. Makanya penting buat milih kata kunci yang tepat. Misal: daripada "masalah hydraulic" (ambigu), lebih baik "hitung hydraulic leak" (pasti ke DB) atau "penyebab hydraulic leak" (pasti ke Graph).
+> 🧠 **Untuk pengembang selanjutnya:** Dulu pake **Router** (LLM milih tool langsung). Sekarang pake **Planner** (LLM bikin `QueryPlan` terstruktur: sub-task + tool + dependencies). Planner lebih reliable karena output-nya terstruktur (bukan free text), dan reflector bisa retry kalau hasil kosong.
 
 ### Langkah 3 — Entity Resolution + Site Mapping + Account Mapping
 
@@ -115,6 +115,8 @@ Apa yang terjadi:
 4. **AccountMapper** — deteksi nama customer/company (PAMA → PAMAPERSADA NUSANTARA), inject filter `account_account_name = 'PAMAPERSADA NUSANTARA'`
 5. Kalau ada **site/account + masalah** → community_id di-skip (biar gak terlalu sempit)
 
+**⚡ Optimasi baru:** Kalau site/account sudah ketemu, **EntityResolver di-SKIP** (hemat 2 panggilan LLM + token). Filter site/account sudah cukup spesifik, gak perlu community_id.
+
 ### Langkah 4 — Eksekusi Tool
 
 Setiap tool jalan dengan caranya masing-masing:
@@ -124,6 +126,8 @@ Setiap tool jalan dengan caranya masing-masing:
 Query + site/account hint → Vanna AI generate SQL → SQL Sandbox (cek keamanan) 
 → Inject community_id / site / account filter + LIMIT 100 → PostgreSQL → Hasil
 → Kalau 0: fallback ILIKE pake expanded_names
+→ ✅ Defense-in-depth: SETELAH Vanna generate SQL, sistem CEK ULANG apakah filter site/account sudah ada di SQL. Kalau belum → PAKSA inject ke WHERE clause (deterministik, gak percaya LLM 100%).
+→ 📊 Tampilkan: 5 baris pertama saja (hemat token), statistik dari SEMUA data
 ```
 
 **`ask_emr_graph` (penjelasan/penyebab):**
@@ -134,7 +138,7 @@ Query → GraphRAG Retriever (Local/Global/Hybrid/DRIFT)
 
 **`search_emr_records` (detail EMR):**
 ```
-Query → EntityResolver cari entity + AccountMapper → Traversal graf cari EMRRecord 
+Query → EntityResolver cari entity + AccountMapper + SiteMapper → Traversal graf cari EMRRecord 
 → Ambil 5 record → Enrichment dari PostgreSQL (SMR, site, account, dll)
 → Format Markdown + PPI enrichment
 ```
@@ -166,9 +170,9 @@ Streamlit nampilin jawaban. Bagian provenance otomatis disembunyiin di dropdown 
 ```mermaid
 graph TD
     A[Kamu ngetik pertanyaan\ndi Streamlit UI] --> B[FastAPI backend\n:8000]
-    B --> C[Agent Router LLM\nbaca intent]
+    B --> C[Agent Planner LLM\nbikin QueryPlan]
     
-    C --> D{Ini pertanyaan\njenis apa?}
+    C --> D{Sub-task\ntipe apa?}
     
     D -->|Angka / Total| E[ask_emr_database]
     D -->|Penyebab / Solusi| F[ask_emr_graph]
@@ -183,8 +187,11 @@ graph TD
     
     E --> M[Vanna AI bikin SQL]
     M --> N[SQL Sandbox\ncek keamanan]
-    N --> O[Jalanin SQL + LIMIT]
+    N --> O[Inject LIMIT 100]
     O --> P{Kalau 0?\nFallback ILIKE}
+    
+    %% NEW: Defense-in-depth filter injection
+    O --> O2[🔒 Defense-in-depth:\nCek filter site/account\ndi SQL → inject kalau belum ada]
     
     F --> Q[GraphRAG: Local /\nGlobal / Hybrid / DRIFT]
     Q --> R[Konteks dari Neo4j]
@@ -200,11 +207,12 @@ graph TD
     
     R --> Y[LLM Synthesizer\n+ Provenance]
     P --> Y
+    O2 --> Y
     T --> Y
     V --> Y
     X --> Y
     
-    Y --> Z[Streamlit render\njawaban + scatter plot\n+ provenance di dropdown]
+    Y --> Z[Streamlit render\njawaban + scatter plot\n+ provenance di dropdown\n+ tabel 5 baris]
 ```
 
 ---
@@ -236,20 +244,20 @@ Config: `src/config.py` — semua diatur lewat `.env`
 | Tool | Dipanggil | Output |
 |------|-----------|--------|
 | `ask_emr_graph` | Pertanyaan "kenapa/gimana" | Jawaban naratif + konteks graf |
-| `ask_emr_database` | Pertanyaan "berapa/total" | Tabel + SQL + metadata |
+| `ask_emr_database` | Pertanyaan "berapa/total" | Tabel + SQL + metadata (tampil 5 baris, statistik dari semua data) |
 | `search_emr_records` | "Cari EMR tentang..." | 5 record detail |
-| `analyze_smr` | "... + SMR/scatter" | smr_data[] buat plot |
+| `analyze_smr` | "... + SMR/scatter" | smr_data[] buat plot (TANPA LIMIT) |
 | `generate_executive_summary` | "Buat laporan PDF" | File PDF |
 
 ### 4. Service Layer
 
 | Service | File | Tugas |
 |---------|------|-------|
-| EntityResolver | `src/services/entity_resolver.py` | Terjemahin kata → entity teknis |
+| EntityResolver | `src/services/entity_resolver.py` | Terjemahin kata → entity teknis (skip kalau site/account sudah ada) |
 | SiteMapper | `src/services/site_map.py` | Deteksi nama site (Jembayan → JBY) |
-| AccountMapper | `src/services/account_map.py` | Deteksi nama customer (PAMA → PAMAPERSADA NUSANTARA) |
+| AccountMapper | `src/services/account_map.py` | Deteksi nama customer (PAMA → PAMAPERSADA NUSANTARA) — load 1.193 account dari DB |
 | Circuit Breaker | `src/services/resilience.py` | Proteksi dari error beruntun |
-| Cache | `src/services/cache_service.py` | Simpen jawaban biar cepet |
+| Cache | `src/services/cache_service.py` | Simpen jawaban biar cepet (semantic + Redis) |
 | Provider | `src/services/providers.py` | Koneksi ke database + LLM |
 
 ### 5. Keamanan
@@ -547,6 +555,7 @@ local-rag-comparator/
 | Streamlit error "can't connect" | Backend belum jalan | Jalanin `uvicorn src.main:app --reload` dulu |
 | Greenlet build error (Windows) | Versi greenlet salah | Pinned `greenlet>=3.0.0,<3.2.0` di requirements |
 | Hasil query 0 terus | Community_id terlalu sempit | Coba pake query yang nyebut site atau account (skip community_id) |
+| Filter site/account gak jalan | Server belum restart | **Restart backend** — kode defense-in-depth inject filter butuh server baru |
 
 ---
 

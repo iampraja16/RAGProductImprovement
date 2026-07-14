@@ -11,12 +11,21 @@ from src.graph.retrieval.local import LocalSearchRetriever
 from src.graph.retrieval.global_search import GlobalSearchRetriever
 from src.graph.retrieval.drift import DriftSearchRetriever
 from src.agent.prompts import estimate_tokens, truncate_to_tokens
-from src.services.site_map import resolve_site_mentions, SITE_MAP
-from src.services.account_map import resolve_account_mentions
+
 
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+
+_entity_resolver_instance = None
+
+def _get_entity_resolver():
+    global _entity_resolver_instance
+    if _entity_resolver_instance is None:
+        _entity_resolver_instance = EntityResolver(
+            get_graph_client(), get_llm(temperature=0.0), get_embeddings()
+        )
+    return _entity_resolver_instance
 
 
 REGISTERED_TOOLS: List[Any] = []
@@ -157,8 +166,13 @@ def _enrich_with_ppi(
     return "\n".join(lines), deduped
 
 
+def _build_full_context(query: str) -> dict:
+    resolver = _get_entity_resolver()
+    return resolver.resolve_full_context(query)
+
+
 @register_tool(args_schema=GraphRetrievalArgs)
-def ask_emr_graph(query: str, mode: str = "drift") -> Dict[str, Any]:
+def ask_emr_graph(query: str, mode: str = "drift", resolved_context: Optional[dict] = None) -> Dict[str, Any]:
     from src.services.telemetry import tracer
     with tracer.start_as_current_span("ask_emr_graph") as span:
         span.set_attribute("tool_query", query)
@@ -237,18 +251,6 @@ def _is_safe_select_query(sql: str) -> bool:
         return False
     return True
 
-def _inject_limit_if_missing(sql: str, default_limit: int) -> str:
-    sql_strip = sql.strip()
-    has_semicolon = sql_strip.endswith(';')
-    if has_semicolon:
-        sql_strip = sql_strip[:-1].rstrip()
-    sql_no_strings = re.sub(r"'[^']*(?:''[^']*)*'", "''", sql_strip)
-    if not re.search(r'\bLIMIT\b', sql_no_strings, re.IGNORECASE):
-        sql_strip = f"{sql_strip} LIMIT {default_limit}"
-    if has_semicolon:
-        sql_strip = f"{sql_strip};"
-    return sql_strip
-
 def _summarize_dataframe(df: pd.DataFrame) -> str:
     if df.empty:
         return "No data returned."
@@ -294,10 +296,6 @@ def _summarize_dataframe(df: pd.DataFrame) -> str:
     full_summary = "\n".join(summary_parts)
     return truncate_to_tokens(full_summary, settings.dataframe_summary_token_limit)
 
-
-
-
-
 def _inject_sql_condition(sql: str, cond: str) -> str:
     if not cond:
         return sql
@@ -308,7 +306,6 @@ def _inject_sql_condition(sql: str, cond: str) -> str:
     if has_semicolon:
         sql_strip = sql_strip[:-1].rstrip()
 
-    # Removed hardcoded community_id check to make it generic
 
     where_match = re.search(r'\bWHERE\b', sql_strip, re.IGNORECASE)
     group_match = re.search(r'\bGROUP\s+BY\b', sql_strip, re.IGNORECASE)
@@ -346,6 +343,18 @@ def _strip_community_filter(sql: str) -> str:
         sql,
         flags=re.IGNORECASE,
     ).strip()
+    sql = re.sub(
+        r"\bAND\s+\S*\.?community_id\s+IN\s*\([^)]*\)",
+        "",
+        sql,
+        flags=re.IGNORECASE,
+    ).strip()
+    sql = re.sub(
+        r"\bAND\s+\S*\.?community_id\s+IS\s+(NOT\s+)?NULL",
+        "",
+        sql,
+        flags=re.IGNORECASE,
+    ).strip()
     # Clean up dangling: WHERE AND → WHERE, WHERE OR → WHERE, trailing AND/OR
     sql = re.sub(r"\s+WHERE\s+(AND|OR)\s+", " WHERE ", sql, flags=re.IGNORECASE)
     sql = re.sub(r"\s+(AND|OR)\s+WHERE\s+", " WHERE ", sql, flags=re.IGNORECASE)
@@ -355,80 +364,187 @@ def _strip_community_filter(sql: str) -> str:
         sql = sql[:-6].strip()
     if sql.endswith("WHERE"):
         sql = sql[:-5].strip()
+    # Warn if community_id still present in WHERE after stripping
+    where_idx = re.search(r'\bWHERE\b', sql, re.IGNORECASE)
+    if where_idx:
+        after_where = sql[where_idx.start():]
+        if re.search(r'\bcommunity_id\b', after_where, re.IGNORECASE):
+            logger.warning(f"community_id still present in WHERE after stripping: {sql[:200]}")
     return sql
 
 
+_STOP_WORDS_ILIKE = frozenset({
+    "the", "a", "an", "of", "in", "on", "at", "to", "for", "with",
+    "and", "or", "is", "are", "was", "were", "this", "that", "these",
+    "from", "by", "be", "been", "being", "have", "has", "had", "do",
+    "does", "did", "but", "not", "no", "yes", "its", "it", "as",
+})
+
+
+def _expand_ilipe_patterns(sql: str) -> str:
+    """Expand multi-word ILIKE patterns — phrase OR all-words-AND for precision+recall.
+
+    E.g. WHERE symptom ILIKE '%hydraulic oil leak%'
+    → WHERE (symptom ILIKE '%hydraulic oil leak%' OR (symptom ILIKE '%hydraulic%' AND symptom ILIKE '%oil%' AND symptom ILIKE '%leak%'))
+
+    Uses AND for individual words (all must appear) instead of OR (any can appear),
+    so 'oil leak FRONT SUSPENSION' won't match 'hydraulic oil leak'.
+    """
+    def _expand_one(m: re.Match) -> str:
+        col = m.group(1)
+        phrase = m.group(2)
+        words = [w for w in phrase.split() if w.lower() not in _STOP_WORDS_ILIKE and len(w) >= 3]
+        if len(words) <= 1:
+            return m.group(0)
+        and_conds = " AND ".join(f"{col} ILIKE '%{w}%'" for w in words)
+        return f"({col} ILIKE '%{phrase}%' OR ({and_conds}))"
+
+    return re.sub(
+        r'(\w+(?:\.\w+)?)\s+ILIKE\s*\'%([^%\']+)%\'',
+        _expand_one,
+        sql,
+        flags=re.IGNORECASE,
+    )
+
+
+_ADJUSTED_LIMIT = 50  # default limit for listing queries
+
+
+def _adjust_small_limit(sql: str) -> str:
+    """Increase LIMIT for non-aggregation listing queries so the user sees more rows.
+
+    E.g. LIMIT 5 → LIMIT 50 for SELECT ... WHERE ... (without COUNT/GROUP BY).
+    """
+    if re.search(r'\bCOUNT\s*\(', sql, re.IGNORECASE):
+        return sql
+    m = re.search(r'\bLIMIT\s+(\d+)\b', sql, re.IGNORECASE)
+    if m:
+        current = int(m.group(1))
+        if current <= 5:
+            return re.sub(r'\bLIMIT\s+\d+\b', f'LIMIT {_ADJUSTED_LIMIT}', sql, flags=re.IGNORECASE)
+    return sql
+
+
+_QUESTION_WORDS = re.compile(
+    r'\b(?:tentukan|berapa|bagaimana|apa|siapa|kapan|dimana|mengapa|'
+    r'coba|tolong|saya|ingin|tahu|bisa|apakah|adakah|'
+    r'mana|saja|seluruh|semua|yaitu|yakni|adalah|'
+    r'untuk|dengan|dan|serta|atau|yang|di|ke|dari|pada|'
+    r'hitung|beri|berikan|kasih|tunjukkan|tampilkan|buat|bantu|'
+    r'show|tell|list|find|get|give|what|how|where|why|when|which|'
+    r'please|help|want|need|can|does|is|are|was|were|do|did|has|have|had)\b',
+    re.IGNORECASE
+)
+
+
+_DOMAIN_NOISE_WORDS = frozenset({
+    "smr", "hm", "hour", "meter", "jam", "operasi", "distribution",
+    "grafik", "chart", "plot", "scatter", "show", "tunjukkan",
+    "list", "tampilkan", "cari", "find", "buatkan", "bantu",
+    "tolong", "please", "help",
+})
+
+
+def _extract_symptom_keywords(query: str) -> list[str]:
+    """Extract symptom-like bigrams from a raw query when entity resolution returns nothing.
+
+    Strips question/stop/domain-noise words, then extracts multi-word sliding windows.
+    Returns ONLY bigrams (not individual words) for better precision.
+    """
+    cleaned = _QUESTION_WORDS.sub("", query).strip()
+    cleaned = re.sub(r'[^\w\s]', ' ', cleaned)
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    tokens = [t for t in cleaned.split()
+              if len(t) >= 3
+              and t.lower() not in _STOP_WORDS_ILIKE
+              and t.lower() not in _DOMAIN_NOISE_WORDS]
+    if not tokens:
+        return []
+    # Multi-word phrases only (sliding window of 2 tokens)
+    phrases = list(dict.fromkeys(
+        " ".join(tokens[i:i+2]) for i in range(len(tokens) - 1)
+    ))
+    return phrases[:10]  # limit to 10 bigrams
+
+
 @register_tool(args_schema=QueryArgs)
-def ask_emr_database(query: str) -> Dict[str, Any]:
+def ask_emr_database(query: str, resolved_context: Optional[dict] = None) -> Dict[str, Any]:
     from src.services.telemetry import tracer
     with tracer.start_as_current_span("ask_emr_database") as span:
         span.set_attribute("tool_query", query)
         logger.info(f"Using tool ask_emr_database for query: {query}")
         try:
-            resolver = EntityResolver(
-                get_graph_client(),
-                get_llm(temperature=0.0),
-                get_embeddings(),
-            )
-            resolved = resolver.resolve_query(query)
-            community_info = resolver.resolve_mentions_to_community_ids(query)
+            ctx = resolved_context if resolved_context is not None else _build_full_context(query)
+            entities = ctx.get("entities", [])
+            modified = ctx.get("modified_query") or query
+            site_hint = ctx.get("site_hint")
+            account_hint = ctx.get("account_hint")
+            should_inject_community = ctx.get("should_inject_community", False)
+            cid_hint = ctx.get("cid_hint")
+            has_model_entities = ctx.get("has_model_entities", False)
 
-            if resolved.entities:
-                logger.info(f"Entity resolution: {[(e.mention, e.canonical_name, e.score) for e in resolved.entities]}")
-            if community_info["community_ids"]:
-                logger.info(f"Community IDs: {community_info['community_ids']}")
-
-            site_query, site_hint = resolve_site_mentions(query)
+            if entities:
+                logger.info(f"Entity resolution: {[(e['mention'], e['canonical_name'], e['score']) for e in entities]}")
+            if ctx.get("symptom_community_ids"):
+                logger.info(f"Community IDs: {ctx['symptom_community_ids']}")
             if site_hint:
                 logger.info(f"Site resolution: {site_hint}")
             span.set_attribute("has_site_hint", site_hint is not None)
-
-            account_query, account_hint = resolve_account_mentions(query)
             if account_hint:
                 logger.info(f"Account resolution: {account_hint}")
+                _acct_names_in_hint = re.findall(r"'([^']+)'", account_hint)
+                _valid_names = [n for n in _acct_names_in_hint if n.lower() in query.lower()]
+                if not _valid_names:
+                    logger.warning(f"Account hint '{account_hint}' has no match in original query — treating as false positive")
+                    account_hint = None
             span.set_attribute("has_account_hint", account_hint is not None)
-
-            symptom_cids = community_info.get("symptom_community_ids", [])
-            has_model_entities = (
-                resolved.entities
-                and any(e.entity_type == "model" for e in resolved.entities)
-            )
-            should_inject_community = bool(symptom_cids) and not has_model_entities
             span.set_attribute("inject_community_id", should_inject_community)
-            if resolved.entities and has_model_entities:
-                logger.info("Model entities present — skipping community_id injection")
 
-            modified = resolved.modified_query
-            
             if site_hint or account_hint:
-                filters = []
-                if site_hint:
-                    filters.append(site_hint)
-                if account_hint:
-                    filters.append(account_hint)
-                combined_hint = " AND ".join(filters)
-                if modified != query:
-                    modified = f"{modified}. WAJIB gunakan filter pasti ini untuk lokasi/customer, JANGAN GUNAKAN ILIKE UNTUK LOKASI: {combined_hint}."
-                else:
-                    modified = f"{query}. WAJIB gunakan filter pasti ini untuk lokasi/customer, JANGAN GUNAKAN ILIKE UNTUK LOKASI: {combined_hint}."
-            if should_inject_community:
-                cid_hint = " OR ".join(f"'{c}' = ANY(community_id)" for c in symptom_cids)
+                combined_hint = " AND ".join(f for f in [site_hint, account_hint] if f)
+                modified = f"{modified}. WAJIB gunakan filter pasti ini untuk lokasi/customer, JANGAN GUNAKAN ILIKE UNTUK LOKASI: {combined_hint}."
+            if should_inject_community and cid_hint:
                 modified = f"{modified} WAJIB Gunakan HANYA filter community_id ini untuk masalah: {cid_hint}. JANGAN gunakan filter ILIKE untuk symptom/problem!"
             else:
-                has_only_models = (
-                    resolved.entities
-                    and all(e.entity_type == "model" for e in resolved.entities)
-                )
+                has_only_models = entities and all(e["entity_type"] == "model" for e in entities)
                 if has_only_models:
                     modified = f"{modified} JANGAN gunakan community_id — query ini murni filter model."
                 else:
                     modified = f"{modified} JANGAN gunakan community_id."
-                    
+
+            graph_problem_names = ctx.get("graph_problem_names")
+            if graph_problem_names:
+                name_set = set()
+                deduped = []
+                for n in graph_problem_names:
+                    short = n[:60]
+                    if short not in name_set:
+                        name_set.add(short)
+                        deduped.append(n)
+                problem_hints = " OR ".join(
+                    f"(symptom ILIKE '%{name}%')"
+                    for name in deduped
+                )
+                modified = f"{modified} Graph analysis found these specific problems: {', '.join(deduped)}. WAJIB filter untuk setiap problem tsb dengan: ({problem_hints})."
+
+            if has_model_entities and entities:
+                model_names = [e["canonical_name"] for e in entities if e["entity_type"] == "model"]
+                if model_names:
+                    model_filter_hint = " OR ".join(
+                        f"(machine_model ILIKE '%{m}%' OR model_family ILIKE '%{m}%')"
+                        for m in model_names
+                    )
+                    modified = f"{modified} WAJIB filter model unit dengan: ({model_filter_hint})."
+
+            if not account_hint:
+                modified = f"{modified} JANGAN GUNAKAN filter account_account_name — user tidak menyebut nama account/customer apapun. HANYA gunakan filter yang sudah diperintahkan di atas!"
+
             if "tunjukkan emr" in query.lower() or "tampilkan emr" in query.lower() or "list emr" in query.lower():
                 modified = f"{modified} User meminta list EMR. WAJIB HANYA SELECT emr_name, ppi_external_id, ppi_improvement_name. JANGAN GUNAKAN FUNGSI AGREGASI COUNT() SAMA SEKALI!"
             if "ppi" in query.lower():
                 modified = f"{modified} JANGAN PERNAH menambahkan filter 'ppi_external_id IS NOT NULL' pada klausa WHERE! Hitung semua masalah secara normal terlepas apakah memiliki PPI atau tidak."
 
+            logger.info(f"Vanna prompt: {modified}")
             vn = get_vanna()
             sql = vn.generate_sql(modified, allow_llm_to_see_data=False)
 
@@ -438,6 +554,21 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
 
             span.set_attribute("sql_generated", True)
             span.set_attribute("sql_query", sql)
+            logger.info(f"Vanna generated SQL: {sql}")
+
+            sql = re.sub(
+                r"\bAND\s+\S*\.?account_account_name\s*=\s*'[^']*'",
+                "",
+                sql,
+                flags=re.IGNORECASE,
+            ).strip()
+            sql = re.sub(
+                r"\bAND\s+\S*\.?account_account_name\s+ILIKE\s*'[^']*'",
+                "",
+                sql,
+                flags=re.IGNORECASE,
+            ).strip()
+            sql = re.sub(r"\s+WHERE\s+(AND|OR)\s+", " WHERE ", sql, flags=re.IGNORECASE)
 
             if should_inject_community:
                 if not re.search(r'\bcommunity_id\b', sql, re.IGNORECASE):
@@ -445,9 +576,29 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
             else:
                 sql = _strip_community_filter(sql)
                 
-            if site_hint or account_hint:
-                combined_hint = " AND ".join(filter(None, [site_hint, account_hint]))
-                sql = _inject_sql_condition(sql, combined_hint)
+            if site_hint and site_hint not in sql:
+                logger.warning(f"site_hint '{site_hint}' not found in Vanna SQL — prompt may have been ignored")
+
+            if account_hint and account_hint not in sql:
+                logger.info(f"Re-injecting account_hint into SQL: {account_hint}")
+                sql = _inject_sql_condition(sql, account_hint)
+
+            # Force-inject graph_problem_names ILIKE filters if Vanna ignored the prompt
+            graph_problem_names = ctx.get("graph_problem_names")
+            if graph_problem_names and not any(
+                re.search(re.escape(n[:30]), sql, re.IGNORECASE)
+                for n in graph_problem_names
+            ):
+                deduped_names = list(dict.fromkeys(graph_problem_names))
+                ilike_parts = " OR ".join(
+                    f"(symptom ILIKE '%{n[:80]}%' OR caused_of_problem ILIKE '%{n[:80]}%' OR subjects ILIKE '%{n[:80]}%')"
+                    for n in deduped_names
+                )
+                sql = _inject_sql_condition(sql, ilike_parts)
+                logger.info(f"Post-injected graph_problem_names ILIKE into SQL: {deduped_names[:5]}...")
+
+            sql = _expand_ilipe_patterns(sql)
+            sql = _adjust_small_limit(sql)
 
             if not _is_safe_select_query(sql):
                 logger.warning(f"Blocked unsafe or non-SELECT query generated by LLM: {sql}")
@@ -516,13 +667,11 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
                     provenance_info += f"Aggregation Counts/Sums: {len(df)} records\n"
                 result_str = f"{markdown_table}\n\nMetadata Provenance:\n{provenance_info.strip()}"
 
-            resolved_info = None
-            if resolved and resolved.entities:
-                resolved_info = [
-                    {"mention": e.mention, "canonical_name": e.canonical_name,
-                     "type": e.entity_type, "score": round(e.score, 3)}
-                    for e in resolved.entities
-                ]
+            resolved_info = [
+                {"mention": e["mention"], "canonical_name": e["canonical_name"],
+                 "type": e["entity_type"], "score": e["score"]}
+                for e in entities
+            ] if entities else None
 
             ppi_ids = []
             if df is not None and not df.empty and "ppi_external_id" in df.columns:
@@ -534,37 +683,38 @@ def ask_emr_database(query: str) -> Dict[str, Any]:
 
             return {"answer": result_str, "chunks": None, "sql": sql, "sql_data": sql_data, "resolved_entities": resolved_info, "ppi_links": ppi_list or None}
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             span.record_exception(e)
             logger.error(f"Error in ask_emr_database: {e}")
             return {"answer": f"Error querying database: {e}", "chunks": None, "sql": None, "sql_data": None}
 
 
 @register_tool(args_schema=QueryArgs)
-def search_emr_records(query: str) -> Dict[str, Any]:
+def search_emr_records(query: str, resolved_context: Optional[dict] = None) -> Dict[str, Any]:
     from src.services.telemetry import tracer
     with tracer.start_as_current_span("search_emr_records") as span:
         span.set_attribute("tool_query", query)
         logger.info(f"Using tool search_emr_records for query: {query}")
         try:
-            from src.services.site_map import resolve_site_mentions
-            from src.services.account_map import resolve_account_mentions
-            
-            site_query, site_hint = resolve_site_mentions(query)
+            ctx = resolved_context if resolved_context is not None else _build_full_context(query)
+            site_hint = ctx.get("site_hint")
+            account_hint = ctx.get("account_hint")
+
             if site_hint:
                 logger.info(f"Site resolution (Graph): {site_hint}")
             span.set_attribute("has_site_hint", site_hint is not None)
-
-            account_query, account_hint = resolve_account_mentions(query)
             if account_hint:
                 logger.info(f"Account resolution (Graph): {account_hint}")
+                _acct_names_in_hint = re.findall(r"'([^']+)'", account_hint)
+                _valid_names = [n for n in _acct_names_in_hint if n.lower() in query.lower()]
+                if not _valid_names:
+                    logger.warning(f"search_emr_records: account hint '{account_hint}' has no match in query — treating as false positive")
+                    account_hint = None
             span.set_attribute("has_account_hint", account_hint is not None)
 
-            resolver = EntityResolver(
-                get_graph_client(),
-                get_llm(temperature=0.0),
-                get_embeddings(),
-            )
-            result = resolver.search_emr_records(query, site_hint=site_hint, account_hint=account_hint)
+            resolver = _get_entity_resolver()
+            result = resolver.search_emr_records(query, site_hint=site_hint, account_hint=account_hint, resolved_ctx=ctx)
             canonical_names = result.get("canonical_names", [])
             neo4j_records = result.get("emr_records", [])
             entities = result.get("entities", [])
@@ -574,9 +724,6 @@ def search_emr_records(query: str) -> Dict[str, Any]:
 
             emr_names = [r["emr_name"] for r in neo4j_records if r.get("emr_name")]
 
-            _, account_hint = resolve_account_mentions(query)
-            if account_hint:
-                logger.info(f"Account filter for EMR records: {account_hint}")
             account_cond = f" AND ({account_hint})" if account_hint else ""
 
             full_records = []
@@ -663,30 +810,29 @@ class SmrAnalysisArgs(BaseModel):
 
 
 @register_tool(args_schema=SmrAnalysisArgs)
-def analyze_smr(query: str) -> Dict[str, Any]:
+def analyze_smr(query: str, resolved_context: Optional[dict] = None) -> Dict[str, Any]:
     from src.services.telemetry import tracer
     with tracer.start_as_current_span("analyze_smr") as span:
         span.set_attribute("tool_query", query)
         logger.info(f"Using tool analyze_smr for query: {query}")
         try:
-            resolver = EntityResolver(
-                get_graph_client(),
-                get_llm(temperature=0.0),
-                get_embeddings(),
-            )
-            resolved = resolver.resolve_query(query)
-            community_info = resolver.resolve_mentions_to_community_ids(query)
+            ctx = resolved_context if resolved_context is not None else _build_full_context(query)
+            symptom_cids = ctx.get("symptom_community_ids", [])
+            canonical_names = ctx.get("canonical_names", [])
+            site_hint = ctx.get("site_hint")
+            account_hint = ctx.get("account_hint")
+            entities = ctx.get("entities", [])
+            model_entities = ctx.get("model_entities", [])
 
-            symptom_cids = community_info.get("symptom_community_ids", [])
-            canonical_names = community_info.get("canonical_names", [])
-
-            site_query, site_hint = resolve_site_mentions(query)
             if site_hint:
                 logger.info(f"SMR site resolution: {site_hint}")
-
-            account_query, account_hint = resolve_account_mentions(query)
             if account_hint:
                 logger.info(f"SMR account resolution: {account_hint}")
+                _acct_names_in_hint = re.findall(r"'([^']+)'", account_hint)
+                _valid_names = [n for n in _acct_names_in_hint if n.lower() in query.lower()]
+                if not _valid_names:
+                    logger.warning(f"SMR account hint '{account_hint}' has no match in original query — treating as false positive")
+                    account_hint = None
 
             from sqlalchemy import create_engine, text
             from src.config import settings
@@ -696,7 +842,6 @@ def analyze_smr(query: str) -> Dict[str, Any]:
                 site_cond = f" AND ({site_hint})" if site_hint else ""
                 account_cond = f" AND ({account_hint})" if account_hint else ""
                 
-                model_entities = [e.canonical_name for e in resolved.entities if e.entity_type == "model"]
                 model_conds = []
                 if model_entities:
                     brand_codes = list(EntityResolver._BRAND_MAP.values())
@@ -720,7 +865,7 @@ def analyze_smr(query: str) -> Dict[str, Any]:
                         ORDER BY created_date
                     """
                 elif canonical_names:
-                    ilike_names = list(set(canonical_names + community_info.get("expanded_names", [])))
+                    ilike_names = list(set(canonical_names + ctx.get("expanded_names", [])))
                     ors = " OR ".join(
                         f"(symptom ILIKE '%{n}%' OR caused_of_problem ILIKE '%{n}%' OR subjects ILIKE '%{n}%')"
                         for n in ilike_names
@@ -732,7 +877,28 @@ def analyze_smr(query: str) -> Dict[str, Any]:
                         ORDER BY created_date
                     """
                 else:
-                    return {"answer": "Tidak dapat mengidentifikasi masalah dari query.", "smr_data": [], "count": 0}
+                    # Fallback: extract symptom-like keywords from the query directly
+                    fallback_terms = _extract_symptom_keywords(query)
+                    if fallback_terms:
+                        ilike_names = fallback_terms
+                        ors = " OR ".join(
+                            f"(symptom ILIKE '%{n}%' OR caused_of_problem ILIKE '%{n}%' OR subjects ILIKE '%{n}%')"
+                            for n in ilike_names
+                        )
+                        sql = f"""
+                            SELECT smr_trouble, emr_name, created_date, symptom, machine_model
+                            FROM emr_records
+                            WHERE {ors}{extra_cond}
+                            ORDER BY created_date
+                        """
+                        logger.info(f"SMR entity fallback — extracted ILIKE terms: {fallback_terms}")
+                    else:
+                        return {"answer": "Tidak dapat mengidentifikasi masalah dari query.", "smr_data": [], "count": 0}
+
+                sql = _expand_ilipe_patterns(sql)
+                sql = sql.rstrip().rstrip(';')
+                if not re.search(r'\bLIMIT\b', sql, re.IGNORECASE) and re.search(r'\bsymptom\b', sql, re.IGNORECASE):
+                    sql += " LIMIT 500"
 
                 if not _is_safe_select_query(sql):
                     logger.warning(f"Blocked unsafe SQL in analyze_smr: {sql}")
@@ -771,11 +937,7 @@ def analyze_smr(query: str) -> Dict[str, Any]:
                 "smr_data": smr_data,
                 "count": len(smr_data),
                 "ppi_links": ppi_list or None,
-                "entities": [
-                    {"mention": e.mention, "canonical_name": e.canonical_name,
-                     "type": e.entity_type, "score": round(e.score, 3)}
-                    for e in resolved.entities
-                ] if resolved.entities else [],
+                "entities": entities,
             }
 
         except Exception as e:

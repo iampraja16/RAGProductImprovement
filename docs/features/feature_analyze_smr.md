@@ -162,7 +162,7 @@ def analyze_smr(query: str) -> dict:
     }
 ```
 
-## Catatan Penting Buat Junior
+## Catatan Penting untuk Pengembang Selanjutnya
 
 1. **Gak pake LIMIT.** Ini fitur satu-satunya yang gak pake LIMIT. Karena scatter plot butuh semua data. Tapi tenang, query-nya pake filter yang spesifik (site + masalah) jadi gak bakal overload.
 

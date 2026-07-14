@@ -104,7 +104,7 @@ class GraphExtractor:
             self.graph_client.write_batch(extracted)     # MERGE ke Neo4j
 ```
 
-## Catatan Penting Buat Junior
+## Catatan Penting untuk Pengembang Selanjutnya
 
 1. **Pipeline ini PELAN.** Proses 20.630 record butuh 2-3 jam karena tergantung kecepatan AI (LLM). Sabar ya kalau jalanin.
 

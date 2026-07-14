@@ -30,6 +30,7 @@ def resolve_site_mentions(query: str):
 
     If no site mention found, returns (query, None).
     If found, returns query with site name replaced by code + SQL hint string.
+    Case-insensitive replacement handles any casing (jembayan, Jembayan, JEMBAYAN).
     """
     query_lower = query.lower()
     found = []
@@ -40,10 +41,11 @@ def resolve_site_mentions(query: str):
     if not found:
         return query, None
 
+    import re
     modified = query
     hints = []
     for full_name, code in found:
-        modified = modified.replace(full_name.title(), code)
+        modified = re.sub(re.escape(full_name), code, modified, flags=re.IGNORECASE)
         hints.append(f"branch_site = '{code}'")
 
     hint_str = " OR ".join(hints)

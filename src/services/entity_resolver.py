@@ -2,7 +2,7 @@ import logging
 import json
 import re
 from typing import List, Dict, Optional, Any, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -11,20 +11,23 @@ MAX_EXPANDED_SYNONYMS = 30
 
 EXTRACT_PROMPT = """Extract up to {max} entity mentions from this EMR maintenance query.
 Entity types:
-- "symptom": problem descriptions, symptoms, failure modes (e.g., "oli bocor", "overheating", "hydraulic leak")
-- "model": machine model names (e.g., "PC200", "HD785", "D155A")
-- "component": component/subsystem names (e.g., "FINAL DRIVE", "engine", "transmission")
-- "part": specific part names (e.g., "seal", "injector", "floating seal")
-- "root_cause": root cause descriptions (e.g., "contamination", "wear", "improper adjustment")
+- "symptom": specific, concrete symptoms or failure modes (e.g., "oli bocor", "overheating", "hydraulic leak", "low power", "suara abnormal").
+  DO NOT extract generic phrases describing symptoms like "problem yang sering terjadi", "gejala", "kondisi", "kerusakan".
+- "model": machine model names (e.g., "PC200", "HD785", "D155A").
+- "component": component/subsystem names (e.g., "FINAL DRIVE", "engine", "transmission", "damper").
+- "part": specific part names (e.g., "seal", "injector", "floating seal", "bearing").
+- "root_cause": specific root causes (e.g., "contamination", "wear", "improper adjustment", "mis machining", "loose bolt").
+  DO NOT extract generic terms like "penyebab kerusakan", "faktor penyebab", "root cause".
 
-IMPORTANT: Ignore generic/filler words like "fault", "error", "problem", "issue", "case",
-"total", "count", "list", "show", "find", "data", "info", "semua", "per", "setiap" —
-these are NOT meaningful symptoms.
+CRITICAL INSTRUCTIONS:
+1. ONLY extract concrete, specific domain terms. If the user asks generally about "problems", "root causes", or "damages" without specifying which one, DO NOT extract those generic words.
+2. Ignore geographic locations (e.g., Jembayan, Samarinda, Lati, Tarakan) and customer names.
+3. Ignore generic/filler words like "fault", "error", "problem", "issue", "case", "total", "count", "list", "show", "find", "data", "info", "semua", "per", "setiap", "kerusakan", "masalah", "komponen", "kendala".
 
 Query: {query}
 
 Return ONLY a valid JSON array, no other text:
-[{{"mention": "...", "type": "symptom|model|component|part|root_cause"}}]
+[[{{"mention": "...", "type": "symptom|model|component|part|root_cause"}}]]
 """
 
 _STOP_WORDS = frozenset({
@@ -39,7 +42,7 @@ _STOP_WORDS = frozenset({
     "on", "to", "for", "with", "and", "or", "is", "are", "was",
     "sebutkan", "tampilkan", "berikan", "nomor", "angka", "satu",
     "dua", "tiga", "empat", "lima", "paling", "banyak", "beserta",
-    "urutan", "ranking", "jumlahnya", "hidup", "masalah",
+    "urutan", "ranking", "jumlahnya", "hidup"
 })
 
 
@@ -52,40 +55,11 @@ class ResolvedEntity:
     score: float
 
 
-@dataclass
-class ResolvedQuery:
-    original_query: str
-    modified_query: str
-    entities: List[ResolvedEntity] = field(default_factory=list)
-
-
 class EntityResolver:
     def __init__(self, graph_client, llm, embedder):
         self.graph_client = graph_client
         self.llm = llm
         self.embedder = embedder
-
-    def resolve_query(self, query: str) -> ResolvedQuery:
-        query = query.strip()
-        if not query:
-            return ResolvedQuery(original_query=query, modified_query=query)
-
-        mentions = self._extract_mentions(query)
-        if not mentions:
-            return ResolvedQuery(original_query=query, modified_query=query)
-
-        resolved = []
-        for m in mentions:
-            entity = self._resolve_single(m["mention"], m["type"])
-            if entity is not None:
-                resolved.append(entity)
-
-        modified = self._build_modified_query(query, resolved)
-        return ResolvedQuery(
-            original_query=query,
-            modified_query=modified,
-            entities=resolved,
-        )
 
     def _extract_mentions(self, query: str) -> List[Dict]:
         from langchain_core.messages import HumanMessage
@@ -266,15 +240,10 @@ class EntityResolver:
             "model": "model_family",
         }
         for e in entities:
-            col = type_map.get(e.entity_type, e.entity_type)
             if e.entity_type == "model":
-                brand_codes = list(self._BRAND_MAP.values())
-                if e.canonical_name in brand_codes:
-                    hints.append(f"machine_product = '{e.canonical_name}'")
-                else:
-                    hints.append(f"machine_model ILIKE '{e.mention}%'")
-            else:
-                hints.append(f"{col} mengandung '{e.canonical_name}'")
+                continue
+            col = type_map.get(e.entity_type, e.entity_type)
+            hints.append(f"{col} mengandung '{e.canonical_name}'")
         if hints:
             hint_str = "; ".join(hints)
             result = original
@@ -351,10 +320,34 @@ class EntityResolver:
             ],
         }
 
-    def search_emr_records(self, query: str, display_limit: int = 5, site_hint: str = None, account_hint: str = None) -> Dict[str, Any]:
+    def search_emr_records(self, query: str, display_limit: int = 5, site_hint: str = None, account_hint: str = None, resolved_ctx: Optional[dict] = None) -> Dict[str, Any]:
         query = query.strip()
         if not query:
             return {"query": query, "emr_records": [], "total_count": 0, "entities": []}
+
+        # Use pre-resolved context if available (avoids redundant LLM calls)
+        if resolved_ctx:
+            entities = resolved_ctx.get("entities", [])
+            canonical_names = resolved_ctx.get("canonical_names", [])
+            expanded_names = resolved_ctx.get("expanded_names", [])
+            site_hint = site_hint or resolved_ctx.get("site_hint")
+            account_hint = account_hint or resolved_ctx.get("account_hint")
+
+            all_entity_names = list(set(canonical_names) | set(expanded_names))
+            model_names = [e.get("canonical_name") for e in entities if e.get("entity_type") == "model"]
+
+            if all_entity_names or model_names:
+                total_count, emr_rows = self._find_connected_emrs(
+                    all_entity_names, display_limit, model_names=model_names, site_hint=site_hint, account_hint=account_hint
+                )
+                if emr_rows:
+                    return {
+                        "query": query,
+                        "emr_records": emr_rows,
+                        "total_count": total_count,
+                        "canonical_names": all_entity_names,
+                        "entities": entities,
+                    }
 
         mentions = self._extract_mentions(query)
         mention_keywords = set()
@@ -484,6 +477,119 @@ class EntityResolver:
         except Exception as e:
             logger.warning(f"EMR record lookup failed: {e}")
             return 0, []
+
+    def _resolve_model_communities(self, model_names: list[str]) -> list[str]:
+        """Fallback: find community_ids associated with a model via EMRRecord lookup."""
+        if not model_names:
+            return []
+        or_conds = []
+        params = {}
+        for i, mn in enumerate(model_names):
+            pk = f"m{i}"
+            params[pk] = mn
+            or_conds.append(f"(toLower(e.machine_model) CONTAINS toLower(${pk}) OR toLower(e.model_family) CONTAINS toLower(${pk}))")
+        cond = " OR ".join(or_conds)
+        query = f"""
+        MATCH (e:EMRRecord)
+        WHERE {cond}
+        RETURN e.community_id AS cid, count(*) AS cnt
+        ORDER BY cnt DESC
+        LIMIT 5
+        """
+        try:
+            results = self.graph_client.run_query(query, params)
+            cids = set()
+            for r in results:
+                raw = r.get("cid")
+                if isinstance(raw, list):
+                    for c in raw:
+                        if c:
+                            cids.add(c)
+                elif raw:
+                    cids.add(raw)
+            return sorted(cids)
+        except Exception as e:
+            logger.warning(f"Model community fallback failed: {e}")
+            return []
+
+    def resolve_full_context(self, query: str) -> dict:
+        from src.services.site_map import resolve_site_mentions
+        from src.services.account_map import resolve_account_mentions
+
+        # Resolve site names to codes BEFORE building the Vanna prompt
+        site_resolved, site_hint = resolve_site_mentions(query)
+        _, account_hint = resolve_account_mentions(query)
+
+        mentions = self._extract_mentions(query)
+
+        resolved_entities = []
+        community_ids: set = set()
+        symptom_community_ids: set = set()
+        canonical_names: set = set()
+
+        for m in mentions:
+            entity = self._resolve_single(m["mention"], m["type"])
+            if entity is not None:
+                resolved_entities.append(entity)
+                canonical_names.add(entity.canonical_name)
+                cids = self.resolve_community_ids(entity.canonical_name)
+                for cid in cids:
+                    community_ids.add(cid)
+                    if entity.entity_type in ("symptom", "root_cause", "component", "part"):
+                        symptom_community_ids.add(cid)
+
+        expanded_names = self._expand_synonyms(list(symptom_community_ids))
+        model_entities = [e for e in resolved_entities if e.entity_type == "model"]
+        has_model_entities = bool(model_entities)
+        s_cids = sorted(symptom_community_ids)
+
+        # Fallback: if no symptom entities extracted but model exists, try model-based community lookup
+        # NOTE: model community fallback does NOT consider site/account constraints,
+        # so we do NOT set should_inject_community here. If we injected community IDs
+        # from all sites while a site filter (JBY/TRK) is also applied, the two filters
+        # could contradict each other (community IDs from other sites don't exist at JBY/TRK).
+        if not s_cids and model_entities:
+            model_cids = self._resolve_model_communities([e.canonical_name for e in model_entities])
+            if model_cids:
+                s_cids = model_cids
+                logger.info(f"Model community fallback (not injected): {model_cids}")
+
+        # Inject community_id whenever community IDs are available from entity resolution.
+        # This includes both symptom-based queries and model-based queries (via model community fallback).
+        # Community IDs provide semantic problem clustering, enabling precise filtering even for model-level queries.
+        should_inject_community = bool(s_cids)
+        cid_hint = (
+            " OR ".join(f"'{c}' = ANY(community_id)" for c in s_cids)
+            if should_inject_community else None
+        )
+        # Build modified query on site-resolved text so Vanna sees site codes, not full names
+        modified = self._build_modified_query(site_resolved, resolved_entities)
+
+        serialized_entities = [
+            {
+                "mention": e.mention,
+                "canonical_name": e.canonical_name,
+                "entity_type": e.entity_type,
+                "neo4j_label": e.neo4j_label,
+                "score": round(e.score, 3),
+            }
+            for e in resolved_entities
+        ]
+
+        return {
+            "entities": serialized_entities,
+            "modified_query": modified,
+            "community_ids": sorted(community_ids),
+            "symptom_community_ids": s_cids,
+            "canonical_names": sorted(canonical_names),
+            "expanded_names": sorted(expanded_names),
+            "site_hint": site_hint,
+            "account_hint": account_hint,
+            "model_entities": [e.canonical_name for e in model_entities],
+            "has_model_entities": has_model_entities,
+            "should_inject_community": should_inject_community,
+            "cid_hint": cid_hint,
+        }
 
     def _search_emrs_by_model(self, keywords: set, display_limit: int, site_hint: str = None, account_hint: str = None) -> Tuple[int, List[Dict]]:
         if not keywords:

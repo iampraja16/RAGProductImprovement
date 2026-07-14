@@ -16,55 +16,55 @@ Nah, Entity Resolution ini tugasnya: **nerjemahin bahasa kamu ke bahasa database
 ```mermaid
 graph TD
     A[Kamu tanya: oli bocor di PC200] --> B[LLM Ekstrak Kata Kunci
-extract_mentions]
+    extract_mentions]
     
     B --> C[LLM dapet:
-1. symptom: oli bocor
-2. model: PC200]
+    1. symptom: oli bocor
+    2. model: PC200]
     
     C --> D[Loop: proses satu per satu]
     
     D --> E[Untuk oli bocor:
-resolve_single]
+    resolve_single]
     E --> F[Cari di Neo4j pake
-Fulltext Search]
+    Fulltext Search]
     F --> G{Cocok?}
     G -->|Enggak| H[Cari pake
-Vector Search
-via embedding]
+    Vector Search
+    via embedding]
     G -->|Ya| I[Canonical name:
-OIL LEAK]
+    OIL LEAK]
     H --> I
     
     D --> J[Untuk PC200:
-resolve_single]
+    resolve_single]
     J --> K[Cari MachineModel
-di Neo4j]
+    di Neo4j]
     K --> L[Canonical name:
-PC200-10M0]
+    PC200-10M0]
     
     I --> M[Dapetin SEMUA
-community_id]
+    community_id]
     L --> M
     
     M --> N[Query ke Neo4j:
-cari community_id
-dari entity yang cocok]
+    cari community_id
+    dari entity yang cocok]
     
     N --> O[Return:
-- canonical names
-- expanded names
-- community_ids
-- entities]
+    - canonical names
+    - expanded names
+    - community_ids
+    - entities]
     
     subgraph P[Synonym Expansion]
         Q[Dari community_id yg didapat,
-cari SEMUA entity
-di komunitas yang sama]
+        cari SEMUA entity
+        di komunitas yang sama]
         Q --> R[Dapet sinonim:
-Hydraulic Oil Leaks
-Oil Hydraulic Leaks
-OIL LEAK]
+        Hydraulic Oil Leaks
+        Oil Hydraulic Leaks
+        OIL LEAK]
     end
     
     N --> P
@@ -149,7 +149,31 @@ Contoh: user nyebut "hydraulic oil leak"
 | `_expand_synonyms()` | Cari semua entity satu komunitas (sinonim) | Internal |
 | `search_emr_records()` | Cari EMR record lewat graf Neo4j | `search_emr_records` tool |
 
-## Catatan Penting Buat Junior
+## ⚡ Optimasi Baru: Skip EntityResolver Kalau Site/Account Sudah Ada
+
+**Ini perubahan penting!** 
+
+Di `ask_emr_database`, sebelum memanggil EntityResolver, sistem dulu cek:
+```python
+site_query, site_hint = resolve_site_mentions(query)
+account_query, account_hint = resolve_account_mentions(query)
+
+if site_hint or account_hint:
+    # FAST PATH: SKIP EntityResolver (hemat 2 panggilan LLM + token)
+    modified = f"Gunakan filter: {site_hint} AND {account_hint}. Gunakan ILIKE..."
+else:
+    # SLOW PATH: pake EntityResolver + community_id
+    resolved = resolver.resolve_query(query)
+    ...
+```
+
+**Alasannya:**
+- Filter site (`branch_site = 'TRK'`) + ILIKE sudah cukup spesifik
+- Filter account (`account_account_name = 'PAMAPERSADA NUSANTARA'`) + ILIKE sudah cukup spesifik
+- Community_id cuma bikin pencarian terlalu sempit kalau digabung site/account
+- Hemat ~5-10 detik + token LLM per query
+
+## Catatan Penting untuk Pengembang Selanjutnya
 
 1. **EntityResolver itu pake LLM untuk ekstrak kata kunci.** Jadi hasilnya kadang bisa beda-beda untuk pertanyaan yang mirip. Makanya kita pake prompt khusus (`EXTRACT_PROMPT`) yang udah di-tuning.
 
@@ -162,3 +186,5 @@ Contoh: user nyebut "hydraulic oil leak"
 5. **EntityResolver gak tau soal nama site.** Resolusi nama site (Jembayan → JBY) ditangani oleh modul terpisah: `site_map.py`. Ini sengaja dipisah biar tanggung jawabnya jelas.
 
 6. **EntityResolver juga gak tau soal nama customer/account.** Resolusi nama account (PAMA → PAMAPERSADA NUSANTARA) ditangani oleh modul terpisah: `account_map.py`. Sama kayak site mapping, sengaja dipisah. Lihat [`feature_account_mapping.md`](feature_account_mapping.md).
+
+7. **EntityResolver di-SKIP kalau site/account sudah ketemu.** Kalau pertanyaan "oil leak di Tarakan", sistem resolve site dulu → dapet `branch_site = 'TRK'` → **EntityResolver gak dipanggil**. Hemat ~5-10 detik + token LLM.

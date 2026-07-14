@@ -118,7 +118,7 @@ def search_emr_records(query: str) -> str:
     return format_emr_list(emrs)
 ```
 
-## Catatan Penting Buat Junior
+## Catatan Penting untuk Pengembang Selanjutnya
 
 1. **Ini murni pencarian graf, bukan SQL.** Bedanya dengan `ask_emr_database` yang pake Vanna AI buat generate SQL, `search_emr_records` cuma njelajah node dan relasi di Neo4j.
 

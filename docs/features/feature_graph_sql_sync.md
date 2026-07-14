@@ -109,7 +109,7 @@ def sync_display_cols_to_neo4j(neo4j_client, pg_uri, dry_run=False):
 
 Dry-run mode (`--dry-run`): ngeprint query yang bakal dijalanin tanpa eksekusi. Berguna buat ngetes.
 
-## Catatan Penting Buat Junior
+## Catatan Penting untuk Pengembang Selanjutnya
 
 1. **Sync ini IDEMPotent** — aman dijalanin berkali-kali. Hasilnya bakal sama karena pake UPDATE/SET, bukan INSERT.
 

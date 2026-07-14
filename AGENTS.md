@@ -1,6 +1,7 @@
 # AGENTS.md — Local RAG Comparator (EMR Fault Analyzer)
 
 ## Project Overview
+
 Production-grade Hybrid GraphRAG + SQL system for Equipment Maintenance Records (EMR) analysis.
 - **Backend**: FastAPI + LangGraph agent (Azure OpenAI / OpenAI)
 - **Frontend**: Streamlit
@@ -36,6 +37,7 @@ python scripts/setup_indexes.py
 # 6. Data ingestion pipeline (run notebooks in order)
 # notebook/1_sql_ingestion.ipynb → 2_graph_extraction.ipynb → 3_entity_resolution.ipynb
 # → 4_community_pipeline.ipynb → 5_graph_to_sql_sync.ipynb → 6_vanna_training.ipynb
+# → 7_ppi_ingestion.ipynb
 
 # 7. Run services
 uvicorn src.main:app --reload          # Backend on :8000
@@ -60,23 +62,28 @@ streamlit run src/streamlit_app.py     # Frontend on :8501
 
 ## Architecture Notes (Non-Obvious)
 
-1. **Dual-DB Sync**: Neo4j (graph) ↔ PostgreSQL (SQL) are kept in sync via `scripts/sync_graph_to_sql.py` using `community_id` arrays on `emr_records`. Run after any graph changes.
+1. **Agent Pipeline**: `entity_resolver → planner → executor → aggregator → reflection → composer`. The planner (`src/agent/planner.py`) decomposes queries into structured `QueryPlan` tasks using LLM structured output. Reflection retries up to 2 times on empty results. The old router is no longer used — `RAG_ROUTER_PROMPT` in `prompts.py` is legacy/unused.
 
-2. **Entity Resolution is Mandatory**: All user queries pass through `EntityResolver` (`src/services/entity_resolver.py`) which maps free-text mentions → canonical Neo4j names + `community_id` via fulltext + vector search. SQL queries inject `community_id` filters.
+2. **Dual-DB Sync**: Neo4j (graph) ↔ PostgreSQL (SQL) are kept in sync via `scripts/sync_graph_to_sql.py` using `community_id` arrays on `emr_records`. Run after any graph changes.
 
-3. **Agent Tools** (`src/agent/tools.py`):
+3. **Entity Resolution is Mandatory**: All user queries pass through `EntityResolver` (`src/services/entity_resolver.py`) which maps free-text mentions → canonical Neo4j names + `community_id` via fulltext + vector search. SQL queries inject `community_id` filters.
+
+4. **Agent Tools** (`src/agent/tools.py`) — 5 registered tools:
    - `ask_emr_graph` — GraphRAG (local/global/drift modes)
    - `ask_emr_database` — Text-to-SQL via Vanna (SQL sandboxed, LIMIT injected, ILIKE fallback)
    - `search_emr_records` — Direct EMR lookup via graph traversal
+   - `analyze_smr` — SMR/HM scatter plot data (direct SQL, NO Vanna, NO LIMIT)
    - `generate_executive_summary` — PDF report generation
 
-4. **Circuit Breakers** (`src/services/resilience.py`): Separate breakers for Neo4j, PostgreSQL, Qdrant, Cloud LLM (primary + failover). HTTP 429 does NOT trip breaker; 5xx does.
+5. **Circuit Breakers** (`src/services/resilience.py`): Separate breakers for Neo4j, PostgreSQL, Qdrant, Cloud LLM (primary + failover). HTTP 429 does NOT trip breaker; 5xx does.
 
-5. **SQL Safety**: `_is_safe_select_query()` in `tools.py` blocks mutations, multi-statements, DDL. Only `SELECT`/`WITH` allowed. Limit auto-injected.
+6. **SQL Safety**: `_is_safe_select_query()` in `tools.py` blocks mutations, multi-statements, DDL. Only `SELECT`/`WITH` allowed. Limit auto-injected.
 
-6. **Provenance Required**: Synthesizer prompt (`src/agent/prompts.py`) forces `--- EVIDENCE/PROVENANCE ---` divider with record identifiers. UI splits on this.
+7. **Provenance Required**: Synthesizer prompt (`src/agent/prompts.py`) forces `--- EVIDENCE/PROVENANCE ---` divider with record identifiers. UI splits on this.
 
-7. **Vanna Training Artifacts** (`vanna_training/`): `schema.sql`, `qa_pairs.yaml`, `domain_docs.md` must be valid — validated by `tests/test_vanna_training.py`.
+8. **Vanna Training Artifacts** (`vanna_training/`): `schema.sql`, `qa_pairs.yaml`, `domain_docs.md` must be valid — validated by `tests/test_vanna_training.py`.
+
+9. **Semantic Cache DISABLED**: In `src/main.py`, semantic cache is explicitly disabled to prevent stale/incorrect results. Redis cache is also effectively unused. Do not re-enable without understanding the staleness issue.
 
 ---
 
@@ -84,13 +91,15 @@ streamlit run src/streamlit_app.py     # Frontend on :8501
 
 - **Framework**: `unittest` (stdlib)
 - **Run all**: `python -m unittest discover -s tests`
-- **Test files** (no redundancy):
+- **Test files** (8 total):
   - `test_agent_tools.py` — Provenance divider, SQL sandbox, LIMIT injection
   - `test_api_endpoints.py` — FastAPI routing, auth, `/health`
   - `test_resilience_circuit.py` — Circuit breaker state transitions, thread-safety
   - `test_data_pipeline.py` — Sync idempotency, dry-run, rollback
   - `test_eval_utils.py` — Atomic file writes
   - `test_vanna_training.py` — Training artifact integrity
+  - `test_account_resolution.py` — Account mapping resolution
+  - `test_ppi_ingestion.py` — PPI data ingestion pipeline
 - **No pytest**, no fixtures, no external test DB — tests mock providers.
 
 ---
@@ -147,12 +156,14 @@ OTEL_EXPORTER_ENDPOINT=...
 | File | Purpose |
 |------|---------|
 | `data/plottingSite.csv` | Source CSV: `code,full_name` (55 sites) |
-| `src/agent/site_map.py` | `SITE_MAP`, `resolve_site_mentions()` — pre-processes user query to replace full names with codes |
+| `src/services/site_map.py` | `SITE_MAP`, `resolve_site_mentions()` — pre-processes user query to replace full names with codes |
 | `vanna_training/schema.sql` | `site_reference` table DDL |
 | `vanna_training/domain_docs.md` | Docs teaching Vanna to JOIN `site_reference` on `branch_site = code` |
 | `scripts/migrate_site_lookup.py` | Migration: creates + populates `site_reference` PG table |
 
 **Flow**: `resolve_site_mentions()` runs in both `ask_emr_database` and `analyze_smr` tools. If user types "Jembayan", the query is modified to "JBY" + SQL hint `branch_site = 'JBY'`. This ensures Vanna generates correct WHERE filters and SMR queries include site filter.
+
+---
 
 ## Common Gotchas
 
@@ -171,21 +182,24 @@ OTEL_EXPORTER_ENDPOINT=...
 
 ```
 src/
-├── main.py                 # FastAPI app, /chat, /health, /cache/*
+├── main.py                 # FastAPI app, /chat, /chat/stream, /health, /cache/*
 ├── streamlit_app.py        # Streamlit UI
 ├── config.py               # Pydantic Settings (all env vars)
 ├── agent/
-│   ├── agent.py           # LangGraph agent (router → tool → synthesizer)
-│   ├── tools.py           # 4 registered tools + SQL sandbox
-│   ├── prompts.py         # Router & synthesizer prompts
-│   └── prompts.py         # Router & synthesizer prompts
+│   ├── agent.py           # LangGraph agent (entity_resolve → plan → execute → aggregate → reflect → compose)
+│   ├── planner.py         # QueryPlan decomposition (LLM structured output)
+│   ├── tools.py           # 5 registered tools + SQL sandbox
+│   └── prompts.py         # Synthesizer prompt + token utilities
 ├── services/
 │   ├── providers.py       # Cached singletons: LLM, Graph, Qdrant, Vanna
 │   ├── entity_resolver.py # Free-text → canonical + community_id
 │   ├── site_map.py        # SITE_MAP + resolve_site_mentions() (site code↔name)
+│   ├── account_map.py     # Account name resolution
 │   ├── resilience.py      # Circuit breakers + retry logic
 │   ├── cache_service.py   # Semantic (Qdrant) + Redis cache
-│   └── embedding_service.py
+│   ├── embedding_service.py
+│   ├── telemetry.py       # OpenTelemetry tracer
+│   └── token_monitor.py   # Token usage tracking
 ├── graph/
 │   ├── client.py          # Neo4j driver wrapper
 │   ├── retrieval/         # Local, Global, Drift, Hybrid retrievers

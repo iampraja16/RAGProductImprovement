@@ -44,7 +44,7 @@ graph TD
     
     C -->|Gak ada yang cocok| G[Return: None\nquery tetap jalan\nnormal aja]
     
-    F --> H[Inject ke tool:\nfilter account]
+    F --> H[🔒 Defense-in-depth:\nSETELAH Vanna bikin SQL,\nsistem CEK ULANG apakah\naccount_account_name sudah\ndi WHERE. Kalau belum → PAKSA inject.]
 ```
 
 ## Input → Proses → Output
@@ -66,6 +66,27 @@ Pas pertama kali dipanggil, fungsi `resolve_account_mentions()` ngambil semua na
 
 Prioritas: Strategy 1 duluan, baru Strategy 2. Hasilnya digabung.
 
+**🛡️ False Positive Protection (BARU!)**
+Strategy 2 punya **skip list** kata-kata yang GAK boleh trigger account match:
+```python
+_QUERY_SKIP_WORDS = frozenset({
+    "site", "area", "unit", "plan", "plant", "lokasi", "branch",
+    "cari", "data", "info", "list", "show", "find",
+    "total", "count", "nomor", "angka",
+    "satu", "dua", "tiga", "empat", "lima",
+    "semua", "setiap", "per", "rata",
+    "masalah", "problem", "error", "fault", "issue", "case",
+    "first", "last", "top", "most",
+    "account", "customer", "type", "code", "name",
+    "engine", "parts", "service", "system",
+})
+```
+
+Contoh masalah yang diperbaiki:
+- Query: `"5 masalah yang sering terjadi di site Bengalon"`
+- Token `"site"` dulu match ke `"MUHAMMAD JAYA SITEPU"` (substring "site" in "sitepu") → **FALSE POSITIVE**
+- Sekarang: `"site"` ada di `_QUERY_SKIP_WORDS` → **di-skip**, tidak trigger account filter
+
 **Langkah 3 — Filter Injection**
 Kalau ketemu, hint dikirim ke tool:
 - Single match: `account_account_name = 'PAMAPERSADA NUSANTARA'`
@@ -73,6 +94,13 @@ Kalau ketemu, hint dikirim ke tool:
 
 **Langkah 4 — Community ID Skip**
 Sama kayak site filter: kalau ada account filter, **community_id di-skip** — karena filter account + ILIKE udah cukup spesifik.
+
+**Langkah 5 — 🔒 Defense-in-depth SQL Filter Injection (BARU!)**
+Ini lapisan keamanan tambahan. Setelah Vanna AI generate SQL:
+1. Sistem cek: apakah kolom `account_account_name` sudah ada di WHERE clause?
+2. Kalau **SUDAH ADA** → baik, Vanna udah bener
+3. Kalau **BELUM ADA** → sistem **PAKSA inject** filter account ke WHERE clause
+4. Ini deterministik (gak percaya LLM 100%) — filter wajib selalu masuk
 
 ### Output
 ```python
@@ -87,9 +115,9 @@ Sama kayak site filter: kalau ada account filter, **community_id di-skip** — k
 
 | Tool | Cara Pake |
 |------|-----------|
-| `ask_emr_database` | Inject hint ke Vanna: "Gunakan filter: account_account_name = 'PAMAPERSADA NUSANTARA'" |
-| `search_emr_records` | Filter PostgreSQL enrichment: `WHERE emr_name IN (...) AND (account_account_name = '...')` |
-| `analyze_smr` | Filter langsung di SQL: `AND (account_account_name = '...')` |
+| `ask_emr_database` | Inject petunjuk ke Vanna: "Gunakan filter: account_account_name = 'PAMAPERSADA NUSANTARA'" + **SQL-level injection** |
+| `search_emr_records` | Filter PostgreSQL enrichment: `WHERE emr_name IN (...) AND (account_account_name = '...')` + **SQL-level injection** |
+| `analyze_smr` | Filter langsung di SQL: `AND (account_account_name = '...')` + **SQL-level injection** |
 
 Ketiga tool juga otomatis nge-skip community_id kalau account_hint aktif.
 
@@ -105,7 +133,7 @@ CREATE TABLE account_reference (
 -- Isinya: 1.193 baris dari DISTINCT account_account_name
 ```
 
-Tabel ini dibuat oleh `scripts/migrate_account_lookup.py`. Sama kayak `site_reference`, tabel ini juga dipake Vanna AI pas generate SQL.
+Tabel ini dibuat oleh `scripts/migrate_account_lookup.py`. Sama kayak `site_reference`, tabel ini juga dipake sama Vanna AI pas generate SQL.
 
 ## Kombinasi dengan Site Mapping
 
@@ -138,10 +166,24 @@ def _load_account_names():
     # ORDER BY account_account_name
     ...
 
+_QUERY_SKIP_WORDS = frozenset({
+    "site", "area", "unit", "plan", "plant", "lokasi", "branch",
+    "cari", "data", "info", "list", "show", "find",
+    "total", "count", "nomor", "angka",
+    "satu", "dua", "tiga", "empat", "lima",
+    "semua", "setiap", "per", "rata",
+    "masalah", "problem", "error", "fault", "issue", "case",
+    "first", "last", "top", "most",
+    "account", "customer", "type", "code", "name",
+    "engine", "parts", "service", "system",
+})
+
 def resolve_account_mentions(query: str):
     """Cari account dalam query. Return hint kalo ketemu."""
     # Cek apakah query match dengan akun mana pun
     for token in query_tokens:          # "PAMA"
+        if token in _QUERY_SKIP_WORDS:  # 🛡️ BARU: skip false positive
+            continue
         for account in ACCOUNT_NAMES:    # "PAMAPERSADA NUSANTARA"
             if token in account.lower():  # "pama" in "pamapersada nusantara" → True
                 found.append(account)
@@ -152,14 +194,30 @@ def resolve_account_mentions(query: str):
     return query, None
 ```
 
-## Catatan Penting Buat Junior
+```python
+# File: src/agent/tools.py — fungsi _inject_where_condition() (BARU)
+
+def _inject_where_condition(sql: str, column_name: str, condition_str: str) -> str:
+    """Inject WHERE condition di SQL level. Deterministik, gak percaya LLM."""
+    # 1. Kalau kolom sudah ada di SQL → skip (Vanna udah bener)
+    # 2. Cari posisi WHERE / GROUP BY / ORDER BY / LIMIT
+    # 3. Inject condition di tempat yang bener
+    # 4. Return SQL dengan filter yang dipastikan masuk
+    ...
+```
+
+## Catatan Penting untuk Pengembang Selanjutnya
 
 1. **Tidak ada hardcode 1.193 account.** Bedanya sama site_map (55 site hardcoded), account_map load dari database setiap server start. Ini sengaja biar gak perlu maintain list manual yang kebanyakan.
 
 2. **Case insensitive.** "pama", "Pama", "PAMA" — semuanya ketemu ke "PAMAPERSADA NUSANTARA".
 
-3. **Multiple match dimungkinin.** "ADARO" bisa match "ADARO INDONESIA" DAN "ADARO LOGISTICS". Hint jadi OR.
+3. **Multiple match dimungkinkan.** "ADARO" bisa match "ADARO INDONESIA" DAN "ADARO LOGISTICS". Hint jadi OR.
 
 4. **Account filter skip community_id.** Sama kayak site filter — kalau udah filter account, community_id gak dipake biar hasil gak terlalu sempit.
 
 5. **Migration tabel account_reference** ada di `scripts/migrate_account_lookup.py`. Datanya dari `data/account_lookup.csv` (export dari database).
+
+6. **🛡️ False positive fix (BARU).** Token `"site"` dulu match `"SITEPU"` → false positive. Sekarang `"site"` di `_QUERY_SKIP_WORDS` → di-skip. Juga `"engine"` (match "engineering"), `"data"`, `"info"`, `"masalah"`, dll. List lengkap di `_QUERY_SKIP_WORDS`.
+
+7. **🔒 Defense-in-depth filter injection (BARU).** Filter account DIJAMIN masuk ke SQL — bukan cuma "hint" buat Vanna. Sistem cek ulang setelah Vanna generate, kalau belum ada → paksa inject. Ini best practice industry buat production NL-to-SQL system.
