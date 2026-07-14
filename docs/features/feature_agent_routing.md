@@ -17,7 +17,7 @@ Nah, Agent Planner ini tugasnya: **baca pertanyaan kamu, trus bikin QueryPlan te
 
 ## Arsitektur Agent (LangGraph)
 
-::: mermaid
+`mermaid
 graph TD
     subgraph Agent[LangGraph Agent Pipeline]
         A[Entity Resolve] --> B[Planner\nLLM Structured Output\n→ QueryPlan]
@@ -29,11 +29,10 @@ graph TD
     
     User[Pertanyaan User] --> A
     F --> Answer[Jawaban Final]
-:::
-
+`
 ## Alur Kerja (Flowchart)
 
-::: mermaid
+`mermaid
 graph TD
     A[Pertanyaan Kamu] --> B[Entity Resolver\nExtract entity teknis\n+ community_id]
     
@@ -57,8 +56,7 @@ graph TD
     K --> L[Reflector\nCek: jawaban lengkap?\nAda provenance?\nKalau kosong → Retry max 2x]
     L --> M[Composer\nFormat jawaban final\n+ Provenance divider]
     M --> N[Stream ke User]
-:::
-
+`
 ## Aturan Planner (Yang Penting Banget)
 
 ### Aturan 1: Tanya "Kenapa/Gimana" → `ask_emr_graph`

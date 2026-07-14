@@ -12,7 +12,7 @@ Bayangin: database lagi sibuk, atau koneksi ke AI lagi lemot. Biasanya aplikasi 
 
 ## Alur Kerja (Flowchart)
 
-::: mermaid
+`mermaid
 graph TD
     A[Sistem mau panggil
 Neo4j / PostgreSQL
@@ -57,7 +57,7 @@ lagi sibuk coba lagi]
 
 ## State Circuit Breaker
 
-::: mermaid
+`mermaid
 stateDiagram-v2
     [*] --> CLOSED: Normal
     

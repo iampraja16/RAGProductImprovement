@@ -50,7 +50,7 @@ Ini disebut **Agentic GraphRAG** karena keputusan *retrieval path* (SQL vs Graph
 
 ### 3.1 Diagram Alur (Mermaid)
 
-::: mermaid
+`mermaid
 flowchart TD
     A[User Query] --> B[Node: Entity & Context Resolver]
     B --> C[Node: Query Planner / Decomposer]
@@ -185,4 +185,4 @@ Query: *"Berikan informasi terkait problem yang sering terjadi pada unit model H
 - **Ya**, migrasi ke pola Agentic GraphRAG (Plan → Parallel Execute → Synthesize → Reflect) diperlukan — bukan mengganti tech stack, tapi mengubah topology orkestrasi LangGraph.
 - **Akar masalah sinkronisasi** = tidak adanya entity resolution terpusat → prioritaskan Fase 1 lebih dulu, dampaknya paling besar untuk effort paling kecil.
 - **Akar masalah prompt sensitivity** = router berbasis free-text tanpa structured output dan tanpa eval harness → Fase 0 (eval set) wajib dibuat duluan sebelum ubah apa pun, supaya setiap perubahan terukur.
-:::
+`

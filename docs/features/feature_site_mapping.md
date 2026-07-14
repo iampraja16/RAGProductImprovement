@@ -30,7 +30,7 @@ Ada **55 site** yang didukung. Contoh beberapa:
 
 ## Alur Kerja (Flowchart)
 
-::: mermaid
+`mermaid
 graph TD
     A[Kamu tanya:
 Hydraulic leak di
@@ -65,8 +65,7 @@ dalam query]
     sistem CEK ULANG apakah
     branch_site sudah ada di WHERE.
     Kalau belum → PAKSA inject.]
-:::
-
+`
 ## Input → Proses → Output
 
 ### Input
