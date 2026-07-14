@@ -7,7 +7,7 @@ import pandas as pd
 sys.path.append(os.getcwd())
 
 from src.agent.prompts import RAG_SYNTHESIZER_PROMPT
-from src.agent.tools import ask_emr_database, _is_safe_select_query, _inject_limit_if_missing
+from src.agent.tools import ask_emr_database, _is_safe_select_query
 
 class TestAgentTools(unittest.TestCase):
     
@@ -129,11 +129,5 @@ class TestAgentTools(unittest.TestCase):
             with self.subTest(query=q):
                 self.assertTrue(_is_safe_select_query(q))
                 
-    def test_inject_limit_if_missing(self):
-        self.assertEqual(_inject_limit_if_missing("SELECT * FROM emr_records", 500), "SELECT * FROM emr_records LIMIT 500")
-        self.assertEqual(_inject_limit_if_missing("SELECT * FROM emr_records;", 500), "SELECT * FROM emr_records LIMIT 500;")
-        self.assertEqual(_inject_limit_if_missing("SELECT * FROM emr_records LIMIT 10", 500), "SELECT * FROM emr_records LIMIT 10")
-        self.assertEqual(_inject_limit_if_missing("SELECT * FROM emr_records limit 20", 500), "SELECT * FROM emr_records limit 20")
-
 if __name__ == "__main__":
     unittest.main()

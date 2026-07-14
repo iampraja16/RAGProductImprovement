@@ -1,8 +1,10 @@
-# Dokumentasi Fitur: Agent Routing
+# Dokumentasi Fitur: Agent Planner (Ex-Router)
 
 ## Apa yang Dilakukan Fitur Ini?
 
-Agent Routing adalah **otak yang mutusin mau pake tool mana** buat jawab pertanyaan kamu.
+Agent Planner adalah **otak yang memecah pertanyaan kamu jadi rencana eksekusi terstruktur**.
+
+> ⚠️ **Catatan:** Dulu ini disebut "Router" (LLM milih tool langsung). Sekarang udah diganti jadi **Planner-based LangGraph Agent** — lebih reliable, structured, dan support reflection/retry.
 
 Bayangin gini: kamu punya 5 alat (tools) berbeda. Masing-masing alat punya keahlian sendiri:
 1. **ask_emr_graph** — ahli ngasih penjelasan soal penyebab dan solusi
@@ -11,44 +13,53 @@ Bayangin gini: kamu punya 5 alat (tools) berbeda. Masing-masing alat punya keahl
 4. **analyze_smr** — ahli ngeliat grafik SMR (jam operasi)
 5. **generate_executive_summary** — ahli bikin laporan PDF
 
-Nah, Agent Routing ini tugasnya: **baca pertanyaan kamu, trus pilih alat yang paling cocok.**
+Nah, Agent Planner ini tugasnya: **baca pertanyaan kamu, trus bikin QueryPlan terstruktur (sub-task + tool + dependencies) yang dieksekusi secara berurutan/paralel.**
+
+## Arsitektur Agent (LangGraph)
+
+```mermaid
+graph TD
+    subgraph Agent[LangGraph Agent Pipeline]
+        A[Entity Resolve] --> B[Planner\nLLM Structured Output\n→ QueryPlan]
+        B --> C[Executor\nJalankan tool\nsesuai plan]
+        C --> D[Aggregator\nKumpulin hasil\nsub-task]
+        D --> E[Reflector\nCek kualitas jawaban\nRetry max 2x kalau kosong]
+        E --> F[Composer\nSusun jawaban final\n+ Provenance]
+    end
+    
+    User[Pertanyaan User] --> A
+    F --> Answer[Jawaban Final]
+```
 
 ## Alur Kerja (Flowchart)
 
 ```mermaid
 graph TD
-    A[Pertanyaan Kamu] --> B[LLM Router
-baca RAG_ROUTER_PROMPT]
+    A[Pertanyaan Kamu] --> B[Entity Resolver\nExtract entity teknis\n+ community_id]
     
-    B --> C{Pertanyaan ini
-minta apa?}
+    B --> C[Planner LLM\nBaca query + entity\nBikin QueryPlan]
     
-    C -->|Kenapa / Gimana cara / Apa penyebab| D[ask_emr_graph
-Jawab pake teori
-+ graph knowledge]
+    C --> D{QueryPlan:\nSub-task apa aja?}
     
-    C -->|Berapa / Top 5 / Total / Paling sering / Tren| E[ask_emr_database
-Hitung + SQL]
+    D -->|Angka / Statistik| E[ask_emr_database]
+    D -->|Penyebab / Solusi| F[ask_emr_graph]
+    D -->|Cari EMR Detail| G[search_emr_records]
+    D -->|SMR / Scatter Plot| H[analyze_smr]
+    D -->|Buat Laporan PDF| I[generate_executive_summary]
     
-    C -->|Cari EMR detail / Tampilkan EMR| F[search_emr_records
-Cari record spesifik
-di Neo4j]
+    E --> J[Executor jalankan\ntool paralel/sequential]
+    F --> J
+    G --> J
+    H --> J
+    I --> J
     
-    C -->|SMR / Jam operasi / Scatter plot| G[analyze_smr
-Ambil data SMR
-buat scatter plot]
-    
-    C -->|Buat laporan / Executive summary / PDF| H[generate_executive_summary
-Generate PDF report]
-    
-    D --> I[Output: Jawaban + konteks graf]
-    E --> J[Output: Jawaban + tabel SQL]
-    F --> K[Output: Detail 5 EMR record]
-    G --> L[Output: Data SMR + scatter plot]
-    H --> M[Output: File PDF]
+    J --> K[Aggregator\nGabungin hasil\nsemua sub-task]
+    K --> L[Reflector\nCek: jawaban lengkap?\nAda provenance?\nKalau kosong → Retry max 2x]
+    L --> M[Composer\nFormat jawaban final\n+ Provenance divider]
+    M --> N[Stream ke User]
 ```
 
-## Aturan Routing (Yang Penting Banget)
+## Aturan Planner (Yang Penting Banget)
 
 ### Aturan 1: Tanya "Kenapa/Gimana" → `ask_emr_graph`
 Kalau kamu tanya soal **penyebab, solusi, rekomendasi** — itu urusannya `ask_emr_graph`.
@@ -105,30 +116,53 @@ Kalau kamu minta laporan resmi — itu urusannya `generate_executive_summary`.
 String pertanyaan bebas dari kamu. Bisa apa aja.
 
 ### Proses
-1. **Router membaca prompt** — `RAG_ROUTER_PROMPT` di `src/agent/prompts.py` berisi aturan-aturan di atas
-2. **LLM menganalisis** — AI baca pertanyaan kamu, cocokin sama aturan, trus pilih tool
-3. **Tool dipanggil** — tool yang dipilih dijalankan dengan parameter dari pertanyaan kamu
-4. **Hasil dikembalikan** — jawaban dari tool dikirim balik ke kamu
+
+1. **Entity Resolver** — Ekstrak entity teknis (symptom, model, component) + resolve ke canonical name + community_id
+2. **Planner (LLM Structured Output)** — Baca pertanyaan + entity, bikin `QueryPlan` berisi array sub-task. Masing-masing sub-task punya: `tool_name`, `sub_query`, `dependencies` (sub-task lain yang harus selesai dulu).
+3. **Executor** — Jalankan sub-task sesuai plan. Bisa paralel (kalau gak ada dependency) atau sequential.
+4. **Aggregator** — Kumpulin hasil dari semua sub-task jadi satu konteks besar.
+5. **Reflector** — Cek kualitas jawaban: apakah ada provenance? Apakah jawaban menghubungkan data? Kalau kosong/kurang → retry (max 2x) dengan plan yang dimodifikasi.
+6. **Composer** — Susun jawaban final dalam bahasa Indonesia + tampilkan `--- EVIDENCE/PROVENANCE ---` di bagian bawah.
 
 ### Output
 ```python
 {
     "response": "Jawaban dalam bahasa Indonesia...",
-    "tool_used": "ask_emr_database",
-    # plus data-data lain tergantung tool yang dipake
+    "tool_used": "ask_emr_database",  # tool utama
+    "sql": "SELECT ...",
+    "sql_data": [...],
+    "graph_traversal": {...},
+    "smr_data": [...],
+    "steps": [...],  # trace eksekusi
+    "token_usage": {...}
 }
 ```
 
-## Catatan Penting Buat Junior
+## Perbedaan Router Lama vs Planner Baru
 
-1. **Routing itu pake LLM, bukan aturan if-else.** Jadi kadang hasilnya bisa beda-beda untuk pertanyaan yang mirip. Makanya kita pake prompt yang detail banget biar AI-nya konsisten.
+| Aspek | Router Lama (Deprecated) | Planner Baru (Current) |
+|-------|--------------------------|------------------------|
+| **Output** | String nama tool (free text) | `QueryPlan` structured (JSON) |
+| **Planning** | Satu tool per query | Bisa multi-subtask + dependencies |
+| **Retry** | Gak ada | Ada Reflector (max 2x retry kalau kosong) |
+| **Reasoning** | Implicit di prompt | Explicit di QueryPlan |
+| **Debugging** | Sulit (black box) | Mudah (liat plan + trace) |
+| **Parallel exec** | Tidak | Bisa (sub-task independen jalan bareng) |
 
-2. **Kalau ragu, sistem pilih tool berdasarkan kata kunci.** Makanya kamu harus jeli — kalau pertanyaan mengandung kata "berarti", "total", "paling sering" → dia akan ke `ask_emr_database`. Tapi kalau mengandung "kenapa", "gimana", "penyebab" → ke `ask_emr_graph`.
+## Catatan Penting untuk Pengembang Selanjutnya
 
-3. **Site + masalah + SMR itu kombinasi spesial.** Kalau kamu nyebut ketiganya, sistem tahu itu butuh `analyze_smr`. Tool ini beda dari `ask_emr_database` karena dia **gak pake LIMIT** (butuh semua data buat grafik) dan support scatter plot.
+1. **Planning itu pake LLM Structured Output, bukan aturan if-else.** Jadi hasilnya bisa beda-beda untuk pertanyaan yang mirip. Makanya kita pake `PLANNER_PROMPT` yang detail banget biar AI-nya konsisten.
 
-4. **Jangan bingung antara `ask_emr_database` dan `analyze_smr`.** Keduanya sama-sama query ke PostgreSQL, tapi:
+2. **Kalau ragu, sistem pecah jadi sub-task.** Misal: "bandingkan hydraulic leak di Jembayan vs Bengalon" → Planner bisa bikin 2 sub-task `ask_emr_database` (satu untuk JBY, satu untuk BGL) → Aggregator gabungin.
+
+3. **Reflector itu jaring pengaman.** Kalau tool balik hasil kosong, Reflector minta Planner bikin plan baru (misal: ganti tool, tambah filter, dll). Max 2 kali retry.
+
+4. **Site + masalah + SMR itu kombinasi spesial.** Kalau kamu nyebut ketiganya, sistem tahu itu butuh `analyze_smr`. Tool ini beda dari `ask_emr_database` karena dia **gak pake LIMIT** (butuh semua data buat grafik) dan support scatter plot.
+
+5. **Jangan bingung antara `ask_emr_database` dan `analyze_smr`.** Keduanya sama-sama query ke PostgreSQL, tapi:
    - `ask_emr_database` → buat statistik/angka (pake Vanna AI, ada LIMIT 100)
    - `analyze_smr` → buat SMR scatter plot (SQL langsung, TANPA LIMIT)
 
-5. **Kalau tool salah pilih, coba ulang dengan kata kunci yang lebih jelas.** Contoh: daripada "masalah hydraulic leak" (bisa masuk ke graph atau DB), lebih baik "hitung berapa hydraulic leak" (pasti ke DB) atau "kenapa hydraulic leak terjadi" (pasti ke graph).
+6. **Kalau tool salah pilih, coba ulang dengan kata kunci yang lebih jelas.** Contoh: daripada "masalah hydraulic leak" (bisa masuk ke graph atau DB), lebih baik "hitung berapa hydraulic leak" (pasti ke DB) atau "kenapa hydraulic leak terjadi" (pasti ke graph).
+
+7. **Router lama (`RAG_ROUTER_PROMPT` di `prompts.py`) sudah deprecated.** Jangan dipake. Kode masih ada tapi gak dipanggil. Planner pake `PLANNER_PROMPT` + `QueryPlan` Pydantic model.

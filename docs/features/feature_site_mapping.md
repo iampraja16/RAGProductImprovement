@@ -23,6 +23,7 @@ Ada **55 site** yang didukung. Contoh beberapa:
 | BKJ | Batukajang |
 | PBB | Pembangkit |
 | TBB | Tuban |
+| TRK | Tarakan |
 | ... | ... (total 55) |
 
 ⚠️ **Catatan:** "Batukajang" punya 2 kode (`BIU` dan `BKJ`). Ini karena dari data aslinya emang begitu.
@@ -38,26 +39,32 @@ scan kata per kata
 dalam query]
     
     B --> C{Cocokin ke
-SITE_MAP kode
-dan SITE_MAP_REVERSE
-nama lengkap}
+    SITE_MAP kode
+    dan SITE_MAP_REVERSE
+    nama lengkap}
     
     C -->|Cocok: Jembayan| D[Dapet:
-- site_code: JBY
-- site_name: Jembayan]
+    - site_code: JBY
+    - site_name: Jembayan]
     
     C -->|Gak cocok| E[Return: None
-query tetap jalan
-normal aja]
+    query tetap jalan
+    normal aja]
     
     D --> F[Ubah query:
-Hydraulic leak di
-site JBY]
+    Hydraulic leak di
+    site JBY]
     
     F --> G[Inject petunjuk
-ke tool:
-Gunakan filter
-branch_site = JBY]
+    ke tool:
+    Gunakan filter
+    branch_site = JBY]
+    
+    G --> H[🔒 Defense-in-depth:
+    SETELAH Vanna bikin SQL,
+    sistem CEK ULANG apakah
+    branch_site sudah ada di WHERE.
+    Kalau belum → PAKSA inject.]
 ```
 
 ## Input → Proses → Output
@@ -83,10 +90,17 @@ Kalau ketemu site:
 1. Query diubah: nama site diganti kode
 2. Petunjuk dikirim: tool harus pake filter `branch_site = 'JBY'`
 
-**Langkah 3 — Skip Community ID**
+**Langkah 3 — Skip Community ID (Existing)**
 Ini efek samping yang penting. Kalau ada site filter:
 - **Community_id DI-SKIP** — karena filter site + ILIKE udah cukup spesifik
 - Tool diinstruksikan: "JANGAN pake community_id, pake ILIKE aja"
+
+**Langkah 4 — 🔒 Defense-in-depth SQL Filter Injection (BARU!)**
+Ini lapisan keamanan tambahan. Setelah Vanna AI generate SQL:
+1. Sistem cek: apakah kolom `branch_site` sudah ada di WHERE clause?
+2. Kalau **SUDAH ADA** → baik, Vanna udah bener
+3. Kalau **BELUM ADA** → sistem **PAKSA inject** `branch_site = 'JBY'` ke WHERE clause
+4. Ini deterministik (gak percaya LLM 100%) — filter wajib selalu masuk
 
 ### Output
 ```python
@@ -110,8 +124,9 @@ Kalau gak ada site yang cocok:
 
 | Tool | Cara Pake |
 |------|-----------|
-| `ask_emr_database` | Inject petunjuk ke Vanna: "Gunakan filter branch_site = 'JBY'" |
-| `analyze_smr` | Filter langsung di SQL: `WHERE branch_site = 'JBY'` |
+| `ask_emr_database` | Inject petunjuk ke Vanna: "Gunakan filter branch_site = 'JBY'" + **SQL-level injection** |
+| `analyze_smr` | Filter langsung di SQL: `WHERE branch_site = 'JBY'` + **SQL-level injection** |
+| `search_emr_records` | Filter PostgreSQL enrichment: `WHERE emr_name IN (...) AND branch_site = 'JBY'` |
 
 ## Hubungan dengan Tabel site_reference
 
@@ -125,6 +140,7 @@ CREATE TABLE site_reference (
 
 INSERT INTO site_reference VALUES ('JBY', 'Jembayan');
 INSERT INTO site_reference VALUES ('BGL', 'Bengalon');
+INSERT INTO site_reference VALUES ('TRK', 'Tarakan');
 -- ... 55 site
 ```
 
@@ -143,6 +159,7 @@ SITE_MAP = {
     "Jembayan": "JBY",
     "Bengalon": "BGL",
     "Samarinda": "SMD",
+    "Tarakan": "TRK",
     # ... 55 site
 }
 
@@ -150,6 +167,7 @@ SITE_MAP = {
 SITE_MAP_REVERSE = {
     "JBY": "Jembayan",
     "BGL": "Bengalon",
+    "TRK": "Tarakan",
     # ...
 }
 
@@ -164,7 +182,19 @@ def resolve_site_mentions(query: str) -> dict:
     return {"site_hint": None, "site_name": None}
 ```
 
-## Catatan Penting Buat Junior
+```python
+# File: src/agent/tools.py — fungsi _inject_where_condition() (BARU)
+
+def _inject_where_condition(sql: str, column_name: str, condition_str: str) -> str:
+    """Inject WHERE condition di SQL level. Deterministik, gak percaya LLM."""
+    # 1. Kalau kolom sudah ada di SQL → skip (Vanna udah bener)
+    # 2. Cari posisi WHERE / GROUP BY / ORDER BY / LIMIT
+    # 3. Inject condition di tempat yang bener
+    # 4. Return SQL dengan filter yang dipastikan masuk
+    ...
+```
+
+## Catatan Penting untuk Pengembang Selanjutnya
 
 1. **Site mapping dipisah dari EntityResolver.** Ini sengaja. EntityResolver urusan sama entity teknis (symptom, model, component). Site mapping urusan lokasi. Dipisah biar kode lebih rapi dan gampang di-test.
 
@@ -177,3 +207,5 @@ def resolve_site_mentions(query: str) -> dict:
 5. **Migration tabel site_reference** ada di `scripts/migrate_site_lookup.py`. Jalanin dulu sebelum pake fitur ini. Datanya dari `data/plottingSite.csv`.
 
 6. **Case insensitive.** "jembayan", "Jembayan", "JEMBAYAN" — semuanya ketemu.
+
+7. **🔒 Defense-in-depth filter injection (BARU).** Filter site DIJAMIN masuk ke SQL — bukan cuma "hint" buat Vanna. Sistem cek ulang setelah Vanna generate, kalau belum ada → paksa inject. Ini best practice industry buat production NL-to-SQL system.

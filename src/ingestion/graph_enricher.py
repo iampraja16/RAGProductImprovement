@@ -77,6 +77,9 @@ class GraphEnricher:
         sub_comp_rows: List[Dict] = []
         action_rows: List[Dict] = []
         machine_rows: List[Dict] = []
+        site_rows: List[Dict] = []
+        account_rows: List[Dict] = []
+        smr_rows: List[Dict] = []
 
         for idx, row in df.iterrows():
             emr_name = _safe(row.get("EMR Name", row.get("emr_name", f"EMR-UNK-{idx}")))
@@ -88,6 +91,9 @@ class GraphEnricher:
             action_raw = _safe(row.get("Action (How was problem corrected?)", ""))
             model = _safe(row.get("Machine Model", ""))
             product = _safe(row.get("Machine Product", row.get("machine_product", "")))
+            site = _safe(row.get("Branch / Site", row.get("branch_site", "")))
+            account = _safe(row.get("Account: Account Name", row.get("account_account_name", "")))
+            smr = _safe(row.get("SMR Trouble", row.get("smr_trouble", "")))
 
             if comp:
                 comp_rows.append({"emr": emr_name, "comp": comp})
@@ -103,10 +109,21 @@ class GraphEnricher:
                     "family": family,
                     "product": product,
                 })
+            if site:
+                site_rows.append({"emr": emr_name, "site": site})
+            if account:
+                account_rows.append({"emr": emr_name, "account": account})
+            if smr:
+                try:
+                    smr_val = float(smr)
+                    smr_rows.append({"emr": emr_name, "smr": smr_val})
+                except ValueError:
+                    pass
 
         logger.info(
-            "GraphEnricher: collected comp=%d, sub_comp=%d, action=%d, machine=%d",
+            "GraphEnricher: collected comp=%d, sub_comp=%d, action=%d, machine=%d, site=%d, account=%d, smr=%d",
             len(comp_rows), len(sub_comp_rows), len(action_rows), len(machine_rows),
+            len(site_rows), len(account_rows), len(smr_rows)
         )
 
         # ── Step 1: Components ─────────────────────────────────────────────
@@ -173,6 +190,43 @@ class GraphEnricher:
             MERGE (e)-[:ON_MACHINE]->(m)
             """,
             "MachineModel+ON_MACHINE",
+        )
+
+        # ── Step 4: Site + LOCATED_AT ─────────────────────────────────────
+        self._batch_run(
+            site_rows,
+            """
+            UNWIND $batch AS row
+            MERGE (s:Site {name: row.site})
+            WITH row, s
+            MATCH (e:EMRRecord {emr_name: row.emr})
+            MERGE (e)-[:LOCATED_AT]->(s)
+            """,
+            "Site+LOCATED_AT",
+        )
+
+        # ── Step 5: Account + BELONGS_TO ──────────────────────────────────
+        self._batch_run(
+            account_rows,
+            """
+            UNWIND $batch AS row
+            MERGE (a:Account {name: row.account})
+            WITH row, a
+            MATCH (e:EMRRecord {emr_name: row.emr})
+            MERGE (e)-[:BELONGS_TO]->(a)
+            """,
+            "Account+BELONGS_TO",
+        )
+
+        # ── Step 6: SMR Trouble Updates ───────────────────────────────────
+        self._batch_run(
+            smr_rows,
+            """
+            UNWIND $batch AS row
+            MATCH (e:EMRRecord {emr_name: row.emr})
+            SET e.smr_trouble = row.smr
+            """,
+            "EMRRecord+SMR",
         )
 
         logger.info(

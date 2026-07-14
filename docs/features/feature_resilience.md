@@ -189,7 +189,7 @@ class SemanticCache:
         redis_service.set(query, answer, ttl=3600)
 ```
 
-## Catatan Penting Buat Junior
+## Catatan Penting untuk Pengembang Selanjutnya
 
 1. **Circuit breaker itu thread-safe.** Artinya aman dipake barengan sama banyak user. Gak bakal ada race condition.
 

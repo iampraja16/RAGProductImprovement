@@ -105,7 +105,7 @@ class CommunityPipelineRunner:
         return True
 ```
 
-## Catatan Penting Buat Junior
+## Catatan Penting untuk Pengembang Selanjutnya
 
 1. **Community_id BUKAN synonym group.** Ini penting! Leiden clustering itu ngelompokin berdasarkan **graph proximity** — yaitu seberapa dekat hubungan node-node di dalam graf. Bukan berdasarkan kesamaan teks. Jadi "Hydraulic Oil Leaks" dan "Oil Hydraulic leaks" bisa beda komunitas.
 
