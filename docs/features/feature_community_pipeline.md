@@ -10,7 +10,7 @@ Hasil grup ini dipake buat **Global Search** — jadi kalau user nanya "Apa tren
 
 ## Alur Kerja (Flowchart)
 
-::: mermaid
+```mermaid
 graph TD
     A[Database Graf Neo4j
 node + relasi EMR] --> B[GDS Graph Projection
@@ -116,4 +116,4 @@ class CommunityPipelineRunner:
 4. **Butuh plugin GDS + APOC.** Pastikan Neo4j kamu udah install plugin `graph-data-science` dan `apoc`. Tanpa ini pipeline gak bisa jalan.
 
 5. **max_workers=4 biar gak kena rate limit LLM.** Summarize 24.000 komunitas butuh waktu. Pake 4 thread paralel biar cepet tapi tetap aman dari batas kuota API.
-:::
+`

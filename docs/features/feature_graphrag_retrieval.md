@@ -12,7 +12,7 @@ Ada **4 mode** pencarian yang bisa dipake. Masing-masing punya kegunaan beda.
 
 ## Alur Kerja (Flowchart)
 
-::: mermaid
+```mermaid
 graph TD
     A[Pertanyaan Kamu] --> B{Pilih Mode}
     
@@ -117,4 +117,4 @@ class GraphRAGRetriever:
 4. **DRIFT itu paling mahal** (pake LLM berulang kali). Makanya dipake kalo emang perlu aja, misal buat investigasi mendalam.
 
 5. **Yang dipanggil dari `ask_emr_graph` tool.** Kamu gak perlu pusing mikirin mode apa yang dipake — tool `ask_emr_graph` di `src/agent/tools.py` yang ngatur ini semua.
-:::
+`

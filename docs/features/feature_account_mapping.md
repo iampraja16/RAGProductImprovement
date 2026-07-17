@@ -29,7 +29,7 @@ Jadi:
 
 ## Alur Kerja (Flowchart)
 
-::: mermaid
+```mermaid
 graph TD
     A[Kamu tanya:\nengine overheat\ndi PAMA] --> B[resolve_account_mentions\nload 1.193 account\ndari PostgreSQL\n(1x aja)]
     
@@ -45,8 +45,7 @@ graph TD
     C -->|Gak ada yang cocok| G[Return: None\nquery tetap jalan\nnormal aja]
     
     F --> H[🔒 Defense-in-depth:\nSETELAH Vanna bikin SQL,\nsistem CEK ULANG apakah\naccount_account_name sudah\ndi WHERE. Kalau belum → PAKSA inject.]
-:::
-
+`
 ## Input → Proses → Output
 
 ### Input

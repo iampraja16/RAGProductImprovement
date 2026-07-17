@@ -20,7 +20,7 @@ Nah, dari satu baris ini, AI bakal bikin node dan relasi di Neo4j:
 
 ## Alur Kerja (Flowchart)
 
-::: mermaid
+```mermaid
 graph TD
     A[Dashboard EMR.csv
 20.630 baris data] --> B[Loop:
@@ -117,4 +117,4 @@ class GraphExtractor:
 5. **CSV header harus sesuai.** Pastikan kolom di CSV sesuai dengan yang diharapkan extractor. Biasanya: `EMR`, `Unit`, `Model`, `Component`, `Symptom`, `SMR`, `Date`, dll.
 
 6. **Batch size 500 itu optimal.** Lebih gede dari itu risiko timeout atau error koneksi ke Neo4j.
-:::
+`

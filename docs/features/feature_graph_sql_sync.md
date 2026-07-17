@@ -16,7 +16,7 @@ Nah, sync ini yang ngejembatani.
 
 ## Alur Kerja (Flowchart)
 
-::: mermaid
+```mermaid
 graph TD
     Start[Mulai Sinkronisasi] --> A{Arah?\nGraph ke SQL atau\nSQL ke Graph?}
     
@@ -122,4 +122,4 @@ Dry-run mode (`--dry-run`): ngeprint query yang bakal dijalanin tanpa eksekusi. 
 5. **Jalanin sync SETELAH ada perubahan di graf.** Misal: abis jalanin community pipeline, atau abis update data. Urutannya: pipeline → sync.
 
 6. **GANYANG cuma community_id Level 0** yang di-sync ke PostgreSQL. Level 1 dan 2 cuma dipake buat analisis global di Neo4j.
-:::
+`

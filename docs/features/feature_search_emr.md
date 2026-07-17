@@ -17,7 +17,7 @@ Contoh penggunaan yang pas:
 
 ## Alur Kerja (Flowchart)
 
-::: mermaid
+```mermaid
 graph TD
     A[Kamu tanya:
 Cari EMR tentang
@@ -129,4 +129,4 @@ def search_emr_records(query: str) -> str:
 4. **Search beda sama GraphRAG.** Search ini nampilin record mentah. GraphRAG (`ask_emr_graph`) ngasih penjelasan dan analisis. Kalo kamu butuh "ngapain?" → pake search. Kalo butuh "kenapa?" → pake graph.
 
 5. **Kalau hasilnya kosong, jangan panik.** Sistem ada fallback: nyari berdasarkan model alat. Misal user cuma bilang "PC200", sistem tetep bakal nyari EMR yang modelnya PC200.
-:::
+`
